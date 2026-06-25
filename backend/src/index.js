@@ -22,7 +22,9 @@ const PORT = 3001;
 
 // CORS設定
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: function (origin, callback) {
+    callback(null, true);
+  },
   credentials: true
 }));
 
