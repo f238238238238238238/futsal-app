@@ -51,6 +51,17 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+app.get('/api/test-db', async (req, res) => {
+  try {
+    const { getDb } = await import('./db/database.js');
+    const db = getDb();
+    const result = await db.query('SELECT 1 as val');
+    res.json({ ok: true, val: result.rows[0].val });
+  } catch (err) {
+    res.status(500).json({ error: err.message, stack: err.stack });
+  }
+});
+
 // DB初期化 & サーバー起動
 initializeDb();
 
