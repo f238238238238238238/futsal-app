@@ -1,4 +1,7 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+let API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+if (API_BASE && !API_BASE.endsWith('/api')) {
+  API_BASE += '/api';
+}
 
 async function request(endpoint, options = {}) {
   const url = `${API_BASE}${endpoint}`;
