@@ -25,15 +25,19 @@ export function initializeDb() {
     }
   });
 
-  const schemaPath = path.join(__dirname, 'schema.sql');
-  const schema = fs.readFileSync(schemaPath, 'utf8');
-
-  // PostgreSQL向けにスキーマ実行
-  pool.query(schema).then(() => {
-    console.log('Database initialized successfully.');
-  }).catch(err => {
-    console.error('Error initializing database:', err);
-  });
+  try {
+    const schemaPath = path.join(__dirname, 'schema.sql');
+    if (fs.existsSync(schemaPath)) {
+      const schema = fs.readFileSync(schemaPath, 'utf8');
+      pool.query(schema).then(() => {
+        console.log('Database schema initialized successfully.');
+      }).catch(err => {
+        console.error('Error initializing database schema:', err);
+      });
+    }
+  } catch (err) {
+    console.error('Could not read or execute schema.sql:', err);
+  }
 }
 
 export function getDb() {
