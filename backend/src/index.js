@@ -52,8 +52,10 @@ app.get('/api/health', (req, res) => {
 // DB初期化 & サーバー起動
 initializeDb();
 
-app.listen(PORT, () => {
-  console.log(`Futsal API server running on http://localhost:${PORT}`);
-});
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Futsal API server running on http://localhost:${PORT}`);
+  });
+}
 
 export default app;
