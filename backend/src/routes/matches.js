@@ -8,7 +8,19 @@ const router = Router();
 router.get('/', async (req, res) => {
   try {
     const db = getDb();
-    const result = await db.query('SELECT * FROM matches ORDER BY date DESC');
+    const { year } = req.query;
+
+    let query = 'SELECT * FROM matches';
+    const params = [];
+
+    if (year && year !== 'all') {
+      query += ' WHERE EXTRACT(YEAR FROM date) = $1';
+      params.push(parseInt(year, 10));
+    }
+
+    query += ' ORDER BY date DESC';
+
+    const result = await db.query(query, params);
     res.json(result.rows);
   } catch (err) {
     console.error('Get matches error:', err);

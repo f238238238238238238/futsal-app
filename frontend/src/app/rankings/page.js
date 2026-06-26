@@ -21,27 +21,40 @@ const fetchers = {
 };
 
 export default function RankingsPage() {
+  const currentYear = new Date().getFullYear();
+  const YEARS = ['all', ...Array.from({ length: currentYear - 2021 }, (_, i) => String(currentYear - i))];
+
   const [activeTab, setActiveTab] = useState('goals');
+  const [selectedYear, setSelectedYear] = useState(String(currentYear)); // デフォルトは今年
   const [data, setData] = useState({});
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  // 変更があったらデータをクリアして再取得
   useEffect(() => {
-    if (data[activeTab]) return;
+    // yearが変わったらキャッシュをクリアするか、あるいは year 別のキーで管理する
+    setData({});
+  }, [selectedYear]);
+
+  useEffect(() => {
+    const cacheKey = `${activeTab}-${selectedYear}`;
+    if (data[cacheKey]) return;
+
     setLoading(true);
-    fetchers[activeTab]()
+    fetchers[activeTab](selectedYear)
       .then(res => {
         const rankings = res.ranking || res.rankings || (Array.isArray(res) ? res : []);
-        setData(prev => ({ ...prev, [activeTab]: rankings }));
+        setData(prev => ({ ...prev, [cacheKey]: rankings }));
       })
       .catch((err) => {
         setErrorMsg(err.message || 'Error occurred');
-        setData(prev => ({ ...prev, [activeTab]: [] }));
+        setData(prev => ({ ...prev, [cacheKey]: [] }));
       })
       .finally(() => setLoading(false));
-  }, [activeTab, data]);
+  }, [activeTab, selectedYear, data]);
 
-  const rankings = data[activeTab] || [];
+  const cacheKey = `${activeTab}-${selectedYear}`;
+  const rankings = data[cacheKey] || [];
   const tab = TABS.find(t => t.key === activeTab);
 
   const getValue = (item) => {
@@ -58,6 +71,19 @@ export default function RankingsPage() {
         <div className={styles.headerBg} />
         <h1 className={styles.pageTitle}>RANKINGS</h1>
         <p className={styles.pageSubtitle}>チーム内ランキング</p>
+        
+        <div className={styles.yearFilterWrapper}>
+          <select 
+            value={selectedYear} 
+            onChange={(e) => setSelectedYear(e.target.value)}
+            className={styles.yearSelect}
+          >
+            <option value="all">すべての期間</option>
+            {YEARS.filter(y => y !== 'all').map(y => (
+              <option key={y} value={y}>{y}年度</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="container">

@@ -8,18 +8,25 @@ import styles from './page.module.css';
 const CATEGORIES = ['すべて', '公式戦', '練習', 'イベント', 'お知らせ'];
 
 export default function NewsPage() {
+  const currentYear = new Date().getFullYear();
+  const YEARS = ['all', ...Array.from({ length: currentYear - 2021 }, (_, i) => String(currentYear - i))];
+
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('すべて');
+  const [selectedYear, setSelectedYear] = useState(String(currentYear));
 
   useEffect(() => {
     setLoading(true);
-    const params = activeCategory !== 'すべて' ? { category: activeCategory } : {};
+    const params = {};
+    if (activeCategory !== 'すべて') params.category = activeCategory;
+    if (selectedYear && selectedYear !== 'all') params.year = selectedYear;
+
     getNewsList(params)
       .then(data => setNews(data.news || data || []))
       .catch(() => setNews([]))
       .finally(() => setLoading(false));
-  }, [activeCategory]);
+  }, [activeCategory, selectedYear]);
 
   return (
     <div className={styles.page}>
@@ -27,6 +34,18 @@ export default function NewsPage() {
         <div className={styles.headerBg} />
         <h1 className={styles.pageTitle}>NEWS</h1>
         <p className={styles.pageSubtitle}>最新ニュース</p>
+        <div className={styles.yearFilterWrapper}>
+          <select 
+            value={selectedYear} 
+            onChange={(e) => setSelectedYear(e.target.value)}
+            className={styles.yearSelect}
+          >
+            <option value="all">すべての期間</option>
+            {YEARS.filter(y => y !== 'all').map(y => (
+              <option key={y} value={y}>{y}年度</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="container">

@@ -8,14 +8,24 @@ const router = Router();
 router.get('/', async (req, res) => {
   try {
     const db = getDb();
-    const { category, limit } = req.query;
+    const { category, limit, year } = req.query;
     
     let query = 'SELECT * FROM news';
     const params = [];
+    const conditions = [];
 
     if (category) {
-      query += ' WHERE category = $1';
+      conditions.push(`category = $${params.length + 1}`);
       params.push(category);
+    }
+
+    if (year && year !== 'all') {
+      conditions.push(`EXTRACT(YEAR FROM created_at) = $${params.length + 1}`);
+      params.push(parseInt(year, 10));
+    }
+
+    if (conditions.length > 0) {
+      query += ' WHERE ' + conditions.join(' AND ');
     }
 
     query += ' ORDER BY created_at DESC';

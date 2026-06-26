@@ -80,7 +80,10 @@ export const deletePlayer = (id) =>
   request(`/users/${id}`, { method: 'DELETE' });
 
 // Matches
-export const getMatches = () => request('/matches');
+export const getMatches = (year) => {
+  const qs = year && year !== 'all' ? `?year=${year}` : '';
+  return request(`/matches${qs}`);
+};
 
 export const getMatch = (id) => request(`/matches/${id}`);
 
@@ -100,10 +103,22 @@ export const deleteMatch = (id) =>
   request(`/matches/${id}`, { method: 'DELETE' });
 
 // Rankings
-export const getGoalRanking = () => request('/rankings/goals');
-export const getAssistRanking = () => request('/rankings/assists');
-export const getAttendanceRanking = () => request('/rankings/attendance');
-export const getStaminaRanking = () => request('/rankings/stamina');
+export const getGoalRanking = (year) => {
+  const qs = year && year !== 'all' ? `?year=${year}` : '';
+  return request(`/rankings/goals${qs}`);
+};
+export const getAssistRanking = (year) => {
+  const qs = year && year !== 'all' ? `?year=${year}` : '';
+  return request(`/rankings/assists${qs}`);
+};
+export const getAttendanceRanking = (year) => {
+  const qs = year && year !== 'all' ? `?year=${year}` : '';
+  return request(`/rankings/attendance${qs}`);
+};
+export const getStaminaRanking = (year) => {
+  const qs = year && year !== 'all' ? `?year=${year}` : '';
+  return request(`/rankings/stamina${qs}`);
+};
 
 // Events
 export const getEvents = () => request('/events');
@@ -141,6 +156,7 @@ export const getNewsList = (params = {}) => {
   const searchParams = new URLSearchParams();
   if (params.category) searchParams.set('category', params.category);
   if (params.limit) searchParams.set('limit', params.limit);
+  if (params.year && params.year !== 'all') searchParams.set('year', params.year);
   const qs = searchParams.toString();
   return request(`/news${qs ? `?${qs}` : ''}`);
 };

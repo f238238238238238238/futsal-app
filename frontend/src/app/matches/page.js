@@ -5,7 +5,11 @@ import { getMatches, getMatch } from '@/lib/api';
 import styles from './page.module.css';
 
 export default function MatchesPage() {
+  const currentYear = new Date().getFullYear();
+  const YEARS = ['all', ...Array.from({ length: currentYear - 2021 }, (_, i) => String(currentYear - i))];
+
   const [matches, setMatches] = useState([]);
+  const [selectedYear, setSelectedYear] = useState(String(currentYear)); // デフォルトは今年
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState(null);
   const [details, setDetails] = useState({});
@@ -13,11 +17,12 @@ export default function MatchesPage() {
   const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
-    getMatches()
+    setLoading(true);
+    getMatches(selectedYear)
       .then(data => setMatches(data.matches || data || []))
       .catch((err) => setErrorMsg(err.message || 'Error occurred'))
       .finally(() => setLoading(false));
-  }, []);
+  }, [selectedYear]);
 
   const toggleDetails = async (matchId) => {
     if (expandedId === matchId) {
@@ -47,8 +52,21 @@ export default function MatchesPage() {
     return (
       <div className={styles.page}>
         <div className={styles.pageHeader}>
+          <div className={styles.headerBg} />
           <h1 className={styles.pageTitle}>MATCHES</h1>
           <p className={styles.pageSubtitle}>試合結果</p>
+          <div className={styles.yearFilterWrapper}>
+            <select 
+              value={selectedYear} 
+              onChange={(e) => setSelectedYear(e.target.value)}
+              className={styles.yearSelect}
+            >
+              <option value="all">すべての期間</option>
+              {YEARS.filter(y => y !== 'all').map(y => (
+                <option key={y} value={y}>{y}年度</option>
+              ))}
+            </select>
+          </div>
         </div>
         <div className="container">
           <div className={styles.loading}><div className={styles.spinner} /></div>
@@ -63,6 +81,18 @@ export default function MatchesPage() {
         <div className={styles.headerBg} />
         <h1 className={styles.pageTitle}>MATCHES</h1>
         <p className={styles.pageSubtitle}>試合結果</p>
+        <div className={styles.yearFilterWrapper}>
+          <select 
+            value={selectedYear} 
+            onChange={(e) => setSelectedYear(e.target.value)}
+            className={styles.yearSelect}
+          >
+            <option value="all">すべての期間</option>
+            {YEARS.filter(y => y !== 'all').map(y => (
+              <option key={y} value={y}>{y}年度</option>
+            ))}
+          </select>
+        </div>
       </div>
       <div className="container">
         <div className={styles.matchList}>
