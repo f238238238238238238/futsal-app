@@ -14,7 +14,7 @@ router.get('/', async (req, res) => {
     const params = [];
 
     if (year && year !== 'all') {
-      query += ' WHERE EXTRACT(YEAR FROM date) = $1';
+      query += ' WHERE EXTRACT(YEAR FROM date::date) = $1';
       params.push(parseInt(year, 10));
     }
 

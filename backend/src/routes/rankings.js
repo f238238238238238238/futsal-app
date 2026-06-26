@@ -14,7 +14,7 @@ router.get('/goals', async (req, res) => {
     `;
     const params = [];
     if (year && year !== 'all') {
-      query += ` JOIN matches m ON ms.match_id = m.match_id WHERE EXTRACT(YEAR FROM m.date) = $1`;
+      query += ` JOIN matches m ON ms.match_id = m.match_id WHERE EXTRACT(YEAR FROM m.date::date) = $1`;
       params.push(parseInt(year, 10));
     }
     query += `
@@ -42,7 +42,7 @@ router.get('/assists', async (req, res) => {
     `;
     const params = [];
     if (year && year !== 'all') {
-      query += ` JOIN matches m ON ms.match_id = m.match_id WHERE EXTRACT(YEAR FROM m.date) = $1`;
+      query += ` JOIN matches m ON ms.match_id = m.match_id WHERE EXTRACT(YEAR FROM m.date::date) = $1`;
       params.push(parseInt(year, 10));
     }
     query += `
@@ -69,13 +69,13 @@ router.get('/attendance', async (req, res) => {
 
     if (year && year !== 'all') {
       params.push(parseInt(year, 10));
-      yearFilterEvents = ` AND EXTRACT(YEAR FROM e.date_time) = $1`;
-      yearFilterMatches = ` JOIN matches m ON ms.match_id = m.match_id WHERE EXTRACT(YEAR FROM m.date) = $1`;
+      yearFilterEvents = ` AND EXTRACT(YEAR FROM e.date_time::timestamp) = $1`;
+      yearFilterMatches = ` JOIN matches m ON ms.match_id = m.match_id WHERE EXTRACT(YEAR FROM m.date::date) = $1`;
     }
 
     // イベント数と試合数を合計して全体の分母とする
     const totalEventsRes = await db.query(`SELECT COUNT(*) as count FROM events e WHERE e.date_time::timestamp < CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Tokyo'${yearFilterEvents}`, params);
-    const totalMatchesRes = await db.query(`SELECT COUNT(*) as count FROM matches m${yearFilterMatches ? ` WHERE EXTRACT(YEAR FROM m.date) = $1` : ''}`, params);
+    const totalMatchesRes = await db.query(`SELECT COUNT(*) as count FROM matches m${yearFilterMatches ? ` WHERE EXTRACT(YEAR FROM m.date::date) = $1` : ''}`, params);
     const totalEvents = parseInt(totalEventsRes.rows[0].count, 10) + parseInt(totalMatchesRes.rows[0].count, 10);
 
     const result = await db.query(`
@@ -117,7 +117,7 @@ router.get('/stamina', async (req, res) => {
     `;
     const params = [];
     if (year && year !== 'all') {
-      query += ` JOIN matches m ON ms.match_id = m.match_id WHERE EXTRACT(YEAR FROM m.date) = $1`;
+      query += ` JOIN matches m ON ms.match_id = m.match_id WHERE EXTRACT(YEAR FROM m.date::date) = $1`;
       params.push(parseInt(year, 10));
     }
     query += `
