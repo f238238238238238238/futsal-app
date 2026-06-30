@@ -79,7 +79,7 @@ router.get('/me', authenticate, async (req, res) => {
     }
 
     const { password_hash, ...userWithoutPassword } = user;
-    res.json(userWithoutPassword);
+    res.json({ user: userWithoutPassword });
   } catch (err) {
     console.error('Get me error:', err);
     res.status(500).json({ error: 'サーバーエラーが発生しました' });

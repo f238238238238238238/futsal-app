@@ -45,9 +45,13 @@ router.post('/webhook', async (req, res) => {
           return;
         }
         
-        // 個人チャットなら「大会」という文字だけで反応、グループならメンションか「大会教えて」で反応
-        if (text.includes('大会教えて') || hasMention || monthMatch || dows.length > 0 || (isPrivateChat && text.includes('大会'))) {
-          await handleCupRequest(event, targetMonth, dows);
+        // メンションがあるか、個人チャットの場合のみ反応する
+        const shouldRespond = isPrivateChat || hasMention;
+        
+        if (shouldRespond) {
+          if (text.includes('大会教えて') || text.includes('大会') || monthMatch || dows.length > 0) {
+            await handleCupRequest(event, targetMonth, dows);
+          }
         }
       } else if (event.type === 'postback') {
         // ボタンが押された場合 (action=attend&date=2026-07-10&title=...)
