@@ -129,6 +129,12 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
       passwordHash = bcrypt.hashSync(password, 10);
     }
 
+    const valOrExisting = (val, existing, type = 'string') => {
+      if (val === undefined) return existing;
+      if (type === 'number' || type === 'date') return val === '' ? null : val;
+      return val;
+    };
+
     await db.query(`
       UPDATE users SET
         name = $1, email = $2, password_hash = $3, role = $4, jersey_number = $5, position = $6,
@@ -138,24 +144,30 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
         updated_at = CURRENT_TIMESTAMP
       WHERE user_id = $25
     `, [
-      name || existing.name, email || existing.email, passwordHash, role || existing.role,
-      jersey_number !== undefined ? jersey_number : existing.jersey_number,
-      position || existing.position,
-      dominant_foot || existing.dominant_foot, birth_date || existing.birth_date,
-      height !== undefined ? height : existing.height,
-      weight !== undefined ? weight : existing.weight,
-      photo_url || existing.photo_url,
-      catchphrase || existing.catchphrase, reason_started || existing.reason_started,
-      hobby || existing.hobby, season_goal || existing.season_goal,
-      favorite_shoes || existing.favorite_shoes,
-      salary !== undefined ? salary : existing.salary,
-      stat_offense !== undefined ? stat_offense : existing.stat_offense,
-      stat_defense !== undefined ? stat_defense : existing.stat_defense,
-      stat_kick !== undefined ? stat_kick : existing.stat_kick,
-      stat_speed !== undefined ? stat_speed : existing.stat_speed,
-      stat_technique !== undefined ? stat_technique : existing.stat_technique,
-      stat_stamina !== undefined ? stat_stamina : existing.stat_stamina,
-      line_name !== undefined ? line_name : existing.line_name,
+      name || existing.name, 
+      email || existing.email, 
+      passwordHash, 
+      role || existing.role,
+      valOrExisting(jersey_number, existing.jersey_number, 'number'),
+      valOrExisting(position, existing.position),
+      valOrExisting(dominant_foot, existing.dominant_foot), 
+      valOrExisting(birth_date, existing.birth_date, 'date'),
+      valOrExisting(height, existing.height, 'number'),
+      valOrExisting(weight, existing.weight, 'number'),
+      valOrExisting(photo_url, existing.photo_url),
+      valOrExisting(catchphrase, existing.catchphrase), 
+      valOrExisting(reason_started, existing.reason_started),
+      valOrExisting(hobby, existing.hobby), 
+      valOrExisting(season_goal, existing.season_goal),
+      valOrExisting(favorite_shoes, existing.favorite_shoes),
+      valOrExisting(salary, existing.salary, 'number'),
+      valOrExisting(stat_offense, existing.stat_offense, 'number'),
+      valOrExisting(stat_defense, existing.stat_defense, 'number'),
+      valOrExisting(stat_kick, existing.stat_kick, 'number'),
+      valOrExisting(stat_speed, existing.stat_speed, 'number'),
+      valOrExisting(stat_technique, existing.stat_technique, 'number'),
+      valOrExisting(stat_stamina, existing.stat_stamina, 'number'),
+      valOrExisting(line_name, existing.line_name),
       req.params.id
     ]);
 
