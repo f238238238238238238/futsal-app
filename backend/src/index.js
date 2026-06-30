@@ -64,6 +64,17 @@ app.get('/api/test-db', async (req, res) => {
   }
 });
 
+app.get('/api/test-scrape', async (req, res) => {
+  try {
+    const fetchRes = await fetch('https://labola.jp/r/event/3014/tournament');
+    const status = fetchRes.status;
+    const html = await fetchRes.text();
+    res.json({ status, htmlLength: html.length, preview: html.substring(0, 500) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // DB初期化 & サーバー起動
 initializeDb();
 
