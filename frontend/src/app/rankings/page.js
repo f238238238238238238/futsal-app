@@ -56,7 +56,7 @@ export default function RankingsPage() {
   }, [activeTab, selectedYear, data]);
 
   const cacheKey = `${activeTab}-${selectedYear}`;
-  const rankings = data[cacheKey] || [];
+  const rawRankings = data[cacheKey] || [];
   const tab = TABS.find(t => t.key === activeTab);
 
   const getValue = (item) => {
@@ -67,6 +67,17 @@ export default function RankingsPage() {
     if (activeTab === 'saves') return item.total_saves ?? item.saves ?? 0;
     return 0;
   };
+
+  let currentRank = 1;
+  let previousValue = null;
+  const rankings = rawRankings.map((item, index) => {
+    const val = getValue(item);
+    if (val !== previousValue) {
+      currentRank = index + 1;
+      previousValue = val;
+    }
+    return { ...item, displayRank: currentRank };
+  });
 
   return (
     <div className={styles.page}>
@@ -117,11 +128,11 @@ export default function RankingsPage() {
                   className={`${styles.podiumCard} ${styles[`podium${i + 1}`]}`}
                   style={{ animationDelay: `${i * 0.15}s` }}
                 >
-                  <div className={styles.podiumMedal} style={{ color: MEDAL_COLORS[i] }}>
-                    {i === 0 ? '👑' : i === 1 ? '🥈' : '🥉'}
+                  <div className={styles.podiumMedal} style={{ color: MEDAL_COLORS[item.displayRank - 1] || '#ccc' }}>
+                    {item.displayRank === 1 ? '👑' : item.displayRank === 2 ? '🥈' : item.displayRank === 3 ? '🥉' : ''}
                   </div>
-                  <div className={styles.podiumRank} style={{ color: MEDAL_COLORS[i] }}>
-                    {i + 1}
+                  <div className={styles.podiumRank} style={{ color: MEDAL_COLORS[item.displayRank - 1] || '#ccc' }}>
+                    {item.displayRank}
                   </div>
                   <div className={styles.podiumAvatar}>
                     {item.photo_url ? (
@@ -149,7 +160,7 @@ export default function RankingsPage() {
                     className={styles.restItem}
                     style={{ animationDelay: `${(i + 3) * 0.05}s` }}
                   >
-                    <span className={styles.restRank}>{i + 4}</span>
+                    <span className={styles.restRank}>{item.displayRank}</span>
                     <div className={styles.restAvatar}>
                       {item.photo_url ? (
                         <img src={getImageUrl(item.photo_url)} alt={item.name} className={styles.avatarImgSmall} />
