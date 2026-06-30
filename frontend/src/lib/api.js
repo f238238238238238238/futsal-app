@@ -198,9 +198,9 @@ export const deleteFumindor = (id) =>
 export const getSettings = () => request('/settings');
 
 export const updateSetting = (key, value) =>
-  request('/settings', {
+  request(`/settings/${key}`, {
     method: 'PUT',
-    body: JSON.stringify({ key, value }),
+    body: JSON.stringify({ value }),
   });
 
 // Upload
