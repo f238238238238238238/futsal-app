@@ -34,6 +34,7 @@ export default function LiveMatchPage() {
   // Selection
   const [selectedCourtId, setSelectedCourtId] = useState(null);
   const [selectedBenchId, setSelectedBenchId] = useState(null);
+  const [tapMeta, setTapMeta] = useState({ id: null, time: 0 });
   
   const [lastPasserId, setLastPasserId] = useState(null);
   const [selectingPosition, setSelectingPosition] = useState(null);
@@ -151,32 +152,32 @@ export default function LiveMatchPage() {
     setEvents(prev => [...prev, { event_type: type, user_id: userId, minute: timerSeconds, ...extraData }]);
   };
 
-  const handleAction = (type) => {
-    if (!selectedCourtId) return;
+  const handleAction = (type, targetId = selectedCourtId) => {
+    if (!targetId) return;
 
     if (type === 'goal') {
-      recordEvent('goal', selectedCourtId);
+      recordEvent('goal', targetId);
       setScore(s => ({ ...s, us: s.us + 1 }));
-      if (lastPasserId && lastPasserId !== selectedCourtId) {
+      if (lastPasserId && lastPasserId !== targetId) {
         recordEvent('assist', lastPasserId);
       }
       setLastPasserId(null);
       setSelectedCourtId(null);
     } else if (type === 'defense_save') {
-      const pos = starterPositions[selectedCourtId];
+      const pos = starterPositions[targetId];
       if (pos === 'GK') {
-        recordEvent('save', selectedCourtId);
+        recordEvent('save', targetId);
       } else {
-        recordEvent('defense', selectedCourtId);
+        recordEvent('defense', targetId);
       }
       setSelectedCourtId(null);
       setLastPasserId(null);
     } else if (type === 'lost_ball') {
-      recordEvent('lost_ball', selectedCourtId);
+      recordEvent('lost_ball', targetId);
       setSelectedCourtId(null);
       setLastPasserId(null); // Reset pass memory on lost ball
     } else {
-      recordEvent(type, selectedCourtId);
+      recordEvent(type, targetId);
       setSelectedCourtId(null);
     }
   };
@@ -203,6 +204,17 @@ export default function LiveMatchPage() {
   };
 
   const handleCourtPlayerClick = (id) => {
+    const now = Date.now();
+    if (tapMeta.id === id && now - tapMeta.time < 400) {
+      // Double tap detected!
+      handleAction('defense_save', id);
+      setTapMeta({ id: null, time: 0 });
+      return;
+    }
+    
+    // Normal tap logic
+    setTapMeta({ id, time: now });
+    
     if (selectedBenchId) {
       handleSub(id);
     } else if (selectedCourtId === id) {
@@ -552,9 +564,6 @@ export default function LiveMatchPage() {
               </button>
               <button className={`${styles.actionBtn} ${styles.btnShot}`} onClick={() => handleAction('shot')}>
                 <span style={{ fontSize: '1.5rem' }}>👟</span> シュート
-              </button>
-              <button className={`${styles.actionBtn} ${styles.btnDefense}`} onClick={() => handleAction('defense_save')}>
-                <span style={{ fontSize: '1.5rem' }}>🛡️/🧤</span> ディフェンス/セーブ
               </button>
               <button className={`${styles.actionBtn} ${styles.btnRecovery}`} onClick={() => handleAction('lost_ball')}>
                  <span style={{ fontSize: '1.5rem' }}>💥</span> ロスト
