@@ -80,13 +80,23 @@ export default function MatchDetailPage() {
         setBallState({ top: `calc(${pPos.top} + 15%)`, left: `calc(${pPos.left} + 15%)`, opacity: 0 });
         break;
       case 'goal':
-        setBallState({ top: '0%', left: '50%', opacity: 1 });
+        // ジャンプしてゴール決めた人の場所へ (transitionを一度無効にするため工夫が必要ですが、React状態だけで擬似的に表現)
+        setBallState({ top: pPos.top, left: pPos.left, opacity: 1 });
         setTimeout(() => {
-          setEffect({ key: Date.now(), type: 'goal', top: '50%', left: '50%', emoji: 'GOAL!!' });
-        }, 400);
+          setBallState({ top: '0%', left: '50%', opacity: 1 });
+          setTimeout(() => {
+            setEffect({ key: Date.now(), type: 'goal', top: '50%', left: '50%', emoji: 'GOAL!! 🎉' });
+          }, 400);
+        }, 50);
         break;
       case 'shot':
-        setBallState({ top: '-10%', left: '70%', opacity: 0 });
+        setBallState({ top: pPos.top, left: pPos.left, opacity: 1 });
+        setTimeout(() => {
+          setBallState({ top: '-10%', left: '70%', opacity: 0 });
+          setTimeout(() => {
+            setEffect({ key: Date.now(), type: 'miss', top: '50%', left: '50%', emoji: 'NO GOAL 😱' });
+          }, 400);
+        }, 50);
         break;
       default:
         break;
@@ -356,6 +366,14 @@ export default function MatchDetailPage() {
                   <div 
                     key={effect.key}
                     className={styles.goalText}
+                  >
+                    {effect.emoji}
+                  </div>
+                )}
+                {effect && effect.type === 'miss' && (
+                  <div 
+                    key={effect.key}
+                    className={styles.missText}
                   >
                     {effect.emoji}
                   </div>
