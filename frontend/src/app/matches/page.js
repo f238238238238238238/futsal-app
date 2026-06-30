@@ -178,25 +178,6 @@ export default function MatchesPage() {
                             </div>
                           )}
 
-                          {detail.events && detail.events.length > 0 && (
-                            <div className={styles.detailSection}>
-                              <h4 className={styles.detailLabel}>タイムライン</h4>
-                              <div className={styles.timeline}>
-                                {detail.events
-                                  .sort((a, b) => (a.minute || 0) - (b.minute || 0))
-                                  .map((ev, idx) => (
-                                    <div key={idx} className={styles.timelineItem}>
-                                      <span className={styles.timelineMin}>{ev.minute ? `${ev.minute}'` : '-'}</span>
-                                      <span className={styles.timelineIcon}>
-                                        {ev.event_type === 'goal' ? '⚽' : '🅰️'}
-                                      </span>
-                                      <span className={styles.timelineName}>{ev.name || ev.user_name}</span>
-                                    </div>
-                                  ))}
-                              </div>
-                            </div>
-                          )}
-
                           <div style={{ marginTop: '1rem', textAlign: 'center' }}>
                             <Link href={`/matches/${match.match_id || match.id}`} className={styles.moreLink} style={{ display: 'inline-block', padding: '0.5rem 1.5rem', background: 'var(--color-primary-500)', color: 'white', borderRadius: '4px', textDecoration: 'none', fontWeight: 600 }}>
                               詳細フォーメーションを見る →

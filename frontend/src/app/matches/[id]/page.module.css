@@ -297,3 +297,85 @@
 .backLink:hover {
   text-decoration: underline;
 }
+
+/* Animations */
+.playbackControls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.playBtn {
+  background: var(--color-primary-500);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  padding: 0.5rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+}
+
+.playBtn:hover {
+  background: var(--color-primary-400);
+  transform: translateY(-2px);
+}
+
+.ball {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  font-size: 20px;
+  line-height: 24px;
+  text-align: center;
+  z-index: 20;
+  transform: translate(-50%, -50%);
+  transition: top 0.4s cubic-bezier(0.25, 1, 0.5, 1), left 0.4s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.3s;
+  pointer-events: none;
+  filter: drop-shadow(0 4px 4px rgba(0,0,0,0.5));
+}
+
+.effectBadge {
+  position: absolute;
+  font-size: 2rem;
+  z-index: 30;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  animation: effectPopOut 1s forwards;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+
+.goalText {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 4rem;
+  font-weight: 900;
+  color: #FFD700;
+  text-shadow: 0 4px 10px rgba(0,0,0,0.8), 0 0 20px #FF4500;
+  z-index: 40;
+  pointer-events: none;
+  animation: goalPopOut 2s forwards;
+}
+
+@keyframes effectPopOut {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+  20% { opacity: 1; transform: translate(-50%, -80%) scale(1.2); }
+  80% { opacity: 1; transform: translate(-50%, -100%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -120%) scale(0.8); }
+}
+
+@keyframes goalPopOut {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.2) rotate(-10deg); }
+  20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1) rotate(5deg); }
+  30% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+  80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
+}

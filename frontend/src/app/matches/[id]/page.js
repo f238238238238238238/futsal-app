@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { getMatch, getImageUrl } from '@/lib/api';
@@ -20,7 +20,13 @@ export default function MatchDetailPage() {
   const [match, setMatch] = useState(null);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
+  
   const [minute, setMinute] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [playIndex, setPlayIndex] = useState(-1);
+  
+  const [ballState, setBallState] = useState({ top: '50%', left: '50%', opacity: 0 });
+  const [effect, setEffect] = useState(null);
 
   useEffect(() => {
     getMatch(id)
@@ -29,13 +35,122 @@ export default function MatchDetailPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
+  const sortedEvents = useMemo(() => {
+    if (!match || !match.events) return [];
+    return [...match.events].sort((a,b) => a.minute - b.minute);
+  }, [match]);
+
+  const getPlayerPosition = (userId, currentMin) => {
+    let pos = '';
+    const starter = match.stats.find(s => s.user_id === userId);
+    if (starter && (starter.is_starter === 1 || starter.is_starter === true)) {
+      pos = starter.position;
+    }
+    for (const e of sortedEvents) {
+      if (e.minute > currentMin) break;
+      if (e.user_id === userId) {
+        if (e.event_type === 'sub_in') pos = e.position;
+        if (e.event_type === 'sub_out') pos = '';
+        if (e.event_type === 'position_change') pos = e.position;
+      }
+    }
+    return POSITIONS[pos] || POSITIONS['default'];
+  };
+
+  const triggerAnimation = (ev) => {
+    const pPos = getPlayerPosition(ev.user_id, ev.minute);
+    
+    switch (ev.event_type) {
+      case 'pass':
+      case 'steal':
+      case 'catch':
+        setBallState({ top: pPos.top, left: pPos.left, opacity: 1 });
+        if(ev.event_type === 'steal' || ev.event_type === 'catch') {
+          setEffect({ key: Date.now(), type: 'badge', top: pPos.top, left: pPos.left, emoji: ev.event_type === 'steal' ? '🛡️' : '🧤' });
+        }
+        break;
+      case 'lost_ball':
+        setEffect({ key: Date.now(), type: 'badge', top: pPos.top, left: pPos.left, emoji: '💥' });
+        setBallState({ top: pPos.top, left: pPos.left, opacity: 0 });
+        break;
+      case 'block':
+      case 'save':
+      case 'defense':
+        setEffect({ key: Date.now(), type: 'badge', top: pPos.top, left: pPos.left, emoji: ev.event_type === 'save' ? '🧤' : '🛡️' });
+        setBallState({ top: `calc(${pPos.top} + 15%)`, left: `calc(${pPos.left} + 15%)`, opacity: 0 });
+        break;
+      case 'goal':
+        setBallState({ top: '0%', left: '50%', opacity: 1 });
+        setTimeout(() => {
+          setEffect({ key: Date.now(), type: 'goal', top: '50%', left: '50%', emoji: 'GOAL!!' });
+        }, 400);
+        break;
+      case 'shot':
+        setBallState({ top: '-10%', left: '70%', opacity: 0 });
+        break;
+      default:
+        break;
+    }
+  };
+
+  useEffect(() => {
+    if (!isPlaying) return;
+    
+    const nextIdx = playIndex + 1;
+    if (nextIdx >= sortedEvents.length) {
+      setIsPlaying(false);
+      return;
+    }
+    
+    const nextEvent = sortedEvents[nextIdx];
+    const delay = playIndex === -1 ? 500 : 2500; // wait longer between events
+    
+    const timer = setTimeout(() => {
+      setMinute(nextEvent.minute);
+      setPlayIndex(nextIdx);
+      triggerAnimation(nextEvent);
+    }, delay);
+    
+    return () => clearTimeout(timer);
+  }, [isPlaying, playIndex, sortedEvents]);
+
+  const handleSliderChange = (newMin) => {
+    setMinute(newMin);
+    setIsPlaying(false);
+    
+    let idx = -1;
+    for(let i=0; i<sortedEvents.length; i++) {
+      if(sortedEvents[i].minute <= newMin) idx = i;
+    }
+    setPlayIndex(idx);
+    
+    if (idx >= 0) {
+      triggerAnimation(sortedEvents[idx]);
+    } else {
+      setBallState({ ...ballState, opacity: 0 });
+    }
+  };
+
+  const togglePlay = () => {
+    if (isPlaying) {
+      setIsPlaying(false);
+    } else {
+      // If at the end, restart
+      if (playIndex >= sortedEvents.length - 1) {
+        setPlayIndex(-1);
+        setMinute(0);
+        setBallState({ top: '50%', left: '50%', opacity: 0 });
+      }
+      setIsPlaying(true);
+    }
+  };
+
   const { onPitch, bench } = useMemo(() => {
     if (!match || !match.stats) return { onPitch: [], bench: [] };
     
     let currentOnPitch = [];
     let currentBench = [];
 
-    // Initialize based on starter flag
     match.stats.forEach(st => {
       const p = { 
         user_id: st.user_id, 
@@ -51,9 +166,6 @@ export default function MatchDetailPage() {
       }
     });
 
-    // Apply events up to current minute
-    const sortedEvents = [...(match.events || [])].sort((a,b) => a.minute - b.minute);
-    
     for (const ev of sortedEvents) {
       if (ev.minute > minute) break;
 
@@ -80,14 +192,13 @@ export default function MatchDetailPage() {
     }
 
     return { onPitch: currentOnPitch, bench: currentBench };
-  }, [match, minute]);
+  }, [match, minute, sortedEvents]);
 
   const pastEvents = useMemo(() => {
-    if (!match || !match.events) return [];
-    return match.events
+    return sortedEvents
       .filter(ev => ev.minute <= minute)
-      .sort((a,b) => b.minute - a.minute); // desc
-  }, [match, minute]);
+      .sort((a,b) => b.minute - a.minute);
+  }, [sortedEvents, minute]);
 
   const getEventText = (ev) => {
     const name = ev.name || ev.user_name || '選手';
@@ -157,9 +268,14 @@ export default function MatchDetailPage() {
             min="0" 
             max={match.duration_seconds || 2400} 
             value={minute} 
-            onChange={e => setMinute(parseInt(e.target.value, 10))} 
+            onChange={e => handleSliderChange(parseInt(e.target.value, 10))} 
             className={styles.slider} 
           />
+          <div className={styles.playbackControls}>
+            <button className={styles.playBtn} onClick={togglePlay}>
+              {isPlaying ? '⏸ 停止' : '▶ ハイライト再生'}
+            </button>
+          </div>
         </div>
 
         <div className={styles.contentGrid}>
@@ -218,6 +334,33 @@ export default function MatchDetailPage() {
                 <div className={styles.pitchPenaltyAreaTop} />
                 <div className={styles.pitchPenaltyAreaBottom} />
                 
+                {/* ⚽ アニメーション用ボール */}
+                <div 
+                  className={styles.ball} 
+                  style={{ top: ballState.top, left: ballState.left, opacity: ballState.opacity }}
+                >
+                  ⚽
+                </div>
+
+                {/* ✨ アニメーション用エフェクト */}
+                {effect && effect.type === 'badge' && (
+                  <div 
+                    key={effect.key}
+                    className={styles.effectBadge}
+                    style={{ top: effect.top, left: effect.left }}
+                  >
+                    {effect.emoji}
+                  </div>
+                )}
+                {effect && effect.type === 'goal' && (
+                  <div 
+                    key={effect.key}
+                    className={styles.goalText}
+                  >
+                    {effect.emoji}
+                  </div>
+                )}
+
                 {onPitch.map(p => {
                   const pos = POSITIONS[p.position] || POSITIONS['default'];
                   return (
