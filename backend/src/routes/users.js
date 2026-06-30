@@ -73,6 +73,23 @@ router.get('/:id', async (req, res) => {
       GROUP BY EXTRACT(YEAR FROM m.date::date)
     `, [req.params.id]);
 
+    const yearlyEventsResult = await db.query(`
+      SELECT 
+        EXTRACT(YEAR FROM m.date::date) as year,
+        event_type,
+        COUNT(event_id) as event_count
+      FROM match_events me
+      JOIN matches m ON me.match_id = m.match_id
+      WHERE me.user_id = $1
+      GROUP BY EXTRACT(YEAR FROM m.date::date), event_type
+    `, [req.params.id]);
+
+    const eventsByYear = {};
+    for (const row of yearlyEventsResult.rows) {
+      if (!eventsByYear[row.year]) eventsByYear[row.year] = {};
+      eventsByYear[row.year][row.event_type] = parseInt(row.event_count, 10);
+    }
+
     // Get yearly event attendances
     const yearlyAttendanceResult = await db.query(`
       SELECT 
@@ -103,12 +120,50 @@ router.get('/:id', async (req, res) => {
 
     const matchStatsByYear = {};
     for (const row of yearlyMatchStatsResult.rows) {
+      const yEvents = eventsByYear[row.year] || {};
+      const passes = yEvents.pass || 0;
+      const lost = yEvents.lost_ball || 0;
+      const shots = yEvents.shot || 0;
+      const defense = yEvents.defense || 0;
+      
+      const goals = parseInt(row.goals, 10);
+      const assists = parseInt(row.assists, 10);
+      const saves = parseInt(row.saves, 10);
+      const matchesPlayed = parseInt(row.matches_played, 10);
+      const minutesPlayed = parseInt(row.minutes_played, 10);
+      
+      const passSuccessRate = (passes + lost) > 0 ? (passes / (passes + lost)) * 100 : 0;
+      const passesPerMatch = matchesPlayed > 0 ? passes / matchesPlayed : 0;
+      const calculated_technique = Math.min(100, Math.round(50 + (passSuccessRate / 2) + (passesPerMatch * 2) + assists));
+
+      const offContribution = matchesPlayed > 0 ? (goals * 2 + assists) / matchesPlayed : 0;
+      const calculated_offense = Math.min(100, Math.round(50 + offContribution * 15));
+
+      const defContribution = matchesPlayed > 0 ? (defense + saves) / matchesPlayed : 0;
+      const calculated_defense = Math.min(100, Math.round(50 + defContribution * 15));
+
+      const totalShots = goals + shots;
+      const shotAccuracy = totalShots > 0 ? (goals / totalShots) * 100 : 0;
+      const calculated_kick = Math.min(100, Math.round(50 + (shotAccuracy / 2) + (totalShots * 2)));
+
+      const avgMinutes = matchesPlayed > 0 ? minutesPlayed / matchesPlayed : 0;
+      const calculated_stamina = Math.min(100, Math.round(50 + avgMinutes * 1.2));
+
       matchStatsByYear[row.year] = {
-        matches_played: parseInt(row.matches_played, 10),
-        goals: parseInt(row.goals, 10),
-        assists: parseInt(row.assists, 10),
-        saves: parseInt(row.saves, 10),
-        minutes_played: parseInt(row.minutes_played, 10),
+        matches_played: matchesPlayed,
+        goals,
+        assists,
+        saves,
+        minutes_played: minutesPlayed,
+        total_defense: defense,
+        total_passes: passes,
+        total_lost: lost,
+        total_shots: shots,
+        calculated_technique,
+        calculated_offense,
+        calculated_defense,
+        calculated_kick,
+        calculated_stamina,
       };
     }
 
@@ -140,7 +195,11 @@ router.get('/:id', async (req, res) => {
     let total_minutes_played = 0;
 
     for (const year of Array.from(allYears).sort((a, b) => b - a)) {
-      const ms = matchStatsByYear[year] || { matches_played: 0, goals: 0, assists: 0, saves: 0, minutes_played: 0 };
+      const ms = matchStatsByYear[year] || { 
+        matches_played: 0, goals: 0, assists: 0, saves: 0, minutes_played: 0,
+        total_defense: 0, total_passes: 0, total_lost: 0, total_shots: 0,
+        calculated_technique: 50, calculated_offense: 50, calculated_defense: 50, calculated_kick: 50, calculated_stamina: 50
+      };
       const att = attendanceByYear[year] || 0;
       const totalEv = totalEventsByYear[year] || 0;
       const presentTotal = att + ms.matches_played;

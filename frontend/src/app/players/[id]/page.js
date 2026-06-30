@@ -104,6 +104,7 @@ export default function PlayerDetailPage({ params }) {
   const [player, setPlayer] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedYearState, setSelectedYearState] = useState(null);
 
   useEffect(() => {
     async function fetchPlayer() {
@@ -126,6 +127,10 @@ export default function PlayerDetailPage({ params }) {
   if (error || !player) {
     return <div className={styles.error}>{error || '選手が見つかりません'}</div>;
   }
+
+  const availableYears = player?.yearlyStats?.map(s => s.year).sort((a,b) => b - a) || [];
+  const defaultYear = availableYears.length > 0 ? availableYears[0].toString() : new Date().getFullYear().toString();
+  const selectedYear = selectedYearState || defaultYear;
 
   const calculateAge = (birthDateString) => {
     if (!birthDateString) return null;
@@ -157,7 +162,16 @@ export default function PlayerDetailPage({ params }) {
     { icon: '💰', label: '年俸', value: formatSalary(latestSalary) },
   ];
 
-  const stats = STAT_KEYS.map(k => player[k] ?? 50);
+  const selectedYearStat = player.yearlyStats?.find(s => s.year.toString() === selectedYear);
+
+  const stats = [
+    selectedYearStat?.calculated_offense ?? player.stat_offense ?? 50,
+    selectedYearStat?.calculated_defense ?? player.stat_defense ?? 50,
+    selectedYearStat?.calculated_kick ?? player.stat_kick ?? 50,
+    player.stat_speed ?? 50,
+    selectedYearStat?.calculated_technique ?? player.stat_technique ?? 50,
+    selectedYearStat?.calculated_stamina ?? player.stat_stamina ?? 50,
+  ];
 
   const profileItems = [
     { label: 'キャッチコピー', value: player.catchphrase || player.catch_copy },
@@ -266,7 +280,27 @@ export default function PlayerDetailPage({ params }) {
         </div>
 
         {/* Radar Chart */}
-        <h2 className={styles.sectionTitle}>能力チャート</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+          <h2 className={styles.sectionTitle} style={{ margin: 0 }}>能力チャート</h2>
+          {availableYears.length > 0 && (
+            <select 
+              value={selectedYear} 
+              onChange={e => setSelectedYearState(e.target.value)}
+              style={{
+                background: 'var(--color-dark-800)',
+                color: 'var(--color-text)',
+                border: '1px solid var(--color-gold)',
+                padding: '5px 10px',
+                borderRadius: '4px',
+                outline: 'none'
+              }}
+            >
+              {availableYears.map(y => (
+                <option key={y} value={y}>{y}年度</option>
+              ))}
+            </select>
+          )}
+        </div>
         <div className={styles.radarWrap}>
           <RadarChart stats={stats} size={280} />
         </div>

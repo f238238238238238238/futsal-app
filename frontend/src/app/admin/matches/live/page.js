@@ -39,6 +39,8 @@ export default function LiveMatchPage() {
   const [showAssistModal, setShowAssistModal] = useState(false);
   const [goalScorerId, setGoalScorerId] = useState(null);
 
+  const [lastPasserId, setLastPasserId] = useState(null);
+
   useEffect(() => {
     getPlayers().then(res => {
       const ps = res.users || res || [];
@@ -105,6 +107,10 @@ export default function LiveMatchPage() {
       setGoalScorerId(selectedCourtId);
       setShowAssistModal(true);
       setSelectedCourtId(null);
+    } else if (type === 'lost_ball') {
+      recordEvent('lost_ball', selectedCourtId);
+      setSelectedCourtId(null);
+      setLastPasserId(null); // Reset pass memory on lost ball
     } else {
       recordEvent(type, selectedCourtId);
       setSelectedCourtId(null);
@@ -117,25 +123,42 @@ export default function LiveMatchPage() {
     }
     setShowAssistModal(false);
     setGoalScorerId(null);
+    setLastPasserId(null); // Reset after goal
   };
 
-  const handleSub = () => {
-    if (!selectedCourtId || !selectedBenchId) return;
+  const handleSub = (courtIdToSub) => {
+    if (!courtIdToSub || !selectedBenchId) return;
     
-    const pos = starterPositions[selectedCourtId];
+    const pos = starterPositions[courtIdToSub];
 
-    recordEvent('sub_out', selectedCourtId);
+    recordEvent('sub_out', courtIdToSub);
     recordEvent('sub_in', selectedBenchId, pos ? { position: pos } : {});
 
-    setCourtIds(prev => [...prev.filter(id => id !== selectedCourtId), selectedBenchId]);
-    setBenchIds(prev => [...prev.filter(id => id !== selectedBenchId), selectedCourtId]);
+    setCourtIds(prev => [...prev.filter(id => id !== courtIdToSub), selectedBenchId]);
+    setBenchIds(prev => [...prev.filter(id => id !== selectedBenchId), courtIdToSub]);
     
     if (pos) {
       setStarterPositions(prev => ({ ...prev, [selectedBenchId]: pos }));
     }
     
-    setSelectedCourtId(null);
+    if (selectedCourtId === courtIdToSub) {
+      setSelectedCourtId(null);
+    }
     setSelectedBenchId(null);
+  };
+
+  const handleCourtPlayerClick = (id) => {
+    if (selectedBenchId) {
+      handleSub(id);
+    } else if (selectedCourtId === id) {
+      setSelectedCourtId(null);
+    } else if (selectedCourtId) {
+      recordEvent('pass', selectedCourtId);
+      setLastPasserId(selectedCourtId); // Remember who passed
+      setSelectedCourtId(id);
+    } else {
+      setSelectedCourtId(id);
+    }
   };
 
   const endMatch = () => {
@@ -335,14 +358,20 @@ export default function LiveMatchPage() {
                  if(e.event_type==='save') text = `🧤 ${p} セーブ`;
                  if(e.event_type==='shot') text = `👟 ${p} シュート(ノーゴール)`;
                  if(e.event_type==='defense') text = `🛡️ ${p} ディフェンス(奪取/ブロック)`;
-                 if(e.event_type==='sub_in') text = `🔼 ${p} IN`;
-                 if(e.event_type==='sub_out') text = `🔽 ${p} OUT`;
+                 if(e.event_type==='pass') text = `🔁 ${p} パス成功`;
+                 if(e.event_type==='lost_ball') text = `💥 ${p} ロスト`;
                  const min = Math.floor(e.minute / 60);
                  const sec = String(e.minute % 60).padStart(2, '0');
                  return <div key={i} className={styles.eventLogItem}>[{min}'{sec}"] {text}</div>;
                })}
              </div>
           </div>
+
+          {selectedBenchId && (
+            <div style={{ textAlign: 'center', marginBottom: '10px', color: 'var(--color-gold)', fontWeight: 'bold' }}>
+              交代するピッチの選手をタップしてください
+            </div>
+          )}
 
           <div className={styles.playArea}>
             <div className={styles.courtSection}>
@@ -355,7 +384,7 @@ export default function LiveMatchPage() {
                     <div 
                       key={id} 
                       className={`${styles.playerRow} ${selectedCourtId === id ? styles.selected : ''}`}
-                      onClick={() => setSelectedCourtId(id === selectedCourtId ? null : id)}
+                      onClick={() => handleCourtPlayerClick(id)}
                     >
                       <img src={p.photo_url ? getImageUrl(p.photo_url) : '/default-avatar.png'} className={styles.playerRowAvatar} />
                       <div className={styles.playerRowInfo}>
@@ -405,11 +434,9 @@ export default function LiveMatchPage() {
               <button className={`${styles.actionBtn} ${styles.btnSave}`} onClick={() => handleAction('save')}>
                 <span style={{ fontSize: '1.5rem' }}>🧤</span> セーブ
               </button>
-              {selectedBenchId && (
-                <button className={`${styles.actionBtn} ${styles.btnSub}`} onClick={handleSub}>
-                  <span style={{ fontSize: '1.5rem' }}>🔄</span> 交代する
-                </button>
-              )}
+              <button className={`${styles.actionBtn} ${styles.btnRecovery}`} onClick={() => handleAction('lost_ball')}>
+                 <span style={{ fontSize: '1.5rem' }}>💥</span> ロスト
+              </button>
             </div>
           )}
         </div>
@@ -474,13 +501,15 @@ export default function LiveMatchPage() {
               
               {courtIds.filter(id => id !== goalScorerId).map(id => {
                 const p = players.find(x => x.user_id === id);
+                const isLastPasser = id === lastPasserId;
                 return (
                   <button 
                     key={id}
                     className={`${styles.modalBtn} ${styles.primary}`}
+                    style={isLastPasser ? { border: '2px solid var(--color-gold)', backgroundColor: 'var(--color-primary-dark)' } : {}}
                     onClick={() => handleAssistSelection(id)}
                   >
-                    {p.name}
+                    {p.name} {isLastPasser && <span style={{ fontSize: '0.8em', color: 'var(--color-gold)' }}><br/>⭐ 推奨 (直前のパス)</span>}
                   </button>
                 );
               })}
