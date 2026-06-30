@@ -236,31 +236,11 @@ export default function AdminPlayersPage() {
               <h3 style={{ marginTop: '1rem', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--color-gold)' }}>能力ステータス (0〜100)</h3>
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>オフェンス</label>
-                  <input type="number" min="0" max="100" className={styles.formInput} value={form.stat_offense} onChange={e => setForm({...form, stat_offense: parseInt(e.target.value, 10) || 0})} />
-                </div>
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>ディフェンス</label>
-                  <input type="number" min="0" max="100" className={styles.formInput} value={form.stat_defense} onChange={e => setForm({...form, stat_defense: parseInt(e.target.value, 10) || 0})} />
-                </div>
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>キック</label>
-                  <input type="number" min="0" max="100" className={styles.formInput} value={form.stat_kick} onChange={e => setForm({...form, stat_kick: parseInt(e.target.value, 10) || 0})} />
-                </div>
-              </div>
-              <div className={styles.formRow}>
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>スピード</label>
+                  <label className={styles.formLabel}>スピード (手動設定)</label>
                   <input type="number" min="0" max="100" className={styles.formInput} value={form.stat_speed} onChange={e => setForm({...form, stat_speed: parseInt(e.target.value, 10) || 0})} />
                 </div>
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>テクニック</label>
-                  <input type="number" min="0" max="100" className={styles.formInput} value={form.stat_technique} onChange={e => setForm({...form, stat_technique: parseInt(e.target.value, 10) || 0})} />
-                </div>
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>スタミナ</label>
-                  <input type="number" min="0" max="100" className={styles.formInput} value={form.stat_stamina} onChange={e => setForm({...form, stat_stamina: parseInt(e.target.value, 10) || 0})} />
-                </div>
+                <div className={styles.formGroup}></div>
+                <div className={styles.formGroup}></div>
               </div>
 
               <div className={styles.modalActions}>

@@ -37,15 +37,31 @@ export default function LiveMatchPage() {
   
   const [lastPasserId, setLastPasserId] = useState(null);
 
+  const [attendingIds, setAttendingIds] = useState([]);
+
   useEffect(() => {
     getPlayers().then(res => {
       const ps = res.users || res || [];
-      // only active players or everyone? Usually everyone.
       setPlayers(ps);
-      setBenchIds(ps.map(p => p.user_id));
+      // Default to empty so they select attendees first
+      setAttendingIds([]);
+      setBenchIds([]);
       setLoading(false);
     });
   }, []);
+
+  const toggleAttendee = (id) => {
+    if (attendingIds.includes(id)) {
+      setAttendingIds(prev => prev.filter(x => x !== id));
+      if (courtIds.includes(id)) {
+        setCourtIds(prev => prev.filter(x => x !== id));
+      }
+      setBenchIds(prev => prev.filter(x => x !== id));
+    } else {
+      setAttendingIds(prev => [...prev, id]);
+      setBenchIds(prev => [...prev, id]);
+    }
+  };
 
   // Timer Effect
   useEffect(() => {
@@ -274,9 +290,29 @@ export default function LiveMatchPage() {
               <input type="text" className={styles.formInput} value={matchInfo.competition_name} onChange={e => setMatchInfo({...matchInfo, competition_name: e.target.value})} placeholder="例: 練習試合" />
             </div>
             
-            <h3 style={{ marginTop: '20px', color: 'var(--color-gold)' }}>スタメン選択 ({courtIds.length}/5)</h3>
+            <h3 style={{ marginTop: '20px', color: 'var(--color-gold)' }}>出席者選択 ({attendingIds.length}名)</h3>
             <div className={styles.startersGrid}>
               {players.map(p => {
+                const isAttending = attendingIds.includes(p.user_id);
+                return (
+                  <div 
+                    key={p.user_id} 
+                    className={`${styles.playerSelectCard} ${isAttending ? styles.selected : ''}`}
+                    onClick={() => toggleAttendee(p.user_id)}
+                  >
+                    <img src={p.photo_url ? getImageUrl(p.photo_url) : '/default-avatar.png'} alt={p.name} className={styles.avatarSmall} />
+                    <div className={styles.jersey}>#{p.jersey_number || '-'}</div>
+                    <div className={styles.playerName}>{p.name}</div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {attendingIds.length > 0 && (
+              <>
+                <h3 style={{ marginTop: '30px', color: 'var(--color-gold)' }}>スタメン選択 ({courtIds.length}/5)</h3>
+                <div className={styles.startersGrid}>
+                  {players.filter(p => attendingIds.includes(p.user_id)).map(p => {
                 const isSelected = courtIds.includes(p.user_id);
                 return (
                   <div 
@@ -309,6 +345,8 @@ export default function LiveMatchPage() {
                 );
               })}
             </div>
+              </>
+            )}
 
             <button className={styles.startBtn} onClick={handleStartMatch} disabled={courtIds.length === 0 || !matchInfo.opponent_name}>
               試合開始
