@@ -92,8 +92,8 @@ export default function LiveMatchPage() {
     return `${m}:${s}`;
   };
 
-  const recordEvent = (type, userId) => {
-    setEvents(prev => [...prev, { event_type: type, user_id: userId, minute: timerSeconds }]);
+  const recordEvent = (type, userId, extraData = {}) => {
+    setEvents(prev => [...prev, { event_type: type, user_id: userId, minute: timerSeconds, ...extraData }]);
   };
 
   const handleAction = (type) => {
@@ -122,11 +122,17 @@ export default function LiveMatchPage() {
   const handleSub = () => {
     if (!selectedCourtId || !selectedBenchId) return;
     
+    const pos = starterPositions[selectedCourtId];
+
     recordEvent('sub_out', selectedCourtId);
-    recordEvent('sub_in', selectedBenchId);
+    recordEvent('sub_in', selectedBenchId, pos ? { position: pos } : {});
 
     setCourtIds(prev => [...prev.filter(id => id !== selectedCourtId), selectedBenchId]);
     setBenchIds(prev => [...prev.filter(id => id !== selectedBenchId), selectedCourtId]);
+    
+    if (pos) {
+      setStarterPositions(prev => ({ ...prev, [selectedBenchId]: pos }));
+    }
     
     setSelectedCourtId(null);
     setSelectedBenchId(null);
