@@ -93,7 +93,7 @@ export default function LiveMatchPage() {
   };
 
   const recordEvent = (type, userId) => {
-    setEvents(prev => [...prev, { event_type: type, user_id: userId, minute: currentMinute }]);
+    setEvents(prev => [...prev, { event_type: type, user_id: userId, minute: timerSeconds }]);
   };
 
   const handleAction = (type) => {
@@ -272,10 +272,11 @@ export default function LiveMatchPage() {
                         className={styles.positionSelect}
                       >
                         <option value="">ポジション</option>
-                        <option value="ゴレイロ">ゴレイロ</option>
-                        <option value="フィクソ">フィクソ</option>
-                        <option value="アラ">アラ</option>
-                        <option value="ピヴォ">ピヴォ</option>
+                        <option value="GK">GK (ゴレイロ)</option>
+                        <option value="Fixo">Fixo (フィクソ)</option>
+                        <option value="Ala L">Ala L (左アラ)</option>
+                        <option value="Ala R">Ala R (右アラ)</option>
+                        <option value="Pivo">Pivo (ピヴォ)</option>
                       </select>
                     )}
                   </div>
@@ -328,7 +329,9 @@ export default function LiveMatchPage() {
                  if(e.event_type==='save') text = `🧤 ${p} セーブ`;
                  if(e.event_type==='sub_in') text = `🔼 ${p} IN`;
                  if(e.event_type==='sub_out') text = `🔽 ${p} OUT`;
-                 return <div key={i} className={styles.eventLogItem}>[{e.minute}分] {text}</div>;
+                 const min = Math.floor(e.minute / 60);
+                 const sec = String(e.minute % 60).padStart(2, '0');
+                 return <div key={i} className={styles.eventLogItem}>[{min}'{sec}"] {text}</div>;
                })}
              </div>
           </div>
@@ -426,9 +429,11 @@ export default function LiveMatchPage() {
                 <ul style={{ listStyle: 'none', padding: 0 }}>
                   {events.map((e, i) => {
                     const p = players.find(x => x.user_id === e.user_id)?.name;
+                    const min = Math.floor(e.minute / 60);
+                    const sec = String(e.minute % 60).padStart(2, '0');
                     return (
                       <li key={i} style={{ borderBottom: '1px solid #333', padding: '8px 0' }}>
-                        [{e.minute}分] {p} - {e.event_type}
+                        [{min}'{sec}"] {p} - {e.event_type}
                       </li>
                     );
                   })}
