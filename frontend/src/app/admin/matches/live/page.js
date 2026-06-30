@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { getPlayers, createMatch, getImageUrl } from '@/lib/api';
+import { getPlayers, createMatch, getImageUrl, getEvents, getEventAttendances } from '@/lib/api';
 import styles from './live.module.css';
 
 export default function LiveMatchPage() {
@@ -49,6 +49,41 @@ export default function LiveMatchPage() {
       setLoading(false);
     });
   }, []);
+
+  // Fetch attendees based on date
+  useEffect(() => {
+    if (!matchInfo.date) return;
+    
+    const fetchAttendance = async () => {
+      try {
+        const eventsRes = await getEvents();
+        const evs = eventsRes.events || [];
+        const targetEvent = evs.find(e => e.date_time && e.date_time.startsWith(matchInfo.date));
+        
+        if (targetEvent) {
+          const attRes = await getEventAttendances(targetEvent.event_id);
+          const attendances = attRes.attendances || [];
+          const presentUserIds = attendances.filter(a => a.status === 'present').map(a => a.user_id);
+          
+          if (presentUserIds.length > 0) {
+            setAttendingIds(presentUserIds);
+            
+            // Keep existing starters if they are present, otherwise remove them
+            const newCourtIds = courtIds.filter(id => presentUserIds.includes(id));
+            setCourtIds(newCourtIds);
+            
+            // Bench is present users minus starters
+            setBenchIds(presentUserIds.filter(id => !newCourtIds.includes(id)));
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch auto-attendances', err);
+      }
+    };
+    
+    fetchAttendance();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matchInfo.date]);
 
   const toggleAttendee = (id) => {
     if (attendingIds.includes(id)) {
