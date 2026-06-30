@@ -40,17 +40,116 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ error: '選手が見つかりません' });
     }
 
-    const statsResult = await db.query(`
-      SELECT
+    // Get yearly match stats
+    const yearlyMatchStatsResult = await db.query(`
+      SELECT 
+        EXTRACT(YEAR FROM m.date::date) as year,
         COUNT(DISTINCT ms.match_id) as matches_played,
-        COALESCE(SUM(ms.goals), 0) as total_goals,
-        COALESCE(SUM(ms.assists), 0) as total_assists
+        COALESCE(SUM(ms.goals), 0) as goals,
+        COALESCE(SUM(ms.assists), 0) as assists,
+        COALESCE(SUM(ms.saves), 0) as saves,
+        COALESCE(SUM(ms.minutes_played), 0) as minutes_played
       FROM match_stats ms
+      JOIN matches m ON ms.match_id = m.match_id
       WHERE ms.user_id = $1
+      GROUP BY EXTRACT(YEAR FROM m.date::date)
     `, [req.params.id]);
 
-    const stats = statsResult.rows[0];
-    res.json({ ...user, ...stats });
+    // Get yearly event attendances
+    const yearlyAttendanceResult = await db.query(`
+      SELECT 
+        EXTRACT(YEAR FROM e.date_time::timestamp) as year,
+        COUNT(a.event_id) as present_count
+      FROM attendances a
+      JOIN events e ON a.event_id = e.event_id
+      WHERE a.user_id = $1 AND a.status = 'present' AND e.date_time::timestamp < CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Tokyo'
+      GROUP BY EXTRACT(YEAR FROM e.date_time::timestamp)
+    `, [req.params.id]);
+
+    const totalEventsResult = await db.query(`
+      SELECT 
+        EXTRACT(YEAR FROM date_time::timestamp) as year,
+        COUNT(event_id) as total_events
+      FROM events
+      WHERE date_time::timestamp < CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Tokyo'
+      GROUP BY EXTRACT(YEAR FROM date_time::timestamp)
+    `);
+
+    const totalMatchesResult = await db.query(`
+      SELECT 
+        EXTRACT(YEAR FROM date::date) as year,
+        COUNT(match_id) as total_matches
+      FROM matches
+      GROUP BY EXTRACT(YEAR FROM date::date)
+    `);
+
+    const matchStatsByYear = {};
+    for (const row of yearlyMatchStatsResult.rows) {
+      matchStatsByYear[row.year] = {
+        matches_played: parseInt(row.matches_played, 10),
+        goals: parseInt(row.goals, 10),
+        assists: parseInt(row.assists, 10),
+        saves: parseInt(row.saves, 10),
+        minutes_played: parseInt(row.minutes_played, 10),
+      };
+    }
+
+    const attendanceByYear = {};
+    for (const row of yearlyAttendanceResult.rows) {
+      attendanceByYear[row.year] = parseInt(row.present_count, 10);
+    }
+
+    const totalEventsByYear = {};
+    for (const row of totalEventsResult.rows) {
+      totalEventsByYear[row.year] = parseInt(row.total_events, 10);
+    }
+    for (const row of totalMatchesResult.rows) {
+      totalEventsByYear[row.year] = (totalEventsByYear[row.year] || 0) + parseInt(row.total_matches, 10);
+    }
+
+    const yearlyStats = [];
+    const allYears = new Set([...Object.keys(matchStatsByYear), ...Object.keys(attendanceByYear)]);
+    
+    // Default to current year if no data
+    if (allYears.size === 0) {
+      allYears.add(new Date().getFullYear().toString());
+    }
+
+    let total_matches_played = 0;
+    let total_goals = 0;
+    let total_assists = 0;
+    let total_saves = 0;
+    let total_minutes_played = 0;
+
+    for (const year of Array.from(allYears).sort((a, b) => b - a)) {
+      const ms = matchStatsByYear[year] || { matches_played: 0, goals: 0, assists: 0, saves: 0, minutes_played: 0 };
+      const att = attendanceByYear[year] || 0;
+      const totalEv = totalEventsByYear[year] || 0;
+      const presentTotal = att + ms.matches_played;
+      const attendance_rate = totalEv > 0 ? (presentTotal / totalEv) * 100 : 0;
+
+      yearlyStats.push({
+        year: parseInt(year, 10),
+        ...ms,
+        attendance_rate: attendance_rate
+      });
+
+      total_matches_played += ms.matches_played;
+      total_goals += ms.goals;
+      total_assists += ms.assists;
+      total_saves += ms.saves;
+      total_minutes_played += ms.minutes_played;
+    }
+
+    res.json({ 
+      ...user, 
+      yearlyStats, 
+      total_matches_played, 
+      total_goals, 
+      total_assists, 
+      total_saves, 
+      total_minutes_played 
+    });
   } catch (err) {
     console.error('Get user error:', err);
     res.status(500).json({ error: 'サーバーエラーが発生しました' });

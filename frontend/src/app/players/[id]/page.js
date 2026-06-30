@@ -199,20 +199,52 @@ export default function PlayerDetailPage({ params }) {
           ))}
         </div>
 
-        {/* Performance */}
+        {/* Performance By Year */}
         <h2 className={styles.sectionTitle}>成績統計</h2>
-        <div className={styles.perfGrid}>
-          <div className={styles.perfCard} style={{ animationDelay: '0.1s' }}>
-            <div className={styles.perfNumber}>{player.appearances ?? player.matches_played ?? 0}</div>
-            <div className={styles.perfLabel}>出場数</div>
-          </div>
-          <div className={styles.perfCard} style={{ animationDelay: '0.2s' }}>
-            <div className={styles.perfNumber}>{player.total_goals ?? player.goals ?? 0}</div>
-            <div className={styles.perfLabel}>ゴール</div>
-          </div>
-          <div className={styles.perfCard} style={{ animationDelay: '0.3s' }}>
-            <div className={styles.perfNumber}>{player.total_assists ?? player.assists ?? 0}</div>
-            <div className={styles.perfLabel}>アシスト</div>
+        <div className={styles.statsScrollWrap}>
+          <div className={styles.statsYearContainer}>
+            {player.yearlyStats && player.yearlyStats.length > 0 ? (
+              player.yearlyStats.map((stat, i) => (
+                <div key={stat.year} className={styles.yearCard} style={{ animationDelay: `${i * 0.1}s` }}>
+                  <div className={styles.yearHeader}>{stat.year}年度</div>
+                  <div className={styles.yearGrid}>
+                    <div className={styles.yearStat}>
+                      <span className={styles.yearStatLabel}>出場数</span>
+                      <span className={styles.yearStatValue}>{stat.matches_played}</span>
+                    </div>
+                    <div className={styles.yearStat}>
+                      <span className={styles.yearStatLabel}>ゴール</span>
+                      <span className={styles.yearStatValue}>{stat.goals}</span>
+                    </div>
+                    <div className={styles.yearStat}>
+                      <span className={styles.yearStatLabel}>アシスト</span>
+                      <span className={styles.yearStatValue}>{stat.assists}</span>
+                    </div>
+                    <div className={styles.yearStat}>
+                      <span className={styles.yearStatLabel}>セーブ</span>
+                      <span className={styles.yearStatValue}>{stat.saves}</span>
+                    </div>
+                    <div className={styles.yearStat}>
+                      <span className={styles.yearStatLabel}>体力(分)</span>
+                      <span className={styles.yearStatValue}>{stat.minutes_played}</span>
+                    </div>
+                    <div className={styles.yearStat}>
+                      <span className={styles.yearStatLabel}>出席率</span>
+                      <span className={styles.yearStatValue}>{Math.round(stat.attendance_rate)}%</span>
+                    </div>
+                    <div className={styles.yearStat}>
+                      <span className={styles.yearStatLabel}>年俸</span>
+                      <span className={styles.yearStatValue}>{formatSalary(player.salary)}</span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className={styles.perfCard}>
+                <div className={styles.perfNumber}>{player.total_matches_played ?? player.matches_played ?? 0}</div>
+                <div className={styles.perfLabel}>出場数</div>
+              </div>
+            )}
           </div>
         </div>
 

@@ -167,14 +167,88 @@
   color: var(--color-white);
 }
 
-/* Performance Stats */
-.perfGrid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-md);
+/* Performance Stats by Year */
+.statsScrollWrap {
+  width: 100%;
+  overflow-x: auto;
+  padding-bottom: var(--space-md);
   margin-bottom: var(--space-3xl);
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-gold) var(--color-dark-800);
 }
 
+.statsScrollWrap::-webkit-scrollbar {
+  height: 8px;
+}
+.statsScrollWrap::-webkit-scrollbar-track {
+  background: var(--color-dark-800);
+  border-radius: 4px;
+}
+.statsScrollWrap::-webkit-scrollbar-thumb {
+  background: var(--color-gold);
+  border-radius: 4px;
+}
+
+.statsYearContainer {
+  display: flex;
+  gap: var(--space-md);
+  min-width: max-content;
+}
+
+.yearCard {
+  background: var(--color-dark-800);
+  border: 1px solid var(--color-dark-600);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  min-width: 200px;
+  transition: all var(--transition-base);
+  animation: fadeInUp 0.5s ease backwards;
+}
+
+.yearCard:hover {
+  transform: translateY(-4px);
+  border-color: var(--color-gold);
+  box-shadow: var(--shadow-gold);
+}
+
+.yearHeader {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--color-gold);
+  margin-bottom: var(--space-md);
+  text-align: center;
+  border-bottom: 1px solid var(--color-dark-600);
+  padding-bottom: var(--space-sm);
+}
+
+.yearGrid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.yearStat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.yearStatLabel {
+  font-family: var(--font-heading);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-light-400);
+}
+
+.yearStatValue {
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--color-white);
+}
+
+/* Fallback card */
 .perfCard {
   background: var(--color-dark-800);
   border: 1px solid var(--color-dark-600);
