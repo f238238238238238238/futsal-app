@@ -66,7 +66,13 @@ app.get('/api/test-db', async (req, res) => {
 
 app.get('/api/test-scrape', async (req, res) => {
   try {
-    const fetchRes = await fetch('https://labola.jp/r/event/3014/tournament');
+    const fetchRes = await fetch('https://labola.jp/r/event/3014/tournament', {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Language': 'ja,en-US;q=0.9,en;q=0.8'
+      }
+    });
     const status = fetchRes.status;
     const html = await fetchRes.text();
     res.json({ status, htmlLength: html.length, preview: html.substring(0, 500) });
