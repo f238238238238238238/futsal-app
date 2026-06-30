@@ -183,8 +183,12 @@ async function handlePostback(event) {
     const lineName = profile.displayName;
     const db = getDb();
     
-    const userResult = await db.query('SELECT user_id, name FROM users WHERE line_user_id = $1 OR (line_user_id IS NULL AND line_name = $2)', [userId, lineName]);
+    const userResult = await db.query('SELECT user_id, name, line_user_id FROM users WHERE line_user_id = $1 OR (line_user_id IS NULL AND line_name = $2)', [userId, lineName]);
     const user = userResult.rows[0];
+
+    if (user && !user.line_user_id) {
+      await db.query('UPDATE users SET line_user_id = $1 WHERE user_id = $2', [userId, user.user_id]);
+    }
 
     if (!user) {
       await replyMessage(replyToken, {

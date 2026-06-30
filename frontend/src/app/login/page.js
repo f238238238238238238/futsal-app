@@ -13,18 +13,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const handleLineLogin = async () => {
-    try {
-      const res = await fetch(process.env.NEXT_PUBLIC_API_URL + '/auth/line/login');
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      }
-    } catch (err) {
-      setError('LINE連携の開始に失敗しました');
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -47,23 +35,7 @@ export default function LoginPage() {
           <div className={styles.loginHeader}>
             <span className={styles.loginIcon}>🔑</span>
             <h1 className={styles.loginTitle}>LOGIN</h1>
-            <p className={styles.loginSubtitle}>ログイン・LINE連携</p>
-          </div>
-
-          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-            <button
-              onClick={handleLineLogin}
-              className={styles.submitBtn}
-              style={{ background: '#06C755', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-            >
-              LINEでログイン・連携する
-            </button>
-            <p style={{ fontSize: '0.8rem', color: '#888', marginTop: '0.5rem' }}>※初めての方もこちらから</p>
-          </div>
-
-          <div style={{ textAlign: 'center', margin: '2rem 0', position: 'relative' }}>
-            <hr style={{ borderColor: 'var(--color-dark-700)' }} />
-            <span style={{ position: 'absolute', top: '-10px', left: '50%', transform: 'translateX(-50%)', background: 'var(--color-dark-800)', padding: '0 10px', fontSize: '0.8rem', color: '#888' }}>またはメールアドレスで</span>
+            <p className={styles.loginSubtitle}>ログイン</p>
           </div>
 
           <form onSubmit={handleSubmit} className={styles.form}>
