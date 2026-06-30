@@ -42,7 +42,7 @@ export default function MatchDetailPage() {
         name: st.name || st.user_name, 
         photo_url: st.photo_url, 
         jersey_number: st.jersey_number || '', 
-        position: '' 
+        position: st.position || '' 
       };
       if (st.is_starter === 1 || st.is_starter === true) {
         currentOnPitch.push(p);

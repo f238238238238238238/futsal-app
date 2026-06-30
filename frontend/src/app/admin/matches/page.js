@@ -28,10 +28,9 @@ export default function AdminMatchesPage() {
         const fetchedPlayers = p.users || p || [];
         setPlayers(fetchedPlayers);
         
-        // Initialize stats map
         const initialStats = {};
         fetchedPlayers.forEach(player => {
-          initialStats[player.user_id] = { attended: false, is_starter: false, goals: 0, assists: 0, saves: 0 };
+          initialStats[player.user_id] = { attended: false, is_starter: false, goals: 0, assists: 0, saves: 0, position: '' };
         });
         setForm(prev => ({ ...prev, statsMap: initialStats }));
       })
@@ -42,7 +41,7 @@ export default function AdminMatchesPage() {
   const openCreate = () => {
     const initialStats = {};
     players.forEach(p => {
-      initialStats[p.user_id] = { attended: false, is_starter: false, goals: 0, assists: 0, saves: 0 };
+      initialStats[p.user_id] = { attended: false, is_starter: false, goals: 0, assists: 0, saves: 0, position: '' };
     });
     setForm({ ...initialForm, statsMap: initialStats });
     setEditingId(null);
@@ -54,7 +53,7 @@ export default function AdminMatchesPage() {
       const match = await getMatch(id);
       const initialStats = {};
       players.forEach(p => {
-        initialStats[p.user_id] = { attended: false, is_starter: false, goals: 0, assists: 0, saves: 0 };
+        initialStats[p.user_id] = { attended: false, is_starter: false, goals: 0, assists: 0, saves: 0, position: '' };
       });
       // Merge saved stats
       (match.stats || []).forEach(st => {
@@ -64,7 +63,8 @@ export default function AdminMatchesPage() {
             is_starter: st.is_starter === 1,
             goals: st.goals || 0,
             assists: st.assists || 0,
-            saves: st.saves || 0
+            saves: st.saves || 0,
+            position: st.position || ''
           };
         }
       });
@@ -124,6 +124,21 @@ export default function AdminMatchesPage() {
     setForm(prev => {
       const newEvents = [...prev.events];
       newEvents[index] = { ...newEvents[index], [field]: value };
+      
+      // ゴールが選択されたら、直後にアシストの入力欄を自動追加
+      if (field === 'event_type' && value === 'goal') {
+        const goalEvent = newEvents[index];
+        const assistEvent = {
+          minute: goalEvent.minute,
+          minute_m: goalEvent.minute_m,
+          minute_s: goalEvent.minute_s,
+          event_type: 'assist',
+          user_id: '',
+          position: ''
+        };
+        newEvents.splice(index + 1, 0, assistEvent);
+      }
+      
       return { ...prev, events: newEvents };
     });
   };
@@ -142,7 +157,8 @@ export default function AdminMatchesPage() {
           is_starter: stat.is_starter,
           goals: stat.goals,
           assists: stat.assists,
-          saves: stat.saves
+          saves: stat.saves,
+          position: stat.position
         }));
 
       // Prepare events
@@ -282,6 +298,7 @@ export default function AdminMatchesPage() {
                     <tr>
                       <th style={{ width: '40px', textAlign: 'center' }}>出場</th>
                       <th style={{ width: '40px', textAlign: 'center' }}>ｽﾀﾒﾝ</th>
+                      <th style={{ width: '100px', textAlign: 'center' }}>ポジション</th>
                       <th>選手名</th>
                       <th style={{ width: '70px', textAlign: 'center' }}>ゴール</th>
                       <th style={{ width: '70px', textAlign: 'center' }}>ｱｼｽﾄ</th>
@@ -290,7 +307,7 @@ export default function AdminMatchesPage() {
                   </thead>
                   <tbody>
                     {players.map(p => {
-                      const stat = form.statsMap[p.user_id] || { attended: false, is_starter: false, goals: 0, assists: 0, saves: 0 };
+                      const stat = form.statsMap[p.user_id] || { attended: false, is_starter: false, goals: 0, assists: 0, saves: 0, position: '' };
                       return (
                         <tr key={p.user_id} style={{ opacity: stat.attended ? 1 : 0.5 }}>
                           <td style={{ textAlign: 'center' }}>
@@ -298,6 +315,16 @@ export default function AdminMatchesPage() {
                           </td>
                           <td style={{ textAlign: 'center' }}>
                             <input type="checkbox" checked={stat.is_starter} onChange={e => handleStatChange(p.user_id, 'is_starter', e.target.checked)} disabled={!stat.attended} style={{ transform: 'scale(1.2)' }} />
+                          </td>
+                          <td>
+                            <select value={stat.position} onChange={e => handleStatChange(p.user_id, 'position', e.target.value)} disabled={!stat.is_starter} style={{ width: '100%', padding: '4px', background: 'var(--color-dark-800)', color: 'white', border: '1px solid var(--color-dark-600)', borderRadius: '4px' }}>
+                              <option value="">(なし)</option>
+                              <option value="GK">GK</option>
+                              <option value="Fixo">Fixo</option>
+                              <option value="Ala L">Ala L</option>
+                              <option value="Ala R">Ala R</option>
+                              <option value="Pivo">Pivo</option>
+                            </select>
                           </td>
                           <td>{p.jersey_number} {p.name}</td>
                           <td>
