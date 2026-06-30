@@ -25,7 +25,7 @@ router.get('/', async (req, res) => {
 router.post('/', authenticate, requireAdmin, async (req, res) => {
   try {
     const db = getDb();
-    const { year, user_id, goals, assists, matches_played, description } = req.body;
+    const { year, user_id, description } = req.body;
 
     if (!year || !user_id) {
       return res.status(400).json({ error: '年度と選手は必須です' });
