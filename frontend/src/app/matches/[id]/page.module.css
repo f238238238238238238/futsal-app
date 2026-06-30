@@ -40,18 +40,30 @@
 
 .contentGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1.5fr 1fr;
   gap: 2rem;
   margin-top: 2rem;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
+  .contentGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 768px) {
   .contentGrid {
     grid-template-columns: 1fr;
   }
 }
 
 .leftColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.middleColumn {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;

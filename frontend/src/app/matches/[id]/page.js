@@ -193,8 +193,8 @@ export default function MatchDetailPage() {
             </div>
           </div>
 
-          {/* 右側: フォーメーション図 */}
-          <div className={styles.rightColumn}>
+          {/* 中央: フォーメーション図 */}
+          <div className={styles.middleColumn}>
             <div className={styles.sectionBox}>
               <h2 className={styles.sectionTitle}>フォーメーション</h2>
               <div className={styles.pitchContainer}>
@@ -223,9 +223,11 @@ export default function MatchDetailPage() {
                 })}
               </div>
             </div>
+          </div>
 
-            {/* イベントログ (実況) */}
-            <div className={styles.sectionBox} style={{ marginTop: '1.5rem' }}>
+          {/* 右側: イベントログ (実況) */}
+          <div className={styles.rightColumn}>
+            <div className={styles.sectionBox}>
               <h2 className={styles.sectionTitle}>タイムライン ({Math.floor(minute / 60)}分{(minute % 60).toString().padStart(2, '0')}秒時点)</h2>
               <div className={styles.eventLogList} style={{ maxHeight: '300px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {pastEvents.length === 0 && <p style={{color: '#888'}}>まだイベントはありません</p>}
