@@ -82,6 +82,26 @@ export default function MatchDetailPage() {
     return { onPitch: currentOnPitch, bench: currentBench };
   }, [match, minute]);
 
+  const pastEvents = useMemo(() => {
+    if (!match || !match.events) return [];
+    return match.events
+      .filter(ev => ev.minute <= minute)
+      .sort((a,b) => b.minute - a.minute); // desc
+  }, [match, minute]);
+
+  const getEventText = (ev) => {
+    const name = ev.name || ev.user_name || '選手';
+    switch (ev.event_type) {
+      case 'goal': return `⚽ ${name} がゴール！`;
+      case 'assist': return `🅰️ ${name} がアシスト！`;
+      case 'save': return `🧤 ${name} がファインセーブ！`;
+      case 'sub_in': return `🔼 ${name} がピッチに入りました`;
+      case 'sub_out': return `🔽 ${name} がベンチに下がりました`;
+      case 'position_change': return `🔄 ${name} が ${ev.position || '別ポジション'} に変更`;
+      default: return `${name} のイベント`;
+    }
+  };
+
   if (loading) {
     return (
       <div className={styles.page}>
@@ -201,6 +221,20 @@ export default function MatchDetailPage() {
                     </div>
                   );
                 })}
+              </div>
+            </div>
+
+            {/* イベントログ (実況) */}
+            <div className={styles.sectionBox} style={{ marginTop: '1.5rem' }}>
+              <h2 className={styles.sectionTitle}>タイムライン ({minute}分時点)</h2>
+              <div className={styles.eventLogList} style={{ maxHeight: '300px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {pastEvents.length === 0 && <p style={{color: '#888'}}>まだイベントはありません</p>}
+                {pastEvents.map((ev, i) => (
+                  <div key={i} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', background: 'var(--color-dark-900)', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--color-dark-700)' }}>
+                    <span style={{ fontWeight: 700, color: 'var(--color-primary-400)', minWidth: '40px' }}>{ev.minute}'</span>
+                    <span style={{ color: 'var(--color-light-100)', flex: 1, lineHeight: 1.4 }}>{getEventText(ev)}</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
