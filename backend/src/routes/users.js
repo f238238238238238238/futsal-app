@@ -12,11 +12,11 @@ router.get('/', async (req, res) => {
   try {
     const db = getDb();
     const { position } = req.query;
-    let query = `SELECT ${USER_FIELDS} FROM users`;
+    let query = `SELECT ${USER_FIELDS} FROM users WHERE role != 'admin'`;
     const params = [];
 
     if (position) {
-      query += ' WHERE position = $1';
+      query += ' AND position = $1';
       params.push(position);
     }
 
