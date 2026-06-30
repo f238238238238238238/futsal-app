@@ -333,11 +333,8 @@ export default function LiveMatchPage() {
                  if(e.event_type==='goal') text = `⚽ ${p} ゴール!`;
                  if(e.event_type==='assist') text = `🅰️ ${p} アシスト`;
                  if(e.event_type==='save') text = `🧤 ${p} セーブ`;
-                 if(e.event_type==='shot') text = `👟 ${p} シュート`;
-                 if(e.event_type==='shot_on_target') text = `🎯 ${p} 枠内シュート`;
-                 if(e.event_type==='corner') text = `🚩 ${p} コーナー獲得`;
-                 if(e.event_type==='recovery') text = `🥾 ${p} ボール奪取`;
-                 if(e.event_type==='block') text = `🛡️ ${p} ブロック`;
+                 if(e.event_type==='shot') text = `👟 ${p} シュート(ノーゴール)`;
+                 if(e.event_type==='defense') text = `🛡️ ${p} ディフェンス(奪取/ブロック)`;
                  if(e.event_type==='sub_in') text = `🔼 ${p} IN`;
                  if(e.event_type==='sub_out') text = `🔽 ${p} OUT`;
                  const min = Math.floor(e.minute / 60);
@@ -402,14 +399,8 @@ export default function LiveMatchPage() {
               <button className={`${styles.actionBtn} ${styles.btnShot}`} onClick={() => handleAction('shot')}>
                 <span style={{ fontSize: '1.5rem' }}>👟</span> シュート
               </button>
-              <button className={`${styles.actionBtn} ${styles.btnShotOnTarget}`} onClick={() => handleAction('shot_on_target')}>
-                <span style={{ fontSize: '1.5rem' }}>🎯</span> 枠内
-              </button>
-              <button className={`${styles.actionBtn} ${styles.btnRecovery}`} onClick={() => handleAction('recovery')}>
-                <span style={{ fontSize: '1.5rem' }}>🥾</span> 奪取
-              </button>
-              <button className={`${styles.actionBtn} ${styles.btnBlock}`} onClick={() => handleAction('block')}>
-                <span style={{ fontSize: '1.5rem' }}>🛡️</span> ブロック
+              <button className={`${styles.actionBtn} ${styles.btnDefense}`} onClick={() => handleAction('defense')}>
+                <span style={{ fontSize: '1.5rem' }}>🛡️</span> ディフェンス
               </button>
               <button className={`${styles.actionBtn} ${styles.btnSave}`} onClick={() => handleAction('save')}>
                 <span style={{ fontSize: '1.5rem' }}>🧤</span> セーブ
