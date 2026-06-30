@@ -4,9 +4,9 @@ import { authenticate, requireAdmin } from '../middleware/auth.js';
 
 const router = Router();
 
-function calculateMinutesPlayed(stats, events, matchLength = 40) {
-  const playingTimes = {};
-  stats.forEach(st => playingTimes[st.user_id] = 0);
+function calculateMinutesPlayed(stats, events, matchLengthSeconds = 2400) {
+  const playingTimesSecs = {};
+  stats.forEach(st => playingTimesSecs[st.user_id] = 0);
   
   const enteredAt = {};
   stats.forEach(st => {
@@ -20,7 +20,7 @@ function calculateMinutesPlayed(stats, events, matchLength = 40) {
   sortedEvents.forEach(ev => {
     if (ev.event_type === 'sub_out') {
       if (enteredAt[ev.user_id] !== undefined) {
-        playingTimes[ev.user_id] = (playingTimes[ev.user_id] || 0) + (ev.minute - enteredAt[ev.user_id]);
+        playingTimesSecs[ev.user_id] = (playingTimesSecs[ev.user_id] || 0) + (ev.minute - enteredAt[ev.user_id]);
         delete enteredAt[ev.user_id];
       }
     } else if (ev.event_type === 'sub_in') {
@@ -29,10 +29,14 @@ function calculateMinutesPlayed(stats, events, matchLength = 40) {
   });
 
   Object.keys(enteredAt).forEach(userId => {
-    playingTimes[userId] = (playingTimes[userId] || 0) + (matchLength - enteredAt[userId]);
+    playingTimesSecs[userId] = (playingTimesSecs[userId] || 0) + (matchLengthSeconds - enteredAt[userId]);
   });
 
-  return playingTimes;
+  const playingTimesMins = {};
+  Object.keys(playingTimesSecs).forEach(k => {
+    playingTimesMins[k] = Math.round(playingTimesSecs[k] / 60);
+  });
+  return playingTimesMins;
 }
 
 // GET / - 試合一覧
@@ -80,7 +84,7 @@ router.get('/:id', async (req, res) => {
 
     // 出場メンバーの成績
     const statsResult = await db.query(`
-      SELECT ms.*, u.name as user_name, u.jersey_number
+      SELECT ms.*, u.name as user_name, u.jersey_number, u.photo_url
       FROM match_stats ms
       JOIN users u ON ms.user_id = u.user_id
       WHERE ms.match_id = $1
@@ -110,7 +114,8 @@ router.get('/:id', async (req, res) => {
 router.post('/', authenticate, requireAdmin, async (req, res) => {
   try {
     const db = getDb();
-    const { date, opponent_name, competition_name, our_score, opponent_score, summary_text, mom_user_id, stats, events } = req.body;
+    const { date, opponent_name, competition_name, our_score, opponent_score, summary_text, mom_user_id, duration_seconds, stats, events } = req.body;
+    const matchDur = duration_seconds ? parseInt(duration_seconds, 10) : 2400;
 
     if (!date || !opponent_name) {
       return res.status(400).json({ error: '日付と対戦相手は必須です' });
@@ -120,16 +125,16 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
     await db.query('BEGIN');
 
     const matchRes = await db.query(`
-      INSERT INTO matches (date, opponent_name, competition_name, our_score, opponent_score, summary_text, mom_user_id)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      INSERT INTO matches (date, opponent_name, competition_name, our_score, opponent_score, summary_text, mom_user_id, duration_seconds)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING match_id
-    `, [date, opponent_name, competition_name, our_score, opponent_score, summary_text, mom_user_id || null]);
+    `, [date, opponent_name, competition_name, our_score, opponent_score, summary_text, mom_user_id || null, matchDur]);
     
     const matchId = matchRes.rows[0].match_id;
 
     let playingTimes = {};
     if (stats && Array.isArray(stats)) {
-      playingTimes = calculateMinutesPlayed(stats, events, 40);
+      playingTimes = calculateMinutesPlayed(stats, events, matchDur);
       for (const st of stats) {
         const mins = playingTimes[st.user_id] || 0;
         await db.query(`
@@ -163,7 +168,8 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
   try {
     const db = getDb();
     const matchId = req.params.id;
-    const { date, opponent_name, competition_name, our_score, opponent_score, summary_text, mom_user_id, stats, events } = req.body;
+    const { date, opponent_name, competition_name, our_score, opponent_score, summary_text, mom_user_id, duration_seconds, stats, events } = req.body;
+    const matchDur = duration_seconds ? parseInt(duration_seconds, 10) : 2400;
 
     if (!date || !opponent_name) {
       return res.status(400).json({ error: '日付と対戦相手は必須です' });
@@ -173,15 +179,15 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
 
     await db.query(`
       UPDATE matches
-      SET date = $1, opponent_name = $2, competition_name = $3, our_score = $4, opponent_score = $5, summary_text = $6, mom_user_id = $7
-      WHERE match_id = $8
-    `, [date, opponent_name, competition_name, our_score, opponent_score, summary_text, mom_user_id || null, matchId]);
+      SET date = $1, opponent_name = $2, competition_name = $3, our_score = $4, opponent_score = $5, summary_text = $6, mom_user_id = $7, duration_seconds = $8
+      WHERE match_id = $9
+    `, [date, opponent_name, competition_name, our_score, opponent_score, summary_text, mom_user_id || null, matchDur, matchId]);
 
     // Update stats: delete old and insert new
     await db.query(`DELETE FROM match_stats WHERE match_id = $1`, [matchId]);
     let playingTimes = {};
     if (stats && Array.isArray(stats)) {
-      playingTimes = calculateMinutesPlayed(stats, events, 40);
+      playingTimes = calculateMinutesPlayed(stats, events, matchDur);
       for (const st of stats) {
         const mins = playingTimes[st.user_id] || 0;
         await db.query(`

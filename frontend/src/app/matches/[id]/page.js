@@ -135,11 +135,11 @@ export default function MatchDetailPage() {
         <Link href="/matches" className={styles.backLink}>← 試合一覧に戻る</Link>
 
         <div className={styles.sliderContainer}>
-          <div className={styles.sliderLabel}>⏱️ {minute}分</div>
+          <div className={styles.sliderLabel}>⏱️ {Math.floor(minute / 60)}分{(minute % 60).toString().padStart(2, '0')}秒</div>
           <input 
             type="range" 
             min="0" 
-            max="40" 
+            max={match.duration_seconds || 2400} 
             value={minute} 
             onChange={e => setMinute(parseInt(e.target.value, 10))} 
             className={styles.slider} 
@@ -226,12 +226,12 @@ export default function MatchDetailPage() {
 
             {/* イベントログ (実況) */}
             <div className={styles.sectionBox} style={{ marginTop: '1.5rem' }}>
-              <h2 className={styles.sectionTitle}>タイムライン ({minute}分時点)</h2>
+              <h2 className={styles.sectionTitle}>タイムライン ({Math.floor(minute / 60)}分{(minute % 60).toString().padStart(2, '0')}秒時点)</h2>
               <div className={styles.eventLogList} style={{ maxHeight: '300px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {pastEvents.length === 0 && <p style={{color: '#888'}}>まだイベントはありません</p>}
                 {pastEvents.map((ev, i) => (
                   <div key={i} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', background: 'var(--color-dark-900)', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--color-dark-700)' }}>
-                    <span style={{ fontWeight: 700, color: 'var(--color-primary-400)', minWidth: '40px' }}>{ev.minute}'</span>
+                    <span style={{ fontWeight: 700, color: 'var(--color-primary-400)', minWidth: '55px' }}>{Math.floor(ev.minute / 60)}'{String(ev.minute % 60).padStart(2, '0')}"</span>
                     <span style={{ color: 'var(--color-light-100)', flex: 1, lineHeight: 1.4 }}>{getEventText(ev)}</span>
                   </div>
                 ))}

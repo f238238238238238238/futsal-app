@@ -16,7 +16,7 @@ export default function AdminMatchesPage() {
   
   const initialForm = {
     date: '', opponent_name: '', competition_name: '', our_score: 0, opponent_score: 0,
-    summary_text: '', mom_user_id: '', statsMap: {}, events: []
+    summary_text: '', mom_user_id: '', duration_m: 40, duration_s: 0, statsMap: {}, events: []
   };
   const [form, setForm] = useState(initialForm);
   const [editingId, setEditingId] = useState(null);
@@ -76,8 +76,14 @@ export default function AdminMatchesPage() {
         opponent_score: match.opponent_score || 0,
         summary_text: match.summary_text || '',
         mom_user_id: match.mom_user_id || '',
+        duration_m: Math.floor((match.duration_seconds || 2400) / 60),
+        duration_s: (match.duration_seconds || 2400) % 60,
         statsMap: initialStats,
-        events: match.events || []
+        events: (match.events || []).map(ev => ({
+          ...ev,
+          minute_m: Math.floor((ev.minute || 0) / 60),
+          minute_s: (ev.minute || 0) % 60
+        }))
       });
       setEditingId(id);
       setShowModal(true);
@@ -112,7 +118,7 @@ export default function AdminMatchesPage() {
   };
 
   const addEvent = () => {
-    setForm(prev => ({ ...prev, events: [...prev.events, { minute: 0, event_type: 'sub_in', user_id: '', position: 'Fixo' }] }));
+    setForm(prev => ({ ...prev, events: [...prev.events, { minute: 0, minute_m: 0, minute_s: 0, event_type: 'sub_in', user_id: '', position: 'Fixo' }] }));
   };
   const updateEvent = (index, field, value) => {
     setForm(prev => {
@@ -139,7 +145,18 @@ export default function AdminMatchesPage() {
           saves: stat.saves
         }));
 
-      const payload = { ...form, stats };
+      // Prepare events
+      const events = form.events.map(ev => ({
+        ...ev,
+        minute: (parseInt(ev.minute_m, 10) || 0) * 60 + (parseInt(ev.minute_s, 10) || 0)
+      }));
+
+      const payload = { 
+        ...form, 
+        duration_seconds: (parseInt(form.duration_m, 10) || 0) * 60 + (parseInt(form.duration_s, 10) || 0),
+        stats, 
+        events 
+      };
       
       if (editingId) {
         await updateMatch(editingId, payload);
@@ -246,6 +263,17 @@ export default function AdminMatchesPage() {
                   {players.map(p => <option key={p.user_id} value={p.user_id}>{p.name}</option>)}
                 </select>
               </div>
+
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>試合終了時間 (分)</label>
+                  <input type="number" min="0" className={styles.formInput} value={form.duration_m} onChange={e => setForm({...form, duration_m: parseInt(e.target.value)||0})} />
+                </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>試合終了時間 (秒)</label>
+                  <input type="number" min="0" max="59" className={styles.formInput} value={form.duration_s} onChange={e => setForm({...form, duration_s: parseInt(e.target.value)||0})} />
+                </div>
+              </div>
               
               <h3 style={{ marginTop: '1.5rem', marginBottom: '1rem', borderBottom: '1px solid var(--color-dark-600)', paddingBottom: '0.5rem' }}>出場選手・成績</h3>
               <div className={styles.tableWrap} style={{ marginBottom: '1.5rem' }}>
@@ -292,7 +320,8 @@ export default function AdminMatchesPage() {
               <button type="button" onClick={addEvent} className={styles.addBtn} style={{ marginBottom: '1rem', fontSize: '0.8rem', padding: '0.4rem 0.8rem' }}>+ タイムライン追加</button>
               {form.events.map((ev, i) => (
                 <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '8px', flexWrap: 'wrap', alignItems: 'center', background: 'var(--color-dark-800)', padding: '8px', borderRadius: '4px' }}>
-                  <input type="number" value={ev.minute} onChange={e => updateEvent(i, 'minute', parseInt(e.target.value)||0)} placeholder="分" style={{ width: '60px', padding: '4px', background: 'var(--color-dark-900)', color: 'white', border: '1px solid var(--color-dark-600)', borderRadius: '4px', textAlign: 'center' }} /> 分
+                  <input type="number" value={ev.minute_m ?? 0} onChange={e => updateEvent(i, 'minute_m', parseInt(e.target.value)||0)} placeholder="分" style={{ width: '50px', padding: '4px', background: 'var(--color-dark-900)', color: 'white', border: '1px solid var(--color-dark-600)', borderRadius: '4px', textAlign: 'center' }} /> 分
+                  <input type="number" value={ev.minute_s ?? 0} onChange={e => updateEvent(i, 'minute_s', parseInt(e.target.value)||0)} max="59" placeholder="秒" style={{ width: '50px', padding: '4px', background: 'var(--color-dark-900)', color: 'white', border: '1px solid var(--color-dark-600)', borderRadius: '4px', textAlign: 'center' }} /> 秒
                   <select value={ev.event_type} onChange={e => updateEvent(i, 'event_type', e.target.value)} style={{ padding: '4px', background: 'var(--color-dark-900)', color: 'white', border: '1px solid var(--color-dark-600)', borderRadius: '4px' }}>
                     <option value="sub_in">IN (交代出場)</option>
                     <option value="sub_out">OUT (ベンチへ)</option>
