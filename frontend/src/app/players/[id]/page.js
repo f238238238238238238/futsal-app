@@ -169,41 +169,49 @@ export default function PlayerDetailPage({ params }) {
 
   return (
     <div className={styles.page}>
-      {/* Hero */}
-      <section className={styles.hero}>
-        <div className={styles.heroBgNumber}>{number}</div>
-        <div className={`container ${styles.heroContent}`}>
-          <Link href="/players" className={styles.backLink}>
-            ← 選手一覧に戻る
-          </Link>
-          {player.photo_url ? (
-            <img src={getImageUrl(player.photo_url)} alt={player.name} className={styles.detailPhoto} />
-          ) : (
-            <div className={styles.heroPlaceholder} />
-          )}
-          <div className={styles.playerMeta}>
-            <span className={styles.jerseyNumber}>#{number}</span>
-            <span className={`${styles.positionBadge} ${POSITION_CLASSES[player.position] || ''}`}>
-              {player.position || '-'}
-            </span>
+      {/* Profile Header */}
+      <section className={styles.profileHeaderSection}>
+        <div className={`container ${styles.profileHeaderContainer}`}>
+          {/* Left Column: Portrait */}
+          <div className={styles.portraitWrapper}>
+            <div className={styles.portraitBgNumber}>{number}</div>
+            {player.photo_url ? (
+              <img src={getImageUrl(player.photo_url)} alt={player.name} className={styles.portraitPhoto} />
+            ) : (
+              <div className={styles.portraitPlaceholder} />
+            )}
           </div>
-          <h1 className={styles.playerName}>{player.name}</h1>
+
+          {/* Right Column: Info */}
+          <div className={styles.infoWrapper}>
+            <Link href="/players" className={styles.backLink}>
+              ← 選手一覧に戻る
+            </Link>
+            <div className={styles.playerMeta}>
+              <span className={styles.jerseyNumber}>#{number}</span>
+              <span className={`${styles.positionBadge} ${POSITION_CLASSES[player.position] || ''}`}>
+                {player.position || '-'}
+              </span>
+            </div>
+            <h1 className={styles.playerName}>{player.name}</h1>
+
+            <div className={styles.basicInfoArea}>
+              <h2 className={styles.sectionTitle}>基本情報</h2>
+              <div className={styles.infoGrid2Col}>
+                {infoItems.map((item, i) => (
+                  <div key={i} className={styles.infoCard} style={{ animationDelay: `${i * 0.1}s` }}>
+                    <div className={styles.infoIcon}>{item.icon}</div>
+                    <div className={styles.infoLabel}>{item.label}</div>
+                    <div className={styles.infoValue}>{item.value}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Basic Info */}
       <section className={`container ${styles.statsSection}`}>
-        <h2 className={styles.sectionTitle}>基本情報</h2>
-        <div className={styles.infoGrid}>
-          {infoItems.map((item, i) => (
-            <div key={i} className={styles.infoCard} style={{ animationDelay: `${i * 0.1}s` }}>
-              <div className={styles.infoIcon}>{item.icon}</div>
-              <div className={styles.infoLabel}>{item.label}</div>
-              <div className={styles.infoValue}>{item.value}</div>
-            </div>
-          ))}
-        </div>
-
         {/* Performance By Year */}
         <h2 className={styles.sectionTitle}>成績統計</h2>
         <div className={styles.statsScrollWrap}>

@@ -4,31 +4,87 @@
   animation: fadeIn 0.5s ease;
 }
 
-/* Hero */
-.hero {
-  position: relative;
+/* Profile Header (Split Layout) */
+.profileHeaderSection {
   padding: var(--space-4xl) 0 var(--space-3xl);
-  overflow: hidden;
   background: linear-gradient(135deg, var(--color-dark-800), var(--color-black));
 }
 
-.heroBgNumber {
-  position: absolute;
-  top: 50%;
-  right: 5%;
-  transform: translateY(-50%);
-  font-family: var(--font-heading);
-  font-size: clamp(10rem, 30vw, 25rem);
-  font-weight: 900;
-  color: rgba(255, 255, 255, 0.04);
-  line-height: 1;
-  pointer-events: none;
-  user-select: none;
+.profileHeaderContainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xl);
 }
 
-.heroContent {
+@media (min-width: 1024px) {
+  .profileHeaderContainer {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+}
+
+.portraitWrapper {
+  flex: 0 0 320px;
+  max-width: 100%;
+  aspect-ratio: 3 / 4;
+  position: relative;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+  background: var(--color-dark-800);
+}
+
+@media (max-width: 1023px) {
+  .portraitWrapper {
+    margin: 0 auto;
+    width: 100%;
+    max-width: 320px;
+  }
+}
+
+.portraitPhoto {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
   position: relative;
   z-index: 1;
+}
+
+.portraitPlaceholder {
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at center, rgba(197, 160, 89, 0.1) 0%, transparent 70%);
+}
+
+.portraitBgNumber {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: var(--font-heading);
+  font-size: clamp(8rem, 20vw, 12rem);
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.05);
+  line-height: 1;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.infoWrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.basicInfoArea {
+  margin-top: var(--space-xl);
+}
+
+.infoGrid2Col {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-md);
 }
 
 .backLink {
@@ -417,27 +473,4 @@
   font-size: 10px;
   font-weight: 800;
   fill: var(--color-white);
-}
-
-.heroPlaceholder {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(circle at center, rgba(197, 160, 89, 0.1) 0%, transparent 70%);
-  z-index: 0;
-}
-
-.detailPhoto {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  z-index: 0;
-  opacity: 0.7;
-  mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
 }
