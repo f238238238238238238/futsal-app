@@ -405,9 +405,6 @@ export default function LiveMatchPage() {
               <button className={`${styles.actionBtn} ${styles.btnShotOnTarget}`} onClick={() => handleAction('shot_on_target')}>
                 <span style={{ fontSize: '1.5rem' }}>🎯</span> 枠内
               </button>
-              <button className={`${styles.actionBtn} ${styles.btnCorner}`} onClick={() => handleAction('corner')}>
-                <span style={{ fontSize: '1.5rem' }}>🚩</span> コーナー
-              </button>
               <button className={`${styles.actionBtn} ${styles.btnRecovery}`} onClick={() => handleAction('recovery')}>
                 <span style={{ fontSize: '1.5rem' }}>🥾</span> 奪取
               </button>
