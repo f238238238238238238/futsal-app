@@ -47,7 +47,8 @@ export default function HomePage() {
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [heroImage, setHeroImage] = useState(null);
+  const [heroImages, setHeroImages] = useState([]);
+  const [currentSlide, setCurrentSlide] = useState(0);
 
   const countdown = useCountdown(nextEvent?.date || nextEvent?.event_date);
 
@@ -61,11 +62,18 @@ export default function HomePage() {
           getSettings(),
         ]);
 
-        // Settings (hero image)
+        // Settings (hero images)
         if (settingsData.status === 'fulfilled') {
           const s = settingsData.value?.settings || {};
-          if (s.hero_image_base64) setHeroImage(s.hero_image_base64);
-          else if (s.hero_image_url) setHeroImage(s.hero_image_url);
+          let images = [];
+          if (s.hero_images) {
+            try { images = JSON.parse(s.hero_images); } catch(e) {}
+          } else if (s.hero_image_base64) {
+            images = [s.hero_image_base64];
+          } else if (s.hero_image_url) {
+            images = [s.hero_image_url];
+          }
+          setHeroImages(images);
         }
 
         // Next event
@@ -98,15 +106,41 @@ export default function HomePage() {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    if (heroImages.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentSlide(prev => (prev + 1) % heroImages.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [heroImages]);
+
   return (
     <>
       {/* Hero Section */}
-      <section className={styles.hero} style={heroImage ? { backgroundImage: `url(${heroImage})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}>
-        <div className={styles.heroBackground}>
-          {!heroImage && <div className={styles.heroPattern} />}
-          <div className={styles.heroGradient} />
-        </div>
-        <div className={styles.heroContent}>
+      <section className={styles.hero}>
+        {heroImages.length > 0 ? (
+          heroImages.map((img, i) => (
+            <div 
+              key={i}
+              className={styles.heroBackground} 
+              style={{ 
+                backgroundImage: `url(${img})`, 
+                backgroundSize: 'cover', 
+                backgroundPosition: 'center',
+                opacity: i === currentSlide ? 1 : 0,
+                transition: 'opacity 1s ease-in-out',
+                zIndex: i === currentSlide ? 1 : 0
+              }} 
+            />
+          ))
+        ) : (
+          <div className={styles.heroBackground}>
+            <div className={styles.heroPattern} />
+          </div>
+        )}
+        <div className={styles.heroGradient} style={{ zIndex: 2 }} />
+        
+        <div className={styles.heroContent} style={{ zIndex: 3 }}>
           <h1 className={styles.heroTitle}>
             <span className={styles.heroTitleAccent}>FUMINTUS</span>
           </h1>

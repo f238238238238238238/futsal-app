@@ -7,7 +7,7 @@ import { getPlayers, createPlayer, updatePlayer, deletePlayer, uploadFile, getIm
 import styles from '../admin.module.css';
 
 const POSITIONS = ['ゴレイロ', 'フィクソ', 'アラ', 'ピヴォ'];
-const emptyForm = { name: '', email: '', password: 'player123', jersey_number: '', position: '', dominant_foot: '右', birth_date: '', height: '', weight: '', catchphrase: '', season_goal: '', salary: 0, stat_offense: 50, stat_defense: 50, stat_kick: 50, stat_speed: 50, stat_technique: 50, stat_stamina: 50, photo_url: '', line_name: '' };
+const emptyForm = { name: '', email: '', password: 'player123', jersey_number: '', position: '', dominant_foot: '右', birth_date: '', height: '', weight: '', catchphrase: '', season_goal: '', salaries: [], stat_offense: 50, stat_defense: 50, stat_kick: 50, stat_speed: 50, stat_technique: 50, stat_stamina: 50, photo_url: '', line_name: '' };
 
 export default function AdminPlayersPage() {
   const { isAdmin, loading: authLoading } = useAuth();
@@ -34,13 +34,28 @@ export default function AdminPlayersPage() {
       position: p.position || '', dominant_foot: p.dominant_foot || '右',
       birth_date: p.birth_date || '', height: p.height || '', weight: p.weight || '',
       catchphrase: p.catchphrase || '', season_goal: p.season_goal || '',
-      salary: p.salary || 0,
+      salaries: p.salaries ? [...p.salaries] : (p.salary ? [{ year: new Date().getFullYear(), salary: p.salary }] : []),
       stat_offense: p.stat_offense ?? 50, stat_defense: p.stat_defense ?? 50, stat_kick: p.stat_kick ?? 50,
       stat_speed: p.stat_speed ?? 50, stat_technique: p.stat_technique ?? 50, stat_stamina: p.stat_stamina ?? 50,
       photo_url: p.photo_url || '', line_name: p.line_name || ''
     });
     setEditingId(p.user_id);
     setShowModal(true);
+  };
+
+  const handleSalaryChange = (index, field, value) => {
+    const newSalaries = [...form.salaries];
+    newSalaries[index][field] = value;
+    setForm({ ...form, salaries: newSalaries });
+  };
+
+  const addSalary = () => {
+    setForm({ ...form, salaries: [...form.salaries, { year: new Date().getFullYear(), salary: 0 }] });
+  };
+
+  const removeSalary = (index) => {
+    const newSalaries = form.salaries.filter((_, i) => i !== index);
+    setForm({ ...form, salaries: newSalaries });
   };
 
   const handleFileChange = async (e) => {
@@ -204,9 +219,17 @@ export default function AdminPlayersPage() {
                 </div>
               </div>
               <div className={styles.formRow}>
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>年俸 (円)</label>
-                  <input type="number" className={styles.formInput} value={form.salary} onChange={e => setForm({...form, salary: parseInt(e.target.value, 10) || 0})} />
+                <div className={styles.formGroup} style={{ flex: '1' }}>
+                  <label className={styles.formLabel}>年俸推移</label>
+                  {form.salaries.map((s, index) => (
+                    <div key={index} style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
+                      <input type="number" className={styles.formInput} value={s.year} onChange={e => handleSalaryChange(index, 'year', parseInt(e.target.value, 10))} placeholder="年" style={{ width: '80px' }} />
+                      <span>年:</span>
+                      <input type="number" className={styles.formInput} value={s.salary} onChange={e => handleSalaryChange(index, 'salary', parseInt(e.target.value, 10) || 0)} placeholder="年俸(円)" style={{ flex: 1 }} />
+                      <button type="button" onClick={() => removeSalary(index)} style={{ background: 'var(--color-red)', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer' }}>削除</button>
+                    </div>
+                  ))}
+                  <button type="button" onClick={addSalary} style={{ background: 'var(--color-primary)', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem' }}>+ 年俸を追加</button>
                 </div>
               </div>
               

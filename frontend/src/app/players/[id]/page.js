@@ -143,13 +143,18 @@ export default function PlayerDetailPage({ params }) {
   const ageDisplay = computedAge !== null ? `${computedAge}歳` : (player.age ? `${player.age}歳` : '-');
 
   const number = player.number ?? player.jersey_number ?? '-';
+  
+  const latestSalary = player.salaries && player.salaries.length > 0 
+    ? player.salaries[0].salary 
+    : player.salary;
+
   const infoItems = [
     { icon: '🥅', label: 'ポジション', value: player.position || '-' },
     { icon: '📏', label: '身長', value: player.height ? `${player.height}cm` : '-' },
     { icon: '⚖️', label: '体重', value: player.weight ? `${player.weight}kg` : '-' },
     { icon: '🎂', label: '年齢', value: ageDisplay },
     { icon: '🦶', label: '利き足', value: player.dominant_foot || player.foot || '-' },
-    { icon: '💰', label: '年俸', value: formatSalary(player.salary) },
+    { icon: '💰', label: '年俸', value: formatSalary(latestSalary) },
   ];
 
   const stats = STAT_KEYS.map(k => player[k] ?? 50);
@@ -234,7 +239,7 @@ export default function PlayerDetailPage({ params }) {
                     </div>
                     <div className={styles.yearStat}>
                       <span className={styles.yearStatLabel}>年俸</span>
-                      <span className={styles.yearStatValue}>{formatSalary(player.salary)}</span>
+                      <span className={styles.yearStatValue}>{formatSalary(player.salaries?.find(s => s.year === stat.year)?.salary ?? player.salary)}</span>
                     </div>
                   </div>
                 </div>

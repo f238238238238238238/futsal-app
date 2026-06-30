@@ -22,7 +22,21 @@ router.get('/', async (req, res) => {
 
     query += ' ORDER BY jersey_number ASC';
     const result = await db.query(query, params);
-    res.json(result.rows);
+    
+    const users = result.rows;
+    // Get salaries for all users
+    const salariesResult = await db.query('SELECT user_id, year, salary FROM user_salaries ORDER BY year DESC');
+    const salariesMap = {};
+    for (const row of salariesResult.rows) {
+      if (!salariesMap[row.user_id]) salariesMap[row.user_id] = [];
+      salariesMap[row.user_id].push({ year: row.year, salary: row.salary });
+    }
+    
+    for (const user of users) {
+      user.salaries = salariesMap[user.user_id] || [];
+    }
+
+    res.json(users);
   } catch (err) {
     console.error('Get users error:', err);
     res.status(500).json({ error: 'サーバーエラーが発生しました' });
@@ -39,6 +53,10 @@ router.get('/:id', async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: '選手が見つかりません' });
     }
+
+    // Get salaries
+    const salariesResult = await db.query(`SELECT year, salary FROM user_salaries WHERE user_id = $1 ORDER BY year DESC`, [req.params.id]);
+    user.salaries = salariesResult.rows;
 
     // Get yearly match stats
     const yearlyMatchStatsResult = await db.query(`
@@ -224,7 +242,7 @@ router.put('/:id', authenticate, async (req, res) => {
       name, email, password, role, jersey_number, position,
       dominant_foot, birth_date, height, weight, photo_url,
       catchphrase, reason_started, hobby, season_goal, favorite_shoes,
-      salary, stat_offense, stat_defense, stat_kick, stat_speed, stat_technique, stat_stamina, line_name
+      salary, salaries, stat_offense, stat_defense, stat_kick, stat_speed, stat_technique, stat_stamina, line_name
     } = req.body;
 
     // Prevent demoting admin
@@ -282,6 +300,20 @@ router.put('/:id', authenticate, async (req, res) => {
       valOrExisting(line_name, existing.line_name),
       targetUserId
     ]);
+
+    // Handle salaries array (admin only)
+    if (isAdmin && Array.isArray(salaries)) {
+      for (const s of salaries) {
+        if (s.year && typeof s.salary === 'number') {
+          await db.query(`
+            INSERT INTO user_salaries (user_id, year, salary)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (user_id, year) DO UPDATE SET salary = EXCLUDED.salary
+          `, [targetUserId, s.year, s.salary]);
+        }
+      }
+    }
+
     const updatedResult = await db.query(`SELECT ${USER_FIELDS} FROM users WHERE user_id = $1`, [req.params.id]);
     res.json(updatedResult.rows[0]);
   } catch (err) {

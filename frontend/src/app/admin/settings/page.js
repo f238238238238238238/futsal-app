@@ -8,17 +8,21 @@ import styles from '../admin.module.css';
 
 export default function AdminSettingsPage() {
   const { isAdmin, loading: authLoading } = useAuth();
-  const [heroImage, setHeroImage] = useState('');
+  const [heroImages, setHeroImages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState('');
 
   const fetchSettings = async () => {
     try {
       const data = await getSettings();
-      if (data.settings && data.settings.hero_image_base64) {
-        setHeroImage(data.settings.hero_image_base64);
+      if (data.settings && data.settings.hero_images) {
+        try {
+          setHeroImages(JSON.parse(data.settings.hero_images));
+        } catch(e) { setHeroImages([]); }
+      } else if (data.settings && data.settings.hero_image_base64) {
+        setHeroImages([data.settings.hero_image_base64]);
       } else if (data.settings && data.settings.hero_image_url) {
-        setHeroImage(data.settings.hero_image_url);
+        setHeroImages([data.settings.hero_image_url]);
       }
     } catch (err) {
       setMsg(err.message);
@@ -34,15 +38,20 @@ export default function AdminSettingsPage() {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (event) => {
-      setHeroImage(event.target.result);
+      setHeroImages(prev => [...prev, event.target.result]);
     };
     reader.readAsDataURL(file);
+    e.target.value = null;
+  };
+
+  const handleRemoveImage = (index) => {
+    setHeroImages(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await updateSetting('hero_image_base64', heroImage);
+      await updateSetting('hero_images', JSON.stringify(heroImages));
       setMsg('設定を保存しました');
     } catch (err) { setMsg(err.message); }
   };
@@ -70,20 +79,29 @@ export default function AdminSettingsPage() {
             <h2 className={styles.modalTitle}>トップページ設定</h2>
             <form onSubmit={handleSubmit}>
               <div className={styles.formGroup}>
-                <label className={styles.formLabel}>待ち受け画像 (ファイルアップロード)</label>
+                <label className={styles.formLabel}>ホーム画面スライド画像 (複数選択可)</label>
                 <input 
                   type="file" 
                   accept="image/*"
                   className={styles.formInput} 
                   onChange={handleFileChange} 
                 />
-                {heroImage && (
-                  <div style={{ marginTop: '1rem' }}>
-                    <img src={heroImage} alt="Hero Preview" style={{ width: '100%', maxHeight: '200px', objectFit: 'cover', borderRadius: '4px' }} />
-                  </div>
-                )}
+                <div style={{ marginTop: '1rem', display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                  {heroImages.map((img, index) => (
+                    <div key={index} style={{ position: 'relative', width: '150px', height: '100px' }}>
+                      <img src={img} alt={`Slide ${index+1}`} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px' }} />
+                      <button 
+                        type="button" 
+                        onClick={() => handleRemoveImage(index)}
+                        style={{ position: 'absolute', top: '4px', right: '4px', background: 'var(--color-red)', color: '#fff', border: 'none', borderRadius: '50%', width: '24px', height: '24px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
                 <p style={{ fontSize: '0.8rem', color: 'var(--color-light-400)', marginTop: '0.5rem' }}>
-                  画像を選択して保存すると、TOPページの背景がその画像に切り替わります。
+                  画像を追加・削除して保存すると、TOPページで画像が数秒おきにスライド切り替えされるようになります。
                 </p>
               </div>
               <div className={styles.modalActions} style={{ justifyContent: 'flex-start' }}>
