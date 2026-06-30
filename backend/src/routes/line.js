@@ -148,7 +148,9 @@ async function handlePostback(event) {
 // ---------------- Helper Functions ----------------
 
 async function replyMessage(replyToken, messageObj) {
-  const LINE_ACCESS_TOKEN = process.env.LINE_ACCESS_TOKEN;
+  // 環境変数がVercelにうまく反映されないケースを防ぐため一時的にハードコード
+  const LINE_ACCESS_TOKEN = process.env.LINE_ACCESS_TOKEN || "YomQr1v0D19HjVSmaIbPsnO4HOylAYo68w7EpsiM1mGIwJQIf2mZr+gy7zjGASYfa3nOtSHTXOECRv9FMdyejs8DlJl+FDDs3l5q75Yfa64ph7+Xupq5a3ofdsg4z/oJ5O/1sgUsgGLemz23LhO0cQdB04t89/1O/w1cDnyilFU=";
+  
   if (!LINE_ACCESS_TOKEN) {
     console.error('LINE_ACCESS_TOKEN is not set');
     return;
@@ -168,7 +170,7 @@ async function replyMessage(replyToken, messageObj) {
 }
 
 async function getLineProfile(userId, groupId = null) {
-  const LINE_ACCESS_TOKEN = process.env.LINE_ACCESS_TOKEN;
+  const LINE_ACCESS_TOKEN = process.env.LINE_ACCESS_TOKEN || "YomQr1v0D19HjVSmaIbPsnO4HOylAYo68w7EpsiM1mGIwJQIf2mZr+gy7zjGASYfa3nOtSHTXOECRv9FMdyejs8DlJl+FDDs3l5q75Yfa64ph7+Xupq5a3ofdsg4z/oJ5O/1sgUsgGLemz23LhO0cQdB04t89/1O/w1cDnyilFU=";
   if (!LINE_ACCESS_TOKEN) return null;
 
   try {
