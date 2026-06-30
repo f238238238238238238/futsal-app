@@ -8,6 +8,15 @@ const router = Router();
 router.get('/', async (req, res) => {
   try {
     const db = getDb();
+    
+    // 過去の未開催イベントを削除（日時の文字列比較で過去判定）
+    // date_timeが 'YYYY-MM-DD' などの形式なので、現在日付の文字列と比較する（今日の日付より前なら削除）
+    await db.query(`
+      DELETE FROM events 
+      WHERE left(date_time, 10) < to_char(CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Tokyo', 'YYYY-MM-DD')
+      AND (is_held = false OR is_held IS NULL)
+    `);
+
     // 過去のイベントも少し含めるか、未来のみにするか。とりあえず全件新しい順
     const result = await db.query('SELECT * FROM events ORDER BY date_time ASC');
     res.json({ events: result.rows });

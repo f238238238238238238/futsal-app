@@ -77,6 +77,7 @@ async function handleHoldEvent(event, dayStr) {
   const evRes = await db.query("SELECT event_id, title FROM events WHERE date_time LIKE $1 ORDER BY date_time DESC LIMIT 1", [searchPattern]);
   if (evRes.rows.length > 0) {
     const eventId = evRes.rows[0].event_id;
+    await db.query("UPDATE events SET is_held = true WHERE event_id = $1", [eventId]);
     await db.query("UPDATE attendances SET status = 'present' WHERE event_id = $1 AND status = 'pending'", [eventId]);
     await replyMessage(replyToken, { type: 'text', text: `${dayStr}日の「${evRes.rows[0].title}」への参加者を出席扱いに確定しました！出席王ランキングに反映されます👑` });
   } else {
@@ -217,9 +218,19 @@ async function handlePostback(event) {
       await db.query("UPDATE attendances SET status = 'present' WHERE event_id = $1 AND user_id = $2", [eventId, user.user_id]);
     }
 
+    // 現在の参加者一覧を取得
+    const listRes = await db.query(`
+      SELECT u.name FROM attendances a
+      JOIN users u ON a.user_id = u.user_id
+      WHERE a.event_id = $1 AND a.status = 'present'
+    `, [eventId]);
+    
+    const count = listRes.rows.length;
+    const names = listRes.rows.map(r => r.name).join(', ');
+
     await replyMessage(replyToken, {
       type: 'text',
-      text: `${user.name}さんが「参加(〇)」として登録されました！\n出欠管理画面の「参加」に反映されています。`
+      text: `${user.name}さんが「参加(〇)」として登録されました！\n\n【現在の参加予定者: ${count}名】\n${names}\n\n出欠管理画面にも反映されています。`
     });
   }
 }
