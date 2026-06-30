@@ -16,7 +16,7 @@ router.post('/webhook', async (req, res) => {
       if (event.type === 'message' && event.message.type === 'text') {
         const text = event.message.text;
         // メンションされているか（mentioneesが存在するか）をチェック
-        const hasMention = event.message.mentions && event.message.mentions.mentionees && event.message.mentions.mentionees.length > 0;
+        const hasMention = event.message.mention && event.message.mention.mentionees && event.message.mention.mentionees.length > 0;
         
         // 個人チャットかどうか
         const isPrivateChat = event.source.type === 'user';
