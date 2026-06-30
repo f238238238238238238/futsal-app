@@ -125,11 +125,19 @@ export default function MatchDetailPage() {
       <div className={styles.pageHeader}>
         <div className={styles.headerBg} />
         <h1 className={styles.pageTitle}>MATCH DETAIL</h1>
-        <div style={{ color: 'var(--color-primary-400)', fontWeight: 600, marginBottom: '0.5rem', letterSpacing: '0.1em', position: 'relative', zIndex: 1 }}>{match.competition_name || '練習試合'}</div>
-        <p className={styles.pageSubtitle}>FUMINTUS vs {match.opponent_name}</p>
-        <p style={{ marginTop: '0.5rem', fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-primary-400)', position: 'relative', zIndex: 1 }}>
-          {match.our_score} - {match.opponent_score}
-        </p>
+        <div style={{ color: 'var(--color-primary-400)', fontWeight: 600, marginBottom: '1rem', letterSpacing: '0.1em', position: 'relative', zIndex: 1 }}>{match.competition_name || '練習試合'}</div>
+        
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', position: 'relative', zIndex: 1, maxWidth: '600px', margin: '0 auto' }}>
+          <div style={{ flex: 1, textAlign: 'right', fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-light-100)' }}>FUMINTUS</div>
+          <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--color-primary-400)' }}>VS</div>
+          <div style={{ flex: 1, textAlign: 'left', fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-light-100)' }}>{match.opponent_name}</div>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', position: 'relative', zIndex: 1, maxWidth: '600px', margin: '0.5rem auto 0' }}>
+          <div style={{ flex: 1, textAlign: 'right', fontSize: '2.5rem', fontWeight: 800, color: 'var(--color-light-100)' }}>{match.our_score}</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--color-dark-500)' }}>-</div>
+          <div style={{ flex: 1, textAlign: 'left', fontSize: '2.5rem', fontWeight: 800, color: 'var(--color-light-100)' }}>{match.opponent_score}</div>
+        </div>
       </div>
 
       <div className="container">
