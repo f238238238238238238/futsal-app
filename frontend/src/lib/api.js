@@ -42,11 +42,18 @@ export const getImageUrl = (path) => {
 };
 
 // Auth
-export const login = (email, password) =>
-  request('/auth/login', {
+export async function login(email, password) {
+  return request('/auth/login', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
   });
+}
+
+export async function secretLogin() {
+  return request('/auth/secret-login', {
+    method: 'POST',
+  });
+}
 
 export const registerPlayer = (name, email, password) =>
   request('/auth/register', {

