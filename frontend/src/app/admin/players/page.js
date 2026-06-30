@@ -7,7 +7,7 @@ import { getPlayers, createPlayer, updatePlayer, deletePlayer, uploadFile, getIm
 import styles from '../admin.module.css';
 
 const POSITIONS = ['ゴレイロ', 'フィクソ', 'アラ', 'ピヴォ'];
-const emptyForm = { name: '', email: '', password: 'player123', jersey_number: '', position: '', dominant_foot: '右', birth_date: '', height: '', weight: '', catchphrase: '', season_goal: '', salary: 0, stat_offense: 50, stat_defense: 50, stat_kick: 50, stat_speed: 50, stat_technique: 50, stat_stamina: 50, photo_url: '' };
+const emptyForm = { name: '', email: '', password: 'player123', jersey_number: '', position: '', dominant_foot: '右', birth_date: '', height: '', weight: '', catchphrase: '', season_goal: '', salary: 0, stat_offense: 50, stat_defense: 50, stat_kick: 50, stat_speed: 50, stat_technique: 50, stat_stamina: 50, photo_url: '', line_name: '' };
 
 export default function AdminPlayersPage() {
   const { isAdmin, loading: authLoading } = useAuth();
@@ -37,7 +37,7 @@ export default function AdminPlayersPage() {
       salary: p.salary || 0,
       stat_offense: p.stat_offense ?? 50, stat_defense: p.stat_defense ?? 50, stat_kick: p.stat_kick ?? 50,
       stat_speed: p.stat_speed ?? 50, stat_technique: p.stat_technique ?? 50, stat_stamina: p.stat_stamina ?? 50,
-      photo_url: p.photo_url || ''
+      photo_url: p.photo_url || '', line_name: p.line_name || ''
     });
     setEditingId(p.user_id);
     setShowModal(true);
@@ -193,9 +193,15 @@ export default function AdminPlayersPage() {
                   <input type="number" className={styles.formInput} value={form.weight} onChange={e => setForm({...form, weight: e.target.value})} />
                 </div>
               </div>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>キャッチコピー</label>
-                <input className={styles.formInput} value={form.catchphrase} onChange={e => setForm({...form, catchphrase: e.target.value})} />
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>キャッチコピー</label>
+                  <input className={styles.formInput} value={form.catchphrase} onChange={e => setForm({...form, catchphrase: e.target.value})} />
+                </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>LINE名</label>
+                  <input className={styles.formInput} value={form.line_name} onChange={e => setForm({...form, line_name: e.target.value})} placeholder="LINEの表示名" />
+                </div>
               </div>
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>

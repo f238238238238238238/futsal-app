@@ -5,7 +5,7 @@ import { authenticate, requireAdmin } from '../middleware/auth.js';
 
 const router = Router();
 
-const USER_FIELDS = 'user_id, name, email, role, jersey_number, position, dominant_foot, birth_date, height, weight, photo_url, catchphrase, reason_started, hobby, season_goal, favorite_shoes, salary, stat_offense, stat_defense, stat_kick, stat_speed, stat_technique, stat_stamina, created_at, updated_at';
+const USER_FIELDS = 'user_id, name, email, role, jersey_number, position, dominant_foot, birth_date, height, weight, photo_url, catchphrase, reason_started, hobby, season_goal, favorite_shoes, salary, stat_offense, stat_defense, stat_kick, stat_speed, stat_technique, stat_stamina, line_name, created_at, updated_at';
 
 // GET / - 全選手一覧
 router.get('/', async (req, res) => {
@@ -65,7 +65,7 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
       name, email, password, role, jersey_number, position,
       dominant_foot, birth_date, height, weight, photo_url,
       catchphrase, reason_started, hobby, season_goal, favorite_shoes,
-      salary, stat_offense, stat_defense, stat_kick, stat_speed, stat_technique, stat_stamina
+      salary, stat_offense, stat_defense, stat_kick, stat_speed, stat_technique, stat_stamina, line_name
     } = req.body;
 
     if (!name) {
@@ -81,14 +81,14 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
       INSERT INTO users (name, email, password_hash, role, jersey_number, position,
         dominant_foot, birth_date, height, weight, photo_url,
         catchphrase, reason_started, hobby, season_goal, favorite_shoes,
-        salary, stat_offense, stat_defense, stat_kick, stat_speed, stat_technique, stat_stamina)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
+        salary, stat_offense, stat_defense, stat_kick, stat_speed, stat_technique, stat_stamina, line_name)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
       RETURNING user_id
     `, [
       name, safeEmail, passwordHash, role || 'player', jersey_number || null, position || null,
       dominant_foot || null, birth_date || null, height || null, weight || null, photo_url || null,
       catchphrase || null, reason_started || null, hobby || null, season_goal || null, favorite_shoes || null,
-      salary || 0, stat_offense || 50, stat_defense || 50, stat_kick || 50, stat_speed || 50, stat_technique || 50, stat_stamina || 50
+      salary || 0, stat_offense || 50, stat_defense || 50, stat_kick || 50, stat_speed || 50, stat_technique || 50, stat_stamina || 50, line_name || null
     ]);
 
     const newUserResult = await db.query(`SELECT ${USER_FIELDS} FROM users WHERE user_id = $1`, [result.rows[0].user_id]);
@@ -116,7 +116,7 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
       name, email, password, role, jersey_number, position,
       dominant_foot, birth_date, height, weight, photo_url,
       catchphrase, reason_started, hobby, season_goal, favorite_shoes,
-      salary, stat_offense, stat_defense, stat_kick, stat_speed, stat_technique, stat_stamina
+      salary, stat_offense, stat_defense, stat_kick, stat_speed, stat_technique, stat_stamina, line_name
     } = req.body;
 
     // Prevent demoting admin
@@ -134,9 +134,9 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
         name = $1, email = $2, password_hash = $3, role = $4, jersey_number = $5, position = $6,
         dominant_foot = $7, birth_date = $8, height = $9, weight = $10, photo_url = $11,
         catchphrase = $12, reason_started = $13, hobby = $14, season_goal = $15, favorite_shoes = $16,
-        salary = $17, stat_offense = $18, stat_defense = $19, stat_kick = $20, stat_speed = $21, stat_technique = $22, stat_stamina = $23,
+        salary = $17, stat_offense = $18, stat_defense = $19, stat_kick = $20, stat_speed = $21, stat_technique = $22, stat_stamina = $23, line_name = $24,
         updated_at = CURRENT_TIMESTAMP
-      WHERE user_id = $24
+      WHERE user_id = $25
     `, [
       name || existing.name, email || existing.email, passwordHash, role || existing.role,
       jersey_number !== undefined ? jersey_number : existing.jersey_number,
@@ -155,6 +155,7 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
       stat_speed !== undefined ? stat_speed : existing.stat_speed,
       stat_technique !== undefined ? stat_technique : existing.stat_technique,
       stat_stamina !== undefined ? stat_stamina : existing.stat_stamina,
+      line_name !== undefined ? line_name : existing.line_name,
       req.params.id
     ]);
 
