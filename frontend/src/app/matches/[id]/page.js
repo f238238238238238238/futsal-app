@@ -1,0 +1,211 @@
+'use client';
+
+import { useState, useEffect, useMemo } from 'react';
+import { useParams } from 'next/navigation';
+import Link from 'next/link';
+import { getMatch, getImageUrl } from '@/lib/api';
+import styles from './page.module.css';
+
+const POSITIONS = {
+  'GK': { top: '85%', left: '50%' },
+  'Fixo': { top: '70%', left: '50%' },
+  'Ala L': { top: '45%', left: '20%' },
+  'Ala R': { top: '45%', left: '80%' },
+  'Pivo': { top: '25%', left: '50%' },
+  'default': { top: '50%', left: '50%' }
+};
+
+export default function MatchDetailPage() {
+  const { id } = useParams();
+  const [match, setMatch] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [minute, setMinute] = useState(0);
+
+  useEffect(() => {
+    getMatch(id)
+      .then(res => setMatch(res.match || res))
+      .catch(err => setErrorMsg(err.message))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  const { onPitch, bench } = useMemo(() => {
+    if (!match || !match.stats) return { onPitch: [], bench: [] };
+    
+    let currentOnPitch = [];
+    let currentBench = [];
+
+    // Initialize based on starter flag
+    match.stats.forEach(st => {
+      const p = { 
+        user_id: st.user_id, 
+        name: st.name || st.user_name, 
+        photo_url: st.photo_url, 
+        jersey_number: st.jersey_number || '', 
+        position: '' 
+      };
+      if (st.is_starter === 1 || st.is_starter === true) {
+        currentOnPitch.push(p);
+      } else {
+        currentBench.push(p);
+      }
+    });
+
+    // Apply events up to current minute
+    const sortedEvents = [...(match.events || [])].sort((a,b) => a.minute - b.minute);
+    
+    for (const ev of sortedEvents) {
+      if (ev.minute > minute) break;
+
+      if (ev.event_type === 'sub_in') {
+        const idx = currentBench.findIndex(p => p.user_id === ev.user_id);
+        if (idx !== -1) {
+          const p = currentBench.splice(idx, 1)[0];
+          p.position = ev.position || '';
+          currentOnPitch.push(p);
+        }
+      } else if (ev.event_type === 'sub_out') {
+        const idx = currentOnPitch.findIndex(p => p.user_id === ev.user_id);
+        if (idx !== -1) {
+          const p = currentOnPitch.splice(idx, 1)[0];
+          p.position = '';
+          currentBench.push(p);
+        }
+      } else if (ev.event_type === 'position_change') {
+        const p = currentOnPitch.find(p => p.user_id === ev.user_id);
+        if (p) {
+          p.position = ev.position || '';
+        }
+      }
+    }
+
+    return { onPitch: currentOnPitch, bench: currentBench };
+  }, [match, minute]);
+
+  if (loading) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.loading}><div className={styles.spinner} /></div>
+      </div>
+    );
+  }
+
+  if (errorMsg || !match) {
+    return (
+      <div className={styles.page}>
+        <div className="container" style={{ paddingTop: '2rem' }}>
+          <p>{errorMsg || 'Match not found'}</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.page}>
+      <div className={styles.pageHeader}>
+        <div className={styles.headerBg} />
+        <h1 className={styles.pageTitle}>MATCH DETAIL</h1>
+        <p className={styles.pageSubtitle}>{match.competition_name || '練習試合'} vs {match.opponent_name}</p>
+        <p style={{ marginTop: '0.5rem', fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-primary-400)', position: 'relative', zIndex: 1 }}>
+          {match.our_score} - {match.opponent_score}
+        </p>
+      </div>
+
+      <div className="container">
+        <Link href="/matches" className={styles.backLink}>← 試合一覧に戻る</Link>
+
+        <div className={styles.sliderContainer}>
+          <div className={styles.sliderLabel}>⏱️ {minute}分</div>
+          <input 
+            type="range" 
+            min="0" 
+            max="40" 
+            value={minute} 
+            onChange={e => setMinute(parseInt(e.target.value, 10))} 
+            className={styles.slider} 
+          />
+        </div>
+
+        <div className={styles.contentGrid}>
+          {/* 左側: スタメン・ベンチ一覧 */}
+          <div className={styles.leftColumn}>
+            <div className={styles.sectionBox}>
+              <h2 className={styles.sectionTitle}>ピッチ上の選手 ({onPitch.length}名)</h2>
+              <div className={styles.memberList}>
+                {onPitch.length === 0 && <p style={{color: '#888'}}>なし</p>}
+                {onPitch.map(p => (
+                  <div key={p.user_id} className={styles.memberItem}>
+                    <div className={styles.memberAvatar}>
+                      {p.photo_url ? (
+                        <img src={getImageUrl(p.photo_url)} alt={p.name} className={styles.memberImage} />
+                      ) : (
+                        <span className={styles.memberAvatarPlaceholder}>#{p.jersey_number}</span>
+                      )}
+                    </div>
+                    <div className={styles.memberInfo}>
+                      <div className={styles.memberName}>{p.name}</div>
+                      <div className={styles.memberPosition}>{p.position || '未設定'}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className={styles.sectionBox}>
+              <h2 className={styles.sectionTitle}>ベンチ ({bench.length}名)</h2>
+              <div className={styles.memberList}>
+                {bench.length === 0 && <p style={{color: '#888'}}>なし</p>}
+                {bench.map(p => (
+                  <div key={p.user_id} className={styles.memberItem}>
+                    <div className={styles.memberAvatar}>
+                      {p.photo_url ? (
+                        <img src={getImageUrl(p.photo_url)} alt={p.name} className={styles.memberImage} />
+                      ) : (
+                        <span className={styles.memberAvatarPlaceholder}>#{p.jersey_number}</span>
+                      )}
+                    </div>
+                    <div className={styles.memberInfo}>
+                      <div className={styles.memberName}>{p.name}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* 右側: フォーメーション図 */}
+          <div className={styles.rightColumn}>
+            <div className={styles.sectionBox}>
+              <h2 className={styles.sectionTitle}>フォーメーション</h2>
+              <div className={styles.pitchContainer}>
+                <div className={styles.pitchLines} />
+                <div className={styles.pitchPenaltyAreaTop} />
+                <div className={styles.pitchPenaltyAreaBottom} />
+                
+                {onPitch.map(p => {
+                  const pos = POSITIONS[p.position] || POSITIONS['default'];
+                  return (
+                    <div 
+                      key={p.user_id} 
+                      className={styles.playerDot}
+                      style={{ top: pos.top, left: pos.left }}
+                    >
+                      <div className={styles.playerDotAvatar}>
+                        {p.photo_url ? (
+                          <img src={getImageUrl(p.photo_url)} alt={p.name} className={styles.playerDotImg} />
+                        ) : (
+                          <span style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{p.jersey_number}</span>
+                        )}
+                      </div>
+                      <div className={styles.playerDotLabel}>{p.name}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

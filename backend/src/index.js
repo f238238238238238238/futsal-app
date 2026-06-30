@@ -29,8 +29,9 @@ app.use(cors({
   credentials: true
 }));
 
-// JSON bodyパーサー
-app.use(express.json());
+// JSON bodyパーサー (大容量Base64画像に対応)
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // 静的ファイル配信
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

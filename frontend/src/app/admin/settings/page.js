@@ -15,7 +15,9 @@ export default function AdminSettingsPage() {
   const fetchSettings = async () => {
     try {
       const data = await getSettings();
-      if (data.settings && data.settings.hero_image_url) {
+      if (data.settings && data.settings.hero_image_base64) {
+        setHeroImage(data.settings.hero_image_base64);
+      } else if (data.settings && data.settings.hero_image_url) {
         setHeroImage(data.settings.hero_image_url);
       }
     } catch (err) {
@@ -27,10 +29,20 @@ export default function AdminSettingsPage() {
 
   useEffect(() => { fetchSettings(); }, []);
 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setHeroImage(event.target.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await updateSetting('hero_image_url', heroImage);
+      await updateSetting('hero_image_base64', heroImage);
       setMsg('設定を保存しました');
     } catch (err) { setMsg(err.message); }
   };
@@ -58,16 +70,20 @@ export default function AdminSettingsPage() {
             <h2 className={styles.modalTitle}>トップページ設定</h2>
             <form onSubmit={handleSubmit}>
               <div className={styles.formGroup}>
-                <label className={styles.formLabel}>ヒーロー画像URL</label>
+                <label className={styles.formLabel}>待ち受け画像 (ファイルアップロード)</label>
                 <input 
-                  type="url" 
+                  type="file" 
+                  accept="image/*"
                   className={styles.formInput} 
-                  placeholder="https://example.com/image.jpg"
-                  value={heroImage} 
-                  onChange={e => setHeroImage(e.target.value)} 
+                  onChange={handleFileChange} 
                 />
+                {heroImage && (
+                  <div style={{ marginTop: '1rem' }}>
+                    <img src={heroImage} alt="Hero Preview" style={{ width: '100%', maxHeight: '200px', objectFit: 'cover', borderRadius: '4px' }} />
+                  </div>
+                )}
                 <p style={{ fontSize: '0.8rem', color: 'var(--color-light-400)', marginTop: '0.5rem' }}>
-                  画像URLを指定すると、TOPページの背景がその画像に切り替わります。空にするとデフォルトのパターン背景に戻ります。
+                  画像を選択して保存すると、TOPページの背景がその画像に切り替わります。
                 </p>
               </div>
               <div className={styles.modalActions} style={{ justifyContent: 'flex-start' }}>

@@ -64,7 +64,8 @@ export default function HomePage() {
         // Settings (hero image)
         if (settingsData.status === 'fulfilled') {
           const s = settingsData.value?.settings || {};
-          if (s.hero_image_url) setHeroImage(s.hero_image_url);
+          if (s.hero_image_base64) setHeroImage(s.hero_image_base64);
+          else if (s.hero_image_url) setHeroImage(s.hero_image_url);
         }
 
         // Next event

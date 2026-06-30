@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getGoalRanking, getAssistRanking, getAttendanceRanking, getStaminaRanking } from '@/lib/api';
+import { getGoalRanking, getAssistRanking, getAttendanceRanking, getStaminaRanking, getSavesRanking } from '@/lib/api';
 import styles from './page.module.css';
 
 const TABS = [
@@ -9,6 +9,7 @@ const TABS = [
   { key: 'assists', label: 'アシスト王', icon: '🅰️', unit: 'アシスト' },
   { key: 'attendance', label: '出席王', icon: '📅', unit: '%' },
   { key: 'stamina', label: '体力王', icon: '💪', unit: '分' },
+  { key: 'saves', label: 'セーブ王', icon: '🧤', unit: '回' },
 ];
 
 const MEDAL_COLORS = ['#FFD700', '#C0C0C0', '#CD7F32'];
@@ -18,6 +19,7 @@ const fetchers = {
   assists: getAssistRanking,
   attendance: getAttendanceRanking,
   stamina: getStaminaRanking,
+  saves: getSavesRanking,
 };
 
 export default function RankingsPage() {
@@ -62,6 +64,7 @@ export default function RankingsPage() {
     if (activeTab === 'assists') return item.total_assists ?? item.assists ?? 0;
     if (activeTab === 'attendance') return item.attendance_rate != null ? Math.round(item.attendance_rate) : (item.rate ?? 0);
     if (activeTab === 'stamina') return item.total_minutes ?? item.full_matches ?? item.stamina ?? 0;
+    if (activeTab === 'saves') return item.total_saves ?? item.saves ?? 0;
     return 0;
   };
 

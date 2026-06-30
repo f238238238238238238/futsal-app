@@ -119,6 +119,10 @@ export const getStaminaRanking = (year) => {
   const qs = year && year !== 'all' ? `?year=${year}` : '';
   return request(`/rankings/stamina${qs}`);
 };
+export const getSavesRanking = (year) => {
+  const qs = year && year !== 'all' ? `?year=${year}` : '';
+  return request(`/rankings/saves${qs}`);
+};
 
 // Events
 export const getEvents = () => request('/events');

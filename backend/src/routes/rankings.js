@@ -134,4 +134,32 @@ router.get('/stamina', async (req, res) => {
   }
 });
 
+router.get('/saves', async (req, res) => {
+  try {
+    const db = getDb();
+    const { year } = req.query;
+    let query = `
+      SELECT u.user_id, u.name, u.photo_url, SUM(ms.saves) as total_saves
+      FROM users u
+      JOIN match_stats ms ON u.user_id = ms.user_id
+    `;
+    const params = [];
+    if (year && year !== 'all') {
+      query += ` JOIN matches m ON ms.match_id = m.match_id WHERE EXTRACT(YEAR FROM m.date::date) = $1`;
+      params.push(parseInt(year, 10));
+    }
+    query += `
+      GROUP BY u.user_id
+      HAVING SUM(ms.saves) > 0
+      ORDER BY total_saves DESC, u.name ASC
+      LIMIT 10
+    `;
+    const result = await db.query(query, params);
+    res.json({ ranking: result.rows });
+  } catch (err) {
+    console.error('Get saves ranking error:', err);
+    res.status(500).json({ error: 'サーバーエラー' });
+  }
+});
+
 export default router;

@@ -4,6 +4,37 @@ import { authenticate, requireAdmin } from '../middleware/auth.js';
 
 const router = Router();
 
+function calculateMinutesPlayed(stats, events, matchLength = 40) {
+  const playingTimes = {};
+  stats.forEach(st => playingTimes[st.user_id] = 0);
+  
+  const enteredAt = {};
+  stats.forEach(st => {
+    if (st.is_starter) {
+      enteredAt[st.user_id] = 0;
+    }
+  });
+
+  const sortedEvents = [...(events || [])].sort((a,b) => (a.minute || 0) - (b.minute || 0));
+
+  sortedEvents.forEach(ev => {
+    if (ev.event_type === 'sub_out') {
+      if (enteredAt[ev.user_id] !== undefined) {
+        playingTimes[ev.user_id] = (playingTimes[ev.user_id] || 0) + (ev.minute - enteredAt[ev.user_id]);
+        delete enteredAt[ev.user_id];
+      }
+    } else if (ev.event_type === 'sub_in') {
+      enteredAt[ev.user_id] = ev.minute;
+    }
+  });
+
+  Object.keys(enteredAt).forEach(userId => {
+    playingTimes[userId] = (playingTimes[userId] || 0) + (matchLength - enteredAt[userId]);
+  });
+
+  return playingTimes;
+}
+
 // GET / - 試合一覧
 router.get('/', async (req, res) => {
   try {
@@ -96,21 +127,24 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
     
     const matchId = matchRes.rows[0].match_id;
 
+    let playingTimes = {};
     if (stats && Array.isArray(stats)) {
+      playingTimes = calculateMinutesPlayed(stats, events, 40);
       for (const st of stats) {
+        const mins = playingTimes[st.user_id] || 0;
         await db.query(`
-          INSERT INTO match_stats (match_id, user_id, is_starter, goals, assists, minutes_played)
-          VALUES ($1, $2, $3, $4, $5, $6)
-        `, [matchId, st.user_id, st.is_starter ? 1 : 0, parseInt(st.goals,10) || 0, parseInt(st.assists,10) || 0, parseInt(st.minutes_played,10) || 0]);
+          INSERT INTO match_stats (match_id, user_id, is_starter, goals, assists, minutes_played, saves)
+          VALUES ($1, $2, $3, $4, $5, $6, $7)
+        `, [matchId, st.user_id, st.is_starter ? 1 : 0, parseInt(st.goals,10) || 0, parseInt(st.assists,10) || 0, mins, parseInt(st.saves,10) || 0]);
       }
     }
 
     if (events && Array.isArray(events)) {
       for (const ev of events) {
         await db.query(`
-          INSERT INTO match_events (match_id, event_type, user_id, minute)
-          VALUES ($1, $2, $3, $4)
-        `, [matchId, ev.event_type, ev.user_id, ev.minute || null]);
+          INSERT INTO match_events (match_id, event_type, user_id, minute, position)
+          VALUES ($1, $2, $3, $4, $5)
+        `, [matchId, ev.event_type, ev.user_id, ev.minute || null, ev.position || null]);
       }
     }
 
@@ -145,12 +179,15 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
 
     // Update stats: delete old and insert new
     await db.query(`DELETE FROM match_stats WHERE match_id = $1`, [matchId]);
+    let playingTimes = {};
     if (stats && Array.isArray(stats)) {
+      playingTimes = calculateMinutesPlayed(stats, events, 40);
       for (const st of stats) {
+        const mins = playingTimes[st.user_id] || 0;
         await db.query(`
-          INSERT INTO match_stats (match_id, user_id, is_starter, goals, assists, minutes_played)
-          VALUES ($1, $2, $3, $4, $5, $6)
-        `, [matchId, st.user_id, st.is_starter ? 1 : 0, parseInt(st.goals,10) || 0, parseInt(st.assists,10) || 0, parseInt(st.minutes_played,10) || 0]);
+          INSERT INTO match_stats (match_id, user_id, is_starter, goals, assists, minutes_played, saves)
+          VALUES ($1, $2, $3, $4, $5, $6, $7)
+        `, [matchId, st.user_id, st.is_starter ? 1 : 0, parseInt(st.goals,10) || 0, parseInt(st.assists,10) || 0, mins, parseInt(st.saves,10) || 0]);
       }
     }
 
@@ -159,9 +196,9 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
     if (events && Array.isArray(events)) {
       for (const ev of events) {
         await db.query(`
-          INSERT INTO match_events (match_id, event_type, user_id, minute)
-          VALUES ($1, $2, $3, $4)
-        `, [matchId, ev.event_type, ev.user_id, ev.minute || null]);
+          INSERT INTO match_events (match_id, event_type, user_id, minute, position)
+          VALUES ($1, $2, $3, $4, $5)
+        `, [matchId, ev.event_type, ev.user_id, ev.minute || null, ev.position || null]);
       }
     }
 

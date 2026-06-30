@@ -16,7 +16,7 @@ export default function AdminMatchesPage() {
   
   const initialForm = {
     date: '', opponent_name: '', competition_name: '', our_score: 0, opponent_score: 0,
-    summary_text: '', mom_user_id: '', statsMap: {}
+    summary_text: '', mom_user_id: '', statsMap: {}, events: []
   };
   const [form, setForm] = useState(initialForm);
   const [editingId, setEditingId] = useState(null);
@@ -31,7 +31,7 @@ export default function AdminMatchesPage() {
         // Initialize stats map
         const initialStats = {};
         fetchedPlayers.forEach(player => {
-          initialStats[player.user_id] = { attended: false, goals: 0, assists: 0, minutes_played: 0, is_starter: false };
+          initialStats[player.user_id] = { attended: false, is_starter: false, goals: 0, assists: 0, saves: 0 };
         });
         setForm(prev => ({ ...prev, statsMap: initialStats }));
       })
@@ -42,7 +42,7 @@ export default function AdminMatchesPage() {
   const openCreate = () => {
     const initialStats = {};
     players.forEach(p => {
-      initialStats[p.user_id] = { attended: false, goals: 0, assists: 0, minutes_played: 0, is_starter: false };
+      initialStats[p.user_id] = { attended: false, is_starter: false, goals: 0, assists: 0, saves: 0 };
     });
     setForm({ ...initialForm, statsMap: initialStats });
     setEditingId(null);
@@ -54,17 +54,17 @@ export default function AdminMatchesPage() {
       const match = await getMatch(id);
       const initialStats = {};
       players.forEach(p => {
-        initialStats[p.user_id] = { attended: false, goals: 0, assists: 0, minutes_played: 0, is_starter: false };
+        initialStats[p.user_id] = { attended: false, is_starter: false, goals: 0, assists: 0, saves: 0 };
       });
       // Merge saved stats
       (match.stats || []).forEach(st => {
         if (initialStats[st.user_id]) {
           initialStats[st.user_id] = {
             attended: true,
+            is_starter: st.is_starter === 1,
             goals: st.goals || 0,
             assists: st.assists || 0,
-            minutes_played: st.minutes_played || 0,
-            is_starter: st.is_starter === 1
+            saves: st.saves || 0
           };
         }
       });
@@ -76,7 +76,8 @@ export default function AdminMatchesPage() {
         opponent_score: match.opponent_score || 0,
         summary_text: match.summary_text || '',
         mom_user_id: match.mom_user_id || '',
-        statsMap: initialStats
+        statsMap: initialStats,
+        events: match.events || []
       });
       setEditingId(id);
       setShowModal(true);
@@ -110,6 +111,20 @@ export default function AdminMatchesPage() {
     }));
   };
 
+  const addEvent = () => {
+    setForm(prev => ({ ...prev, events: [...prev.events, { minute: 0, event_type: 'sub_in', user_id: '', position: 'Fixo' }] }));
+  };
+  const updateEvent = (index, field, value) => {
+    setForm(prev => {
+      const newEvents = [...prev.events];
+      newEvents[index] = { ...newEvents[index], [field]: value };
+      return { ...prev, events: newEvents };
+    });
+  };
+  const removeEvent = (index) => {
+    setForm(prev => ({ ...prev, events: prev.events.filter((_, i) => i !== index) }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -118,10 +133,10 @@ export default function AdminMatchesPage() {
         .filter(([_, stat]) => stat.attended)
         .map(([userId, stat]) => ({
           user_id: parseInt(userId, 10),
+          is_starter: stat.is_starter,
           goals: stat.goals,
           assists: stat.assists,
-          minutes_played: stat.minutes_played,
-          is_starter: stat.is_starter
+          saves: stat.saves
         }));
 
       const payload = { ...form, stats };
@@ -237,20 +252,24 @@ export default function AdminMatchesPage() {
                 <table className={styles.table} style={{ fontSize: '0.85rem' }}>
                   <thead>
                     <tr>
-                      <th style={{ width: '60px', textAlign: 'center' }}>出場</th>
+                      <th style={{ width: '40px', textAlign: 'center' }}>出場</th>
+                      <th style={{ width: '40px', textAlign: 'center' }}>ｽﾀﾒﾝ</th>
                       <th>選手名</th>
-                      <th style={{ width: '80px', textAlign: 'center' }}>ゴール</th>
-                      <th style={{ width: '80px', textAlign: 'center' }}>アシスト</th>
-                      <th style={{ width: '100px', textAlign: 'center' }}>時間(分)</th>
+                      <th style={{ width: '70px', textAlign: 'center' }}>ゴール</th>
+                      <th style={{ width: '70px', textAlign: 'center' }}>ｱｼｽﾄ</th>
+                      <th style={{ width: '70px', textAlign: 'center' }}>セーブ</th>
                     </tr>
                   </thead>
                   <tbody>
                     {players.map(p => {
-                      const stat = form.statsMap[p.user_id] || { attended: false, goals: 0, assists: 0, minutes_played: 0 };
+                      const stat = form.statsMap[p.user_id] || { attended: false, is_starter: false, goals: 0, assists: 0, saves: 0 };
                       return (
                         <tr key={p.user_id} style={{ opacity: stat.attended ? 1 : 0.5 }}>
                           <td style={{ textAlign: 'center' }}>
                             <input type="checkbox" checked={stat.attended} onChange={e => handleStatChange(p.user_id, 'attended', e.target.checked)} style={{ transform: 'scale(1.5)' }} />
+                          </td>
+                          <td style={{ textAlign: 'center' }}>
+                            <input type="checkbox" checked={stat.is_starter} onChange={e => handleStatChange(p.user_id, 'is_starter', e.target.checked)} disabled={!stat.attended} style={{ transform: 'scale(1.2)' }} />
                           </td>
                           <td>{p.jersey_number} {p.name}</td>
                           <td>
@@ -260,7 +279,7 @@ export default function AdminMatchesPage() {
                             <input type="number" min="0" value={stat.assists} onChange={e => handleStatChange(p.user_id, 'assists', parseInt(e.target.value)||0)} disabled={!stat.attended} style={{ width: '100%', padding: '4px', background: 'var(--color-dark-800)', color: 'white', border: '1px solid var(--color-dark-600)', borderRadius: '4px', textAlign: 'center' }} />
                           </td>
                           <td>
-                            <input type="number" min="0" value={stat.minutes_played} onChange={e => handleStatChange(p.user_id, 'minutes_played', parseInt(e.target.value)||0)} disabled={!stat.attended} style={{ width: '100%', padding: '4px', background: 'var(--color-dark-800)', color: 'white', border: '1px solid var(--color-dark-600)', borderRadius: '4px', textAlign: 'center' }} />
+                            <input type="number" min="0" value={stat.saves} onChange={e => handleStatChange(p.user_id, 'saves', parseInt(e.target.value)||0)} disabled={!stat.attended} style={{ width: '100%', padding: '4px', background: 'var(--color-dark-800)', color: 'white', border: '1px solid var(--color-dark-600)', borderRadius: '4px', textAlign: 'center' }} />
                           </td>
                         </tr>
                       );
@@ -268,6 +287,34 @@ export default function AdminMatchesPage() {
                   </tbody>
                 </table>
               </div>
+
+              <h3 style={{ marginTop: '1.5rem', marginBottom: '1rem', borderBottom: '1px solid var(--color-dark-600)', paddingBottom: '0.5rem' }}>交代・ポジション設定</h3>
+              <button type="button" onClick={addEvent} className={styles.addBtn} style={{ marginBottom: '1rem', fontSize: '0.8rem', padding: '0.4rem 0.8rem' }}>+ タイムライン追加</button>
+              {form.events.map((ev, i) => (
+                <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '8px', flexWrap: 'wrap', alignItems: 'center', background: 'var(--color-dark-800)', padding: '8px', borderRadius: '4px' }}>
+                  <input type="number" value={ev.minute} onChange={e => updateEvent(i, 'minute', parseInt(e.target.value)||0)} placeholder="分" style={{ width: '60px', padding: '4px', background: 'var(--color-dark-900)', color: 'white', border: '1px solid var(--color-dark-600)', borderRadius: '4px', textAlign: 'center' }} /> 分
+                  <select value={ev.event_type} onChange={e => updateEvent(i, 'event_type', e.target.value)} style={{ padding: '4px', background: 'var(--color-dark-900)', color: 'white', border: '1px solid var(--color-dark-600)', borderRadius: '4px' }}>
+                    <option value="sub_in">IN (交代出場)</option>
+                    <option value="sub_out">OUT (ベンチへ)</option>
+                    <option value="position_change">ポジション変更</option>
+                    <option value="goal">ゴール</option>
+                    <option value="assist">アシスト</option>
+                  </select>
+                  <select value={ev.user_id} onChange={e => updateEvent(i, 'user_id', e.target.value)} style={{ padding: '4px', background: 'var(--color-dark-900)', color: 'white', border: '1px solid var(--color-dark-600)', borderRadius: '4px', flex: 1 }}>
+                    <option value="">対象選手</option>
+                    {players.map(p => <option key={p.user_id} value={p.user_id}>{p.name}</option>)}
+                  </select>
+                  <select value={ev.position} onChange={e => updateEvent(i, 'position', e.target.value)} style={{ padding: '4px', background: 'var(--color-dark-900)', color: 'white', border: '1px solid var(--color-dark-600)', borderRadius: '4px' }}>
+                    <option value="">(ポジションを選択)</option>
+                    <option value="GK">GK</option>
+                    <option value="Fixo">Fixo</option>
+                    <option value="Ala L">Ala L</option>
+                    <option value="Ala R">Ala R</option>
+                    <option value="Pivo">Pivo</option>
+                  </select>
+                  <button type="button" onClick={() => removeEvent(i)} className={styles.deleteBtn} style={{ padding: '4px 8px' }}>✕</button>
+                </div>
+              ))}
 
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>サマリー</label>
