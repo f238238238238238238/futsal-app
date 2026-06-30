@@ -111,6 +111,17 @@
   margin-bottom: var(--space-xs);
 }
 
+.positionSelect {
+  width: 100%;
+  margin-top: var(--space-xs);
+  padding: 2px;
+  border-radius: var(--radius-sm);
+  background: var(--color-dark-800);
+  color: var(--color-white);
+  border: 1px solid var(--color-gold);
+  font-size: 0.75rem;
+}
+
 .playerName {
   font-size: 0.875rem;
   font-weight: 600;
@@ -218,6 +229,37 @@
   font-weight: 700;
   cursor: pointer;
   margin-top: var(--space-sm);
+}
+
+/* Playing Phase - Event Log */
+.eventLogContainer {
+  background: var(--color-dark-900);
+  border: 1px solid var(--color-dark-600);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.eventLogTitle {
+  font-family: var(--font-heading);
+  font-size: 0.875rem;
+  color: var(--color-gold);
+  margin-bottom: var(--space-xs);
+}
+
+.eventLogList {
+  max-height: 80px;
+  overflow-y: auto;
+  font-size: 0.875rem;
+  color: var(--color-light-400);
+}
+
+.eventLogItem {
+  padding: 2px 0;
+  border-bottom: 1px dashed var(--color-dark-600);
+}
+.eventLogItem:last-child {
+  border-bottom: none;
 }
 
 /* Playing Phase - Court & Bench */

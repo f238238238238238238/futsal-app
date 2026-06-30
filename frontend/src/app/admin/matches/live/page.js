@@ -21,6 +21,7 @@ export default function LiveMatchPage() {
   
   const [courtIds, setCourtIds] = useState([]);
   const [benchIds, setBenchIds] = useState([]);
+  const [starterPositions, setStarterPositions] = useState({});
   
   const [score, setScore] = useState({ us: 0, opponent: 0 });
   const [events, setEvents] = useState([]); // { type: 'goal'|'assist'|'save'|'sub_in'|'sub_out', user_id, minute }
@@ -181,6 +182,7 @@ export default function LiveMatchPage() {
       statsObj[uid] = {
         user_id: uid,
         is_starter: initialStarters.includes(uid) ? 1 : 0,
+        position: starterPositions[uid] || null,
         goals: 0,
         assists: 0,
         saves: 0
@@ -248,17 +250,37 @@ export default function LiveMatchPage() {
             
             <h3 style={{ marginTop: '20px', color: 'var(--color-gold)' }}>スタメン選択 ({courtIds.length}/5)</h3>
             <div className={styles.startersGrid}>
-              {players.map(p => (
-                <div 
-                  key={p.user_id} 
-                  className={`${styles.playerSelectCard} ${courtIds.includes(p.user_id) ? styles.selected : ''}`}
-                  onClick={() => toggleSetupStarter(p.user_id)}
-                >
-                  <img src={p.photo_url ? getImageUrl(p.photo_url) : '/default-avatar.png'} alt={p.name} className={styles.avatarSmall} />
-                  <div className={styles.jersey}>#{p.jersey_number || '-'}</div>
-                  <div className={styles.playerName}>{p.name}</div>
-                </div>
-              ))}
+              {players.map(p => {
+                const isSelected = courtIds.includes(p.user_id);
+                return (
+                  <div 
+                    key={p.user_id} 
+                    className={`${styles.playerSelectCard} ${isSelected ? styles.selected : ''}`}
+                    onClick={(e) => {
+                      if (e.target.tagName.toLowerCase() !== 'select') {
+                        toggleSetupStarter(p.user_id);
+                      }
+                    }}
+                  >
+                    <img src={p.photo_url ? getImageUrl(p.photo_url) : '/default-avatar.png'} alt={p.name} className={styles.avatarSmall} />
+                    <div className={styles.jersey}>#{p.jersey_number || '-'}</div>
+                    <div className={styles.playerName}>{p.name}</div>
+                    {isSelected && (
+                      <select 
+                        value={starterPositions[p.user_id] || ''}
+                        onChange={(e) => setStarterPositions(prev => ({ ...prev, [p.user_id]: e.target.value }))}
+                        className={styles.positionSelect}
+                      >
+                        <option value="">ポジション</option>
+                        <option value="ゴレイロ">ゴレイロ</option>
+                        <option value="フィクソ">フィクソ</option>
+                        <option value="アラ">アラ</option>
+                        <option value="ピヴォ">ピヴォ</option>
+                      </select>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
             <button className={styles.startBtn} onClick={handleStartMatch} disabled={courtIds.length === 0 || !matchInfo.opponent_name}>
@@ -292,6 +314,23 @@ export default function LiveMatchPage() {
               <div className={styles.scoreValue}>{score.opponent}</div>
               <button className={styles.oppGoalBtn} onClick={() => setScore(s => ({ ...s, opponent: s.opponent + 1 }))}>+1 失点</button>
             </div>
+          </div>
+
+          <div className={styles.eventLogContainer}>
+             <h3 className={styles.eventLogTitle}>直近のアクションログ</h3>
+             <div className={styles.eventLogList}>
+               {events.length === 0 && <div className={styles.eventLogItem}>まだ記録はありません</div>}
+               {events.slice(-5).reverse().map((e, i) => {
+                 const p = players.find(x => x.user_id === e.user_id)?.name;
+                 let text = `${p} - ${e.event_type}`;
+                 if(e.event_type==='goal') text = `⚽ ${p} ゴール!`;
+                 if(e.event_type==='assist') text = `🅰️ ${p} アシスト`;
+                 if(e.event_type==='save') text = `🧤 ${p} セーブ`;
+                 if(e.event_type==='sub_in') text = `🔼 ${p} IN`;
+                 if(e.event_type==='sub_out') text = `🔽 ${p} OUT`;
+                 return <div key={i} className={styles.eventLogItem}>[{e.minute}分] {text}</div>;
+               })}
+             </div>
           </div>
 
           <div className={styles.playArea}>
