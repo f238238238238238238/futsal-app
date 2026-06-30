@@ -62,6 +62,9 @@ CREATE TABLE IF NOT EXISTS match_events (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 以前の制約を削除（マイグレーション用）
+ALTER TABLE match_events DROP CONSTRAINT IF EXISTS match_events_event_type_check;
+
 -- スケジュール・イベントテーブル
 CREATE TABLE IF NOT EXISTS events (
   event_id    SERIAL PRIMARY KEY,

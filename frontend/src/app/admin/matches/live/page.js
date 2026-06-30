@@ -35,10 +35,6 @@ export default function LiveMatchPage() {
   const [selectedCourtId, setSelectedCourtId] = useState(null);
   const [selectedBenchId, setSelectedBenchId] = useState(null);
   
-  // Modal
-  const [showAssistModal, setShowAssistModal] = useState(false);
-  const [goalScorerId, setGoalScorerId] = useState(null);
-
   const [lastPasserId, setLastPasserId] = useState(null);
 
   useEffect(() => {
@@ -104,8 +100,18 @@ export default function LiveMatchPage() {
     if (type === 'goal') {
       recordEvent('goal', selectedCourtId);
       setScore(s => ({ ...s, us: s.us + 1 }));
-      setGoalScorerId(selectedCourtId);
-      setShowAssistModal(true);
+      if (lastPasserId && lastPasserId !== selectedCourtId) {
+        recordEvent('assist', lastPasserId);
+      }
+      setLastPasserId(null);
+      setSelectedCourtId(null);
+    } else if (type === 'defense_save') {
+      const pos = starterPositions[selectedCourtId];
+      if (pos === 'GK') {
+        recordEvent('save', selectedCourtId);
+      } else {
+        recordEvent('defense', selectedCourtId);
+      }
       setSelectedCourtId(null);
     } else if (type === 'lost_ball') {
       recordEvent('lost_ball', selectedCourtId);
@@ -115,15 +121,6 @@ export default function LiveMatchPage() {
       recordEvent(type, selectedCourtId);
       setSelectedCourtId(null);
     }
-  };
-
-  const handleAssistSelection = (assistId) => {
-    if (assistId) {
-      recordEvent('assist', assistId);
-    }
-    setShowAssistModal(false);
-    setGoalScorerId(null);
-    setLastPasserId(null); // Reset after goal
   };
 
   const handleSub = (courtIdToSub) => {
@@ -428,11 +425,8 @@ export default function LiveMatchPage() {
               <button className={`${styles.actionBtn} ${styles.btnShot}`} onClick={() => handleAction('shot')}>
                 <span style={{ fontSize: '1.5rem' }}>👟</span> シュート
               </button>
-              <button className={`${styles.actionBtn} ${styles.btnDefense}`} onClick={() => handleAction('defense')}>
-                <span style={{ fontSize: '1.5rem' }}>🛡️</span> ディフェンス
-              </button>
-              <button className={`${styles.actionBtn} ${styles.btnSave}`} onClick={() => handleAction('save')}>
-                <span style={{ fontSize: '1.5rem' }}>🧤</span> セーブ
+              <button className={`${styles.actionBtn} ${styles.btnDefense}`} onClick={() => handleAction('defense_save')}>
+                <span style={{ fontSize: '1.5rem' }}>🛡️/🧤</span> ディフェンス/セーブ
               </button>
               <button className={`${styles.actionBtn} ${styles.btnRecovery}`} onClick={() => handleAction('lost_ball')}>
                  <span style={{ fontSize: '1.5rem' }}>💥</span> ロスト
@@ -483,41 +477,6 @@ export default function LiveMatchPage() {
           </div>
         </div>
       )}
-
-      {/* Assist Modal */}
-      {showAssistModal && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modal}>
-            <h3>アシストした選手を選択</h3>
-            <p style={{ marginBottom: '20px', fontSize: '0.9rem', color: '#ccc' }}>アシストがいない場合は「なし」を選択してください。</p>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', maxHeight: '400px', overflowY: 'auto' }}>
-              <button 
-                className={`${styles.modalBtn} ${styles.secondary}`} 
-                onClick={() => handleAssistSelection(null)}
-              >
-                アシストなし
-              </button>
-              
-              {courtIds.filter(id => id !== goalScorerId).map(id => {
-                const p = players.find(x => x.user_id === id);
-                const isLastPasser = id === lastPasserId;
-                return (
-                  <button 
-                    key={id}
-                    className={`${styles.modalBtn} ${styles.primary}`}
-                    style={isLastPasser ? { border: '2px solid var(--color-gold)', backgroundColor: 'var(--color-primary-dark)' } : {}}
-                    onClick={() => handleAssistSelection(id)}
-                  >
-                    {p.name} {isLastPasser && <span style={{ fontSize: '0.8em', color: 'var(--color-gold)' }}><br/>⭐ 推奨 (直前のパス)</span>}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-
     </div>
   );
 }
