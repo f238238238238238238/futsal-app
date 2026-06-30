@@ -362,7 +362,7 @@ export default function LiveMatchPage() {
                   
                   {['Pivo', 'Ala L', 'Ala R', 'Fixo', 'GK'].map(pos => {
                     const playerId = Object.keys(starterPositions).find(id => starterPositions[id] === pos);
-                    const player = players.find(p => p.user_id === playerId);
+                    const player = players.find(p => p.user_id == playerId);
                     const posClass = pos.replace(' ', ''); // e.g. Ala L -> AlaL
                     
                     return (
@@ -396,7 +396,7 @@ export default function LiveMatchPage() {
                   <h3>{selectingPosition} を選択</h3>
                   <div className={styles.startersGrid}>
                     {players.filter(p => attendingIds.includes(p.user_id)).map(p => {
-                      const isSelected = Object.values(starterPositions).includes(p.user_id);
+                      const isSelected = Object.keys(starterPositions).includes(String(p.user_id));
                       return (
                         <div
                           key={p.user_id}
@@ -409,7 +409,7 @@ export default function LiveMatchPage() {
                             newPositions[p.user_id] = selectingPosition;
                             setStarterPositions(newPositions);
                             
-                            const currentCourt = Object.keys(newPositions);
+                            const currentCourt = Object.keys(newPositions).map(Number);
                             setCourtIds(currentCourt);
                             setBenchIds(attendingIds.filter(id => !currentCourt.includes(id)));
                             
@@ -430,7 +430,7 @@ export default function LiveMatchPage() {
                       if (oldUserId) delete newPositions[oldUserId];
                       
                       setStarterPositions(newPositions);
-                      const currentCourt = Object.keys(newPositions);
+                      const currentCourt = Object.keys(newPositions).map(Number);
                       setCourtIds(currentCourt);
                       setBenchIds(attendingIds.filter(id => !currentCourt.includes(id)));
                       setSelectingPosition(null);
