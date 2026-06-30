@@ -349,6 +349,7 @@
   display: flex;
   gap: var(--space-sm);
   justify-content: center;
+  flex-wrap: wrap;
   z-index: 100;
   box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
   animation: slideUp 0.3s ease;
@@ -360,14 +361,15 @@
 }
 
 .actionBtn {
-  flex: 1;
+  flex: 1 1 calc(33.333% - var(--space-sm));
+  min-width: 90px;
   max-width: 150px;
-  padding: var(--space-md);
+  padding: var(--space-md) var(--space-sm);
   border: none;
   border-radius: var(--radius-md);
   font-family: var(--font-heading);
   font-weight: 800;
-  font-size: 1rem;
+  font-size: 0.875rem;
   cursor: pointer;
   display: flex;
   flex-direction: column;
@@ -377,7 +379,12 @@
 .btnGoal { background: #27ae60; color: white; }
 .btnAssist { background: #2980b9; color: white; }
 .btnSave { background: #f39c12; color: white; }
-.btnSub { background: #8e44ad; color: white; }
+.btnShot { background: #e67e22; color: white; }
+.btnShotOnTarget { background: #d35400; color: white; }
+.btnCorner { background: #16a085; color: white; }
+.btnRecovery { background: #34495e; color: white; }
+.btnBlock { background: #7f8c8d; color: white; }
+.btnSub { background: #8e44ad; color: white; width: 100%; max-width: none; flex: 1 1 100%; }
 
 /* Finished Phase */
 .summaryCard {

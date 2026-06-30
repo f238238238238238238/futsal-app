@@ -95,6 +95,11 @@ export default function MatchDetailPage() {
       case 'goal': return `⚽ ${name} がゴール！`;
       case 'assist': return `🅰️ ${name} がアシスト！`;
       case 'save': return `🧤 ${name} がファインセーブ！`;
+      case 'shot': return `👟 ${name} がシュート！`;
+      case 'shot_on_target': return `🎯 ${name} が枠内シュート！`;
+      case 'corner': return `🚩 ${name} がコーナーキックを獲得`;
+      case 'recovery': return `🥾 ${name} がボールを奪取！`;
+      case 'block': return `🛡️ ${name} が相手の攻撃をブロック！`;
       case 'sub_in': return `🔼 ${name} がピッチに入りました`;
       case 'sub_out': return `🔽 ${name} がベンチに下がりました`;
       case 'position_change': return `🔄 ${name} が ${ev.position || '別ポジション'} に変更`;
