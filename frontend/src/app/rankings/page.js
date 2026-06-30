@@ -1,15 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getGoalRanking, getAssistRanking, getAttendanceRanking, getStaminaRanking, getSavesRanking, getImageUrl } from '@/lib/api';
+import { getGoalRanking, getAssistRanking, getAttendanceRanking, getStaminaRanking, getSavesRanking, getDefenseRanking, getShotAccuracyRanking, getImageUrl } from '@/lib/api';
 import styles from './page.module.css';
 
 const TABS = [
   { key: 'goals', label: '得点王', icon: '⚽', unit: 'ゴール' },
   { key: 'assists', label: 'アシスト王', icon: '🅰️', unit: 'アシスト' },
+  { key: 'shot_accuracy', label: 'シュート成功率王', icon: '🎯', unit: '%' },
+  { key: 'defense', label: 'ディフェンス王', icon: '🛡️', unit: '回' },
+  { key: 'saves', label: 'セーブ王', icon: '🧤', unit: '回' },
   { key: 'attendance', label: '出席王', icon: '📅', unit: '%' },
   { key: 'stamina', label: '体力王', icon: '💪', unit: '分' },
-  { key: 'saves', label: 'セーブ王', icon: '🧤', unit: '回' },
 ];
 
 const MEDAL_COLORS = ['#FFD700', '#C0C0C0', '#CD7F32'];
@@ -17,6 +19,8 @@ const MEDAL_COLORS = ['#FFD700', '#C0C0C0', '#CD7F32'];
 const fetchers = {
   goals: getGoalRanking,
   assists: getAssistRanking,
+  shot_accuracy: getShotAccuracyRanking,
+  defense: getDefenseRanking,
   attendance: getAttendanceRanking,
   stamina: getStaminaRanking,
   saves: getSavesRanking,
@@ -65,6 +69,8 @@ export default function RankingsPage() {
     if (activeTab === 'attendance') return item.attendance_rate != null ? Math.round(item.attendance_rate) : (item.rate ?? 0);
     if (activeTab === 'stamina') return item.total_minutes ?? item.full_matches ?? item.stamina ?? 0;
     if (activeTab === 'saves') return item.total_saves ?? item.saves ?? 0;
+    if (activeTab === 'shot_accuracy') return item.rate ?? 0;
+    if (activeTab === 'defense') return parseInt(item.total_defense, 10) || 0;
     return 0;
   };
 

@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS match_stats (
 CREATE TABLE IF NOT EXISTS match_events (
   event_id   SERIAL PRIMARY KEY,
   match_id   INTEGER NOT NULL REFERENCES matches(match_id) ON DELETE CASCADE,
-  event_type TEXT CHECK(event_type IN ('goal','assist')),
+  event_type TEXT,
   user_id    INTEGER NOT NULL REFERENCES users(user_id),
   minute     INTEGER,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

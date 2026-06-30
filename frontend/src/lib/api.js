@@ -130,6 +130,14 @@ export const getSavesRanking = (year) => {
   const qs = year && year !== 'all' ? `?year=${year}` : '';
   return request(`/rankings/saves${qs}`);
 };
+export const getDefenseRanking = (year) => {
+  const qs = year && year !== 'all' ? `?year=${year}` : '';
+  return request(`/rankings/defense${qs}`);
+};
+export const getShotAccuracyRanking = (year) => {
+  const qs = year && year !== 'all' ? `?year=${year}` : '';
+  return request(`/rankings/shot_accuracy${qs}`);
+};
 
 // Events
 export const getEvents = () => request('/events');
