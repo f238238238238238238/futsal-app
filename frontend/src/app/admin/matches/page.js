@@ -202,7 +202,12 @@ export default function AdminMatchesPage() {
 
       <div className={styles.topBar}>
         <span>{matches.length} 件の試合</span>
-        <button className={styles.addBtn} onClick={openCreate}>+ 新規登録</button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button className={styles.addBtn} onClick={openCreate}>+ 新規登録</button>
+          <Link href="/admin/matches/live" className={styles.addBtn} style={{ background: 'var(--color-gold)', color: 'var(--color-black)', textDecoration: 'none' }}>
+            + リアルタイム試合登録
+          </Link>
+        </div>
       </div>
 
       {msg && <div className="container"><div className={styles.successMsg}>{msg}</div></div>}
