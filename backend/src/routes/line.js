@@ -228,9 +228,17 @@ async function handlePostback(event) {
     const count = listRes.rows.length;
     const names = listRes.rows.map(r => r.name).join(', ');
 
+    let displayDate = dateStr;
+    if (dateStr && dateStr.includes('-')) {
+      const parts = dateStr.split('-');
+      if (parts.length >= 3) {
+        displayDate = `${parseInt(parts[1], 10)}月${parseInt(parts[2], 10)}日`;
+      }
+    }
+
     await replyMessage(replyToken, {
       type: 'text',
-      text: `${user.name}さんが「参加(〇)」として登録されました！\n\n【現在の参加予定者: ${count}名】\n${names}\n\n出欠管理画面にも反映されています。`
+      text: `${displayDate}：${user.name}さんが「参加(〇)」として登録されました！\n\n【現在の参加予定者: ${count}名】\n${names}\n\n出欠管理画面にも反映されています。`
     });
   }
 }
