@@ -361,6 +361,8 @@ export default function AdminMatchesPage() {
                     <option value="goal">ゴール</option>
                     <option value="assist">アシスト</option>
                     <option value="save">セーブ</option>
+                    <option value="shot">シュート</option>
+                    <option value="defense">ディフェンス</option>
                   </select>
                   <select value={ev.user_id} onChange={e => updateEvent(i, 'user_id', e.target.value)} style={{ padding: '4px', background: 'var(--color-dark-900)', color: 'white', border: '1px solid var(--color-dark-600)', borderRadius: '4px', flex: 1 }}>
                     <option value="">対象選手</option>
