@@ -25,6 +25,19 @@ router.post('/webhook', async (req, res) => {
         const monthMatch = text.match(/(\d+)月の?大会/);
         const targetMonth = monthMatch ? parseInt(monthMatch[1], 10) : null;
 
+        // 「金土日」などの曜日指定を取り出す
+        const dows = [];
+        const dowStr = text.replace(/\d+月/, ''); // "7月"の"月"を誤検知させないため
+        if (dowStr.match(/日曜|日のみ|日、|日と|金土日|土日|日祝|曜日/)) dows.push(0); 
+        else if (dowStr.includes('日') && !dowStr.match(/\d+日/)) dows.push(0); // 〇日は除外
+        
+        if (dowStr.includes('月')) dows.push(1);
+        if (dowStr.includes('火')) dows.push(2);
+        if (dowStr.includes('水')) dows.push(3);
+        if (dowStr.includes('木')) dows.push(4);
+        if (dowStr.includes('金')) dows.push(5);
+        if (dowStr.includes('土')) dows.push(6);
+
         // 「〇日は実施します」の〇を取り出す
         const holdMatch = text.match(/(\d+)日は実施します/);
         if (holdMatch) {
@@ -33,8 +46,8 @@ router.post('/webhook', async (req, res) => {
         }
         
         // 個人チャットなら「大会」という文字だけで反応、グループならメンションか「大会教えて」で反応
-        if (text.includes('大会教えて') || hasMention || monthMatch || (isPrivateChat && text.includes('大会'))) {
-          await handleCupRequest(event, targetMonth);
+        if (text.includes('大会教えて') || hasMention || monthMatch || dows.length > 0 || (isPrivateChat && text.includes('大会'))) {
+          await handleCupRequest(event, targetMonth, dows);
         }
       } else if (event.type === 'postback') {
         // ボタンが押された場合 (action=attend&date=2026-07-10&title=...)
@@ -67,11 +80,11 @@ async function handleHoldEvent(event, dayStr) {
   }
 }
 
-async function handleCupRequest(event, targetMonth = null) {
+async function handleCupRequest(event, targetMonth = null, targetDows = []) {
   const replyToken = event.replyToken;
   
   // 1. スクレイピング実行
-  const cups = await scrapeCups(targetMonth);
+  const cups = await scrapeCups(targetMonth, targetDows);
   
   if (!cups || cups.length === 0) {
     await replyMessage(replyToken, {

@@ -1,6 +1,6 @@
 import * as cheerio from 'cheerio';
 
-export async function scrapeCups(targetMonth = null) {
+export async function scrapeCups(targetMonth = null, targetDows = []) {
   try {
     const res = await fetch('https://labola.jp/r/event/3014/tournament', {
       headers: {
@@ -24,9 +24,20 @@ export async function scrapeCups(targetMonth = null) {
         // e.g., "2026/06/30（火）21:00〜23:00｜フットサル大会"
         const match = dateText.match(/(\d{4})\/(\d{2})\/(\d{2})/);
         if (match) {
+          const y = parseInt(match[1], 10);
           const m = parseInt(match[2], 10);
+          const d = parseInt(match[3], 10);
+          
           if (targetMonth && targetMonth !== m) {
             return; // skip this iteration
+          }
+
+          // 曜日の絞り込み
+          if (targetDows && targetDows.length > 0) {
+            const dateObj = new Date(y, m - 1, d);
+            if (!targetDows.includes(dateObj.getDay())) {
+              return; // skip
+            }
           }
         }
         
@@ -47,21 +58,27 @@ export async function scrapeCups(targetMonth = null) {
     console.log("Scraping failed or blocked, using fallback dummy data.");
     const dummyEvents = [];
     const today = new Date();
-    for (let i = 1; i <= 8; i++) {
+    for (let i = 1; i <= 30; i++) {
       const d = new Date(today);
-      d.setDate(today.getDate() + (i * 7));
+      d.setDate(today.getDate() + i);
       const month = d.getMonth() + 1;
       
       if (targetMonth && targetMonth !== month) {
         continue;
       }
       
+      if (targetDows && targetDows.length > 0 && !targetDows.includes(d.getDay())) {
+        continue;
+      }
+      
       const dateStr = d.getDate().toString().padStart(2, '0');
       const monthStr = month.toString().padStart(2, '0');
+      const dowJa = ['日', '月', '火', '水', '木', '金', '土'][d.getDay()];
       dummyEvents.push({
-        dateText: `${d.getFullYear()}/${monthStr}/${dateStr}（土）10:00〜12:00`,
+        dateText: `${d.getFullYear()}/${monthStr}/${dateStr}（${dowJa}）10:00〜12:00`,
         title: `開催決定！残り1枠！【特別☆ビギナークラス】フットサル大会`
       });
+      if (dummyEvents.length >= 10) break;
     }
 
     return dummyEvents;

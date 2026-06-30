@@ -7,9 +7,9 @@ import { getEvents, getEventAttendances, createEvent, updateEvent, deleteEvent }
 import styles from '../admin.module.css';
 
 const STATUS_LABELS = {
-  present: { label: '参加', color: '#22c55e' },
+  present: { label: '出席確定', color: '#22c55e' },
   absent: { label: '不参加', color: '#ef4444' },
-  pending: { label: '未定', color: '#f59e0b' },
+  pending: { label: '参加予定', color: '#3b82f6' },
 };
 
 export default function AdminAttendancePage() {
@@ -186,9 +186,9 @@ export default function AdminAttendancePage() {
                 <>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                     <div style={{ display: 'flex', gap: '16px', fontSize: '0.8rem', fontWeight: 700 }}>
-                      <span style={{ color: '#22c55e' }}>参加: {presentCount}</span>
+                      <span style={{ color: '#22c55e' }}>出席確定: {presentCount}</span>
                       <span style={{ color: '#ef4444' }}>不参加: {absentCount}</span>
-                      <span style={{ color: '#f59e0b' }}>未回答: {pendingCount}</span>
+                      <span style={{ color: '#3b82f6' }}>参加予定: {pendingCount}</span>
                     </div>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       <button 
