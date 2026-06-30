@@ -15,9 +15,11 @@ router.post('/webhook', async (req, res) => {
     try {
       if (event.type === 'message' && event.message.type === 'text') {
         const text = event.message.text;
+        // メンションされているか（mentioneesが存在するか）をチェック
+        const hasMention = event.message.mentions && event.message.mentions.mentionees && event.message.mentions.mentionees.length > 0;
         
-        // 「大会」という文字が含まれていれば反応
-        if (text.includes('大会教えて') || text.includes('大会')) {
+        // 「大会教えて」が含まれている、またはメンションされている場合に反応
+        if (text.includes('大会教えて') || hasMention) {
           await handleCupRequest(event);
         }
       } else if (event.type === 'postback') {
