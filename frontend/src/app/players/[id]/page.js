@@ -171,40 +171,44 @@ export default function PlayerDetailPage({ params }) {
     <div className={styles.page}>
       {/* Profile Header */}
       <section className={styles.profileHeaderSection}>
-        <div className={`container ${styles.profileHeaderContainer}`}>
-          {/* Left Column: Portrait */}
-          <div className={styles.portraitWrapper}>
-            <div className={styles.portraitBgNumber}>{number}</div>
-            {player.photo_url ? (
-              <img src={getImageUrl(player.photo_url)} alt={player.name} className={styles.portraitPhoto} />
-            ) : (
-              <div className={styles.portraitPlaceholder} />
-            )}
-          </div>
-
-          {/* Right Column: Info */}
-          <div className={styles.infoWrapper}>
-            <Link href="/players" className={styles.backLink}>
-              ← 選手一覧に戻る
-            </Link>
-            <div className={styles.playerMeta}>
+        <div className="container">
+          <Link href="/players" className={styles.backLink}>
+            ← 選手一覧に戻る
+          </Link>
+          
+          <div className={styles.playerHeaderTop}>
+            <div className={styles.playerMetaTop}>
               <span className={styles.jerseyNumber}>#{number}</span>
               <span className={`${styles.positionBadge} ${POSITION_CLASSES[player.position] || ''}`}>
                 {player.position || '-'}
               </span>
             </div>
-            <h1 className={styles.playerName}>{player.name}</h1>
+            <h1 className={styles.playerNameTop}>{player.name}</h1>
+          </div>
 
-            <div className={styles.basicInfoArea}>
-              <h2 className={styles.sectionTitle}>基本情報</h2>
-              <div className={styles.infoGrid2Col}>
-                {infoItems.map((item, i) => (
-                  <div key={i} className={styles.infoCard} style={{ animationDelay: `${i * 0.1}s` }}>
-                    <div className={styles.infoIcon}>{item.icon}</div>
-                    <div className={styles.infoLabel}>{item.label}</div>
-                    <div className={styles.infoValue}>{item.value}</div>
-                  </div>
-                ))}
+          <div className={styles.profileHeaderContainer}>
+            {/* Left Column: Portrait */}
+            <div className={styles.portraitWrapper}>
+              <div className={styles.portraitBgNumber}>{number}</div>
+              {player.photo_url ? (
+                <img src={getImageUrl(player.photo_url)} alt={player.name} className={styles.portraitPhoto} />
+              ) : (
+                <div className={styles.portraitPlaceholder} />
+              )}
+            </div>
+
+            {/* Right Column: Info */}
+            <div className={styles.infoWrapper}>
+              <div className={styles.basicInfoArea}>
+                <div className={styles.infoGrid2Col}>
+                  {infoItems.map((item, i) => (
+                    <div key={i} className={styles.infoCard} style={{ animationDelay: `${i * 0.1}s` }}>
+                      <div className={styles.infoIcon}>{item.icon}</div>
+                      <div className={styles.infoLabel}>{item.label}</div>
+                      <div className={styles.infoValue}>{item.value}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
