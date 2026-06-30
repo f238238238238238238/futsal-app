@@ -2,30 +2,34 @@ import * as cheerio from 'cheerio';
 
 export async function scrapeCups(targetMonth = null) {
   try {
-    const res = await fetch('https://zfutsal.com/nagoya/cup/');
+    const res = await fetch('https://labola.jp/r/event/3014/tournament');
     const html = await res.text();
     const $ = cheerio.load(html);
     
-    // Z FutsalのサイトやLabolaから大会情報を取得する
-    // 今回はデモとして、Vercel環境でPuppeteerが動かない問題を回避するため
-    // 静的パースができない場合はダミーの大会データを返します
     const events = [];
     
-    // 今後2ヶ月分の週末のダミー大会データを生成 (LaBOLAのスクレイピングが動的レンダリングのため)
-    const today = new Date();
-    for (let i = 1; i <= 8; i++) {
-      const d = new Date(today);
-      d.setDate(today.getDate() + (i * 7)); // 1週間後、2週間後...
-      const month = d.getMonth() + 1;
+    $('.date').each((i, el) => {
+      const dateText = $(el).text().trim();
+      const titleText = $(el).next('h2').text().trim();
       
-      // もし特定の月が指定されていて、その月と違う場合はスキップ
-      if (targetMonth && targetMonth !== month) {
-        continue;
+      if (dateText && titleText) {
+        // e.g., "2026/06/30（火）21:00〜23:00｜フットサル大会"
+        const match = dateText.match(/(\d{4})\/(\d{2})\/(\d{2})/);
+        if (match) {
+          const m = parseInt(match[2], 10);
+          if (targetMonth && targetMonth !== m) {
+            return; // skip this iteration
+          }
+        }
+        
+        // フォーマット整形
+        const cleanDate = dateText.split('｜')[0];
+        events.push({
+          dateText: cleanDate,
+          title: titleText
+        });
       }
-      
-      const date = d.getDate();
-      events.push(`${month}月${date}日 10:00〜14:00 エンジョイクラス`);
-    }
+    });
 
     return events;
   } catch (err) {

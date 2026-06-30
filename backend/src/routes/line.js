@@ -24,6 +24,13 @@ router.post('/webhook', async (req, res) => {
         // 「〇月の大会」の〇を取り出す正規表現
         const monthMatch = text.match(/(\d+)月の?大会/);
         const targetMonth = monthMatch ? parseInt(monthMatch[1], 10) : null;
+
+        // 「〇日は実施します」の〇を取り出す
+        const holdMatch = text.match(/(\d+)日は実施します/);
+        if (holdMatch) {
+          await handleHoldEvent(event, holdMatch[1]);
+          return;
+        }
         
         // 個人チャットなら「大会」という文字だけで反応、グループならメンションか「大会教えて」で反応
         if (text.includes('大会教えて') || hasMention || monthMatch || (isPrivateChat && text.includes('大会'))) {
@@ -42,6 +49,24 @@ router.post('/webhook', async (req, res) => {
   res.status(200).send('OK');
 });
 
+async function handleHoldEvent(event, dayStr) {
+  const replyToken = event.replyToken;
+  const db = getDb();
+  
+  const paddedDay = dayStr.padStart(2, '0');
+  // 日付文字列を検索 '%-15%' のような形
+  const searchPattern = `%-${paddedDay}%`; 
+  
+  const evRes = await db.query("SELECT event_id, title FROM events WHERE date_time LIKE $1 ORDER BY date_time DESC LIMIT 1", [searchPattern]);
+  if (evRes.rows.length > 0) {
+    const eventId = evRes.rows[0].event_id;
+    await db.query("UPDATE attendances SET status = 'present' WHERE event_id = $1 AND status = 'pending'", [eventId]);
+    await replyMessage(replyToken, { type: 'text', text: `${dayStr}日の「${evRes.rows[0].title}」への参加者を出席扱いに確定しました！出席王ランキングに反映されます👑` });
+  } else {
+    await replyMessage(replyToken, { type: 'text', text: `${dayStr}日に予定されている大会が見つかりませんでした。先に「参加する(〇)」を押してイベントを作成してください。` });
+  }
+}
+
 async function handleCupRequest(event, targetMonth = null) {
   const replyToken = event.replyToken;
   
@@ -59,7 +84,14 @@ async function handleCupRequest(event, targetMonth = null) {
   // 2. Flex Messageの構築
   // 取得したリストをフォーマットしてボタンを付ける
   const bubbles = cups.slice(0, 10).map((cup, i) => {
-    // 簡易パース: 文字列から情報を取り出す (実運用では正確なパースが必要)
+    // cup.dateText: "2026/06/30（火）21:00〜23:00"
+    // cup.title: "満員御礼【特別☆ビギナークラス】..."
+    const dMatch = cup.dateText.match(/(\d{4})\/(\d{2})\/(\d{2})/);
+    const dStr = dMatch ? `${dMatch[1]}-${dMatch[2]}-${dMatch[3]}` : `date_${i}`;
+    
+    // データ長制限のためタイトルは15文字程度に切り詰め
+    const shortTitle = cup.title.substring(0, 15);
+    
     return {
       type: "bubble",
       body: {
@@ -68,14 +100,14 @@ async function handleCupRequest(event, targetMonth = null) {
         contents: [
           {
             type: "text",
-            text: "Z FUTSAL SPORT 名古屋",
+            text: cup.dateText,
             weight: "bold",
             color: "#1DB446",
             size: "sm"
           },
           {
             type: "text",
-            text: cup.substring(0, 40) + '...',
+            text: cup.title,
             weight: "bold",
             size: "md",
             margin: "md",
@@ -95,7 +127,7 @@ async function handleCupRequest(event, targetMonth = null) {
             action: {
               type: "postback",
               label: "参加する(〇)",
-              data: `action=attend&cup_id=${i}`, // 本当は日付やタイトルを含める
+              data: `action=attend&d=${dStr}&t=${encodeURIComponent(shortTitle)}`,
               displayText: "参加します"
             }
           }
@@ -124,7 +156,6 @@ async function handlePostback(event) {
   const action = data.get('action');
   
   if (action === 'attend') {
-    // LINEプロフィールの取得
     const profile = await getLineProfile(userId, event.source.groupId);
     if (!profile) {
       await replyMessage(replyToken, { type: 'text', text: 'LINEプロフィールの取得に失敗しました。' });
@@ -134,7 +165,6 @@ async function handlePostback(event) {
     const lineName = profile.displayName;
     const db = getDb();
     
-    // DBでユーザー検索
     const userResult = await db.query('SELECT user_id, name FROM users WHERE line_name = $1', [lineName]);
     const user = userResult.rows[0];
 
@@ -146,12 +176,33 @@ async function handlePostback(event) {
       return;
     }
 
-    // イベントの作成または取得処理 (今回は簡略化のため、モックとして返信だけ行う)
-    // 実運用では events テーブルに INSERT し、 attendances テーブルに INSERT する。
-    
+    const dateStr = data.get('d');
+    const shortTitle = data.get('t');
+
+    // イベントを探すか作成する
+    let eventRes = await db.query('SELECT event_id FROM events WHERE date_time LIKE $1', [`${dateStr}%`]);
+    let eventId;
+    if (eventRes.rows.length > 0) {
+      eventId = eventRes.rows[0].event_id;
+    } else {
+      const insertRes = await db.query(
+        "INSERT INTO events (title, event_type, date_time, location, description) VALUES ($1, 'match', $2, 'Z FUTSAL SPORT 名古屋駅前', 'LINEからの自動登録') RETURNING event_id",
+        [`[大会] ${shortTitle}...`, dateStr]
+      );
+      eventId = insertRes.rows[0].event_id;
+    }
+
+    // 出欠登録
+    const attRes = await db.query('SELECT attendance_id FROM attendances WHERE event_id = $1 AND user_id = $2', [eventId, user.user_id]);
+    if (attRes.rows.length === 0) {
+      await db.query("INSERT INTO attendances (event_id, user_id, status) VALUES ($1, $2, 'pending')", [eventId, user.user_id]);
+    } else {
+      await db.query("UPDATE attendances SET status = 'pending' WHERE event_id = $1 AND user_id = $2", [eventId, user.user_id]);
+    }
+
     await replyMessage(replyToken, {
       type: 'text',
-      text: `${user.name}さんが大会に「参加(〇)」しました！サイトの出欠表に反映しました。`
+      text: `${user.name}さんが「参加予定(〇)」として登録されました！\n出欠管理画面に反映されましたので、確定時に「〇日は実施します」と発言してください。`
     });
   }
 }
