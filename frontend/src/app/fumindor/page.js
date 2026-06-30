@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getFumindor } from '@/lib/api';
+import { getFumindor, getImageUrl } from '@/lib/api';
 import styles from './page.module.css';
 import Link from 'next/link';
 
@@ -51,6 +51,9 @@ export default function FumindorPage() {
                 </div>
                 <div className={styles.contentCol}>
                   <div className={styles.playerInfo}>
+                    {award.photo_url && (
+                      <img src={getImageUrl(award.photo_url)} alt={award.name} className={styles.avatar} />
+                    )}
                     <span className={styles.jersey}>#{award.jersey_number}</span>
                     <Link href={`/players/${award.user_id}`} className={styles.playerName}>
                       {award.name}
@@ -70,6 +73,18 @@ export default function FumindorPage() {
                     <div className={styles.statItem}>
                       <span className={styles.statValue}>{award.assists}</span>
                       <span className={styles.statLabel}>アシスト</span>
+                    </div>
+                    <div className={styles.statItem}>
+                      <span className={styles.statValue}>{award.saves || 0}</span>
+                      <span className={styles.statLabel}>セーブ</span>
+                    </div>
+                    <div className={styles.statItem}>
+                      <span className={styles.statValue}>{award.minutes_played || 0}</span>
+                      <span className={styles.statLabel}>体力(分)</span>
+                    </div>
+                    <div className={styles.statItem}>
+                      <span className={styles.statValue}>{Math.round(award.attendance_rate || 0)}%</span>
+                      <span className={styles.statLabel}>出席率</span>
                     </div>
                   </div>
 

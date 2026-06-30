@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getFumindor, createFumindor, deleteFumindor, getPlayers } from '@/lib/api';
 import styles from '../admin.module.css';
 
-const emptyForm = { year: new Date().getFullYear(), user_id: '', goals: 0, assists: 0, matches_played: 0, description: '' };
+const emptyForm = { year: new Date().getFullYear(), user_id: '', description: '' };
 
 export default function AdminFumindorPage() {
   const { isAdmin, loading: authLoading } = useAuth();
@@ -126,20 +126,6 @@ export default function AdminFumindorPage() {
                     <option value="">選択してください</option>
                     {players.map(p => <option key={p.user_id} value={p.user_id}>{p.name}</option>)}
                   </select>
-                </div>
-              </div>
-              <div className={styles.formRow}>
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>ゴール数</label>
-                  <input type="number" className={styles.formInput} value={form.goals} onChange={e => setForm({...form, goals: parseInt(e.target.value, 10) || 0})} />
-                </div>
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>アシスト数</label>
-                  <input type="number" className={styles.formInput} value={form.assists} onChange={e => setForm({...form, assists: parseInt(e.target.value, 10) || 0})} />
-                </div>
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>出場数</label>
-                  <input type="number" className={styles.formInput} value={form.matches_played} onChange={e => setForm({...form, matches_played: parseInt(e.target.value, 10) || 0})} />
                 </div>
               </div>
               <div className={styles.formGroup}>

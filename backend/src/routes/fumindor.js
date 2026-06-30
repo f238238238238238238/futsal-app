@@ -38,11 +38,43 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
       return res.status(400).json({ error: '年度と選手は正しい数値である必要があります' });
     }
 
+    const yearMatchesQuery = `SELECT match_id FROM matches WHERE EXTRACT(YEAR FROM date::date) = $2`;
+    const statsResult = await db.query(`
+      SELECT 
+        SUM(goals) as goals,
+        SUM(assists) as assists,
+        SUM(saves) as saves,
+        SUM(minutes_played) as minutes_played,
+        COUNT(match_id) as matches_played
+      FROM match_stats
+      WHERE user_id = $1 AND match_id IN (${yearMatchesQuery})
+    `, [parsedUserId, parsedYear]);
+
+    const totalEventsRes = await db.query(`SELECT COUNT(*) as count FROM events WHERE EXTRACT(YEAR FROM date_time::timestamp) = $1 AND date_time::timestamp < CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Tokyo'`, [parsedYear]);
+    const totalMatchesRes = await db.query(`SELECT COUNT(*) as count FROM matches WHERE EXTRACT(YEAR FROM date::date) = $1`, [parsedYear]);
+    const totalEvents = parseInt(totalEventsRes.rows[0].count, 10) + parseInt(totalMatchesRes.rows[0].count, 10);
+
+    const attendancesRes = await db.query(`
+      SELECT COUNT(*) as count FROM attendances a 
+      JOIN events e ON a.event_id = e.event_id 
+      WHERE a.user_id = $1 AND a.status = 'present' AND EXTRACT(YEAR FROM e.date_time::timestamp) = $2 AND e.date_time::timestamp < CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Tokyo'
+    `, [parsedUserId, parsedYear]);
+
+    const row = statsResult.rows[0];
+    const goals = parseInt(row.goals, 10) || 0;
+    const assists = parseInt(row.assists, 10) || 0;
+    const saves = parseInt(row.saves, 10) || 0;
+    const minutes_played = parseInt(row.minutes_played, 10) || 0;
+    const matches_played = parseInt(row.matches_played, 10) || 0;
+    
+    const presentCount = parseInt(attendancesRes.rows[0].count, 10) + matches_played;
+    const attendance_rate = totalEvents > 0 ? (presentCount / totalEvents) * 100 : 0;
+
     const result = await db.query(`
-      INSERT INTO fumindor (year, user_id, goals, assists, matches_played, description)
-      VALUES ($1, $2, $3, $4, $5, $6)
+      INSERT INTO fumindor (year, user_id, goals, assists, matches_played, saves, minutes_played, attendance_rate, description)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING fumindor_id
-    `, [parsedYear, parsedUserId, parseInt(goals, 10) || 0, parseInt(assists, 10) || 0, parseInt(matches_played, 10) || 0, description || null]);
+    `, [parsedYear, parsedUserId, goals, assists, matches_played, saves, minutes_played, attendance_rate, description || null]);
 
     const awardResult = await db.query(`
       SELECT f.*, u.name, u.jersey_number, u.position
