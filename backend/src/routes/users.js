@@ -201,11 +201,20 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
   }
 });
 
-// PUT /:id - 選手情報編集（admin only）
-router.put('/:id', authenticate, requireAdmin, async (req, res) => {
+// PUT /:id - 選手情報編集（admin or self）
+router.put('/:id', authenticate, async (req, res) => {
   try {
+    const targetUserId = parseInt(req.params.id, 10);
+    const requestingUserId = req.user.userId;
+    const isAdmin = req.user.role === 'admin';
+
+    // Allow if admin OR if the user is editing their own profile
+    if (!isAdmin && targetUserId !== requestingUserId) {
+      return res.status(403).json({ error: '他のユーザーの情報は編集できません' });
+    }
+
     const db = getDb();
-    const existingResult = await db.query('SELECT * FROM users WHERE user_id = $1', [req.params.id]);
+    const existingResult = await db.query('SELECT * FROM users WHERE user_id = $1', [targetUserId]);
     const existing = existingResult.rows[0];
     if (!existing) {
       return res.status(404).json({ error: '選手が見つかりません' });
@@ -234,6 +243,16 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
       return val;
     };
 
+    // If not admin, restrict certain fields
+    const finalRole = isAdmin ? (role || existing.role) : existing.role;
+    const finalSalary = isAdmin ? valOrExisting(salary, existing.salary, 'number') : existing.salary;
+    const finalStatOffense = isAdmin ? valOrExisting(stat_offense, existing.stat_offense, 'number') : existing.stat_offense;
+    const finalStatDefense = isAdmin ? valOrExisting(stat_defense, existing.stat_defense, 'number') : existing.stat_defense;
+    const finalStatKick = isAdmin ? valOrExisting(stat_kick, existing.stat_kick, 'number') : existing.stat_kick;
+    const finalStatSpeed = isAdmin ? valOrExisting(stat_speed, existing.stat_speed, 'number') : existing.stat_speed;
+    const finalStatTechnique = isAdmin ? valOrExisting(stat_technique, existing.stat_technique, 'number') : existing.stat_technique;
+    const finalStatStamina = isAdmin ? valOrExisting(stat_stamina, existing.stat_stamina, 'number') : existing.stat_stamina;
+
     await db.query(`
       UPDATE users SET
         name = $1, email = $2, password_hash = $3, role = $4, jersey_number = $5, position = $6,
@@ -246,30 +265,23 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
       name || existing.name, 
       email || existing.email, 
       passwordHash, 
-      role || existing.role,
+      finalRole,
       valOrExisting(jersey_number, existing.jersey_number, 'number'),
       valOrExisting(position, existing.position),
-      valOrExisting(dominant_foot, existing.dominant_foot), 
+      valOrExisting(dominant_foot, existing.dominant_foot),
       valOrExisting(birth_date, existing.birth_date, 'date'),
       valOrExisting(height, existing.height, 'number'),
       valOrExisting(weight, existing.weight, 'number'),
       valOrExisting(photo_url, existing.photo_url),
-      valOrExisting(catchphrase, existing.catchphrase), 
+      valOrExisting(catchphrase, existing.catchphrase),
       valOrExisting(reason_started, existing.reason_started),
-      valOrExisting(hobby, existing.hobby), 
+      valOrExisting(hobby, existing.hobby),
       valOrExisting(season_goal, existing.season_goal),
       valOrExisting(favorite_shoes, existing.favorite_shoes),
-      valOrExisting(salary, existing.salary, 'number'),
-      valOrExisting(stat_offense, existing.stat_offense, 'number'),
-      valOrExisting(stat_defense, existing.stat_defense, 'number'),
-      valOrExisting(stat_kick, existing.stat_kick, 'number'),
-      valOrExisting(stat_speed, existing.stat_speed, 'number'),
-      valOrExisting(stat_technique, existing.stat_technique, 'number'),
-      valOrExisting(stat_stamina, existing.stat_stamina, 'number'),
+      finalSalary, finalStatOffense, finalStatDefense, finalStatKick, finalStatSpeed, finalStatTechnique, finalStatStamina,
       valOrExisting(line_name, existing.line_name),
-      req.params.id
+      targetUserId
     ]);
-
     const updatedResult = await db.query(`SELECT ${USER_FIELDS} FROM users WHERE user_id = $1`, [req.params.id]);
     res.json(updatedResult.rows[0]);
   } catch (err) {

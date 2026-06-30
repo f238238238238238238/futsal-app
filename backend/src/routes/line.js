@@ -183,7 +183,7 @@ async function handlePostback(event) {
     const lineName = profile.displayName;
     const db = getDb();
     
-    const userResult = await db.query('SELECT user_id, name FROM users WHERE line_name = $1', [lineName]);
+    const userResult = await db.query('SELECT user_id, name FROM users WHERE line_user_id = $1 OR (line_user_id IS NULL AND line_name = $2)', [userId, lineName]);
     const user = userResult.rows[0];
 
     if (!user) {

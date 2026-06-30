@@ -73,7 +73,7 @@ export default function Header() {
           <div className={styles.navActions}>
             {user ? (
               <div className={styles.userMenu}>
-                <span className={styles.userName}>{user.name}</span>
+                <Link href="/mypage" className={styles.userName}>👤 {user.name} (設定)</Link>
                 <button onClick={logout} className={styles.logoutBtn}>
                   LOGOUT
                 </button>
