@@ -208,14 +208,14 @@ async function handlePostback(event) {
     // 出欠登録
     const attRes = await db.query('SELECT attendance_id FROM attendances WHERE event_id = $1 AND user_id = $2', [eventId, user.user_id]);
     if (attRes.rows.length === 0) {
-      await db.query("INSERT INTO attendances (event_id, user_id, status) VALUES ($1, $2, 'pending')", [eventId, user.user_id]);
+      await db.query("INSERT INTO attendances (event_id, user_id, status) VALUES ($1, $2, 'present')", [eventId, user.user_id]);
     } else {
-      await db.query("UPDATE attendances SET status = 'pending' WHERE event_id = $1 AND user_id = $2", [eventId, user.user_id]);
+      await db.query("UPDATE attendances SET status = 'present' WHERE event_id = $1 AND user_id = $2", [eventId, user.user_id]);
     }
 
     await replyMessage(replyToken, {
       type: 'text',
-      text: `${user.name}さんが「参加予定(〇)」として登録されました！\n出欠管理画面に反映されましたので、確定時に「〇日は実施します」と発言してください。`
+      text: `${user.name}さんが「参加(〇)」として登録されました！\n出欠管理画面の「参加」に反映されています。`
     });
   }
 }
