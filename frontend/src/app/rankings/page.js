@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getGoalRanking, getAssistRanking, getAttendanceRanking, getStaminaRanking, getSavesRanking } from '@/lib/api';
+import { getGoalRanking, getAssistRanking, getAttendanceRanking, getStaminaRanking, getSavesRanking, getImageUrl } from '@/lib/api';
 import styles from './page.module.css';
 
 const TABS = [
@@ -124,7 +124,11 @@ export default function RankingsPage() {
                     {i + 1}
                   </div>
                   <div className={styles.podiumAvatar}>
-                    <span className={styles.podiumJersey}>#{item.jersey_number ?? '-'}</span>
+                    {item.photo_url ? (
+                      <img src={getImageUrl(item.photo_url)} alt={item.name} className={styles.avatarImg} />
+                    ) : (
+                      <span className={styles.podiumJersey}>#{item.jersey_number ?? '-'}</span>
+                    )}
                   </div>
                   <h3 className={styles.podiumName}>{item.name}</h3>
                   <span className={styles.podiumPosition}>{item.position || '-'}</span>
@@ -146,7 +150,13 @@ export default function RankingsPage() {
                     style={{ animationDelay: `${(i + 3) * 0.05}s` }}
                   >
                     <span className={styles.restRank}>{i + 4}</span>
-                    <span className={styles.restJersey}>#{item.jersey_number ?? '-'}</span>
+                    <div className={styles.restAvatar}>
+                      {item.photo_url ? (
+                        <img src={getImageUrl(item.photo_url)} alt={item.name} className={styles.avatarImgSmall} />
+                      ) : (
+                        <span className={styles.restJersey}>#{item.jersey_number ?? '-'}</span>
+                      )}
+                    </div>
                     <span className={styles.restName}>{item.name}</span>
                     <span className={styles.restPosition}>{item.position || '-'}</span>
                     <span className={styles.restValue}>
