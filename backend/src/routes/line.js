@@ -18,9 +18,16 @@ router.post('/webhook', async (req, res) => {
         // メンションされているか（mentioneesが存在するか）をチェック
         const hasMention = event.message.mentions && event.message.mentions.mentionees && event.message.mentions.mentionees.length > 0;
         
-        // 「大会教えて」が含まれている、またはメンションされている場合に反応
-        if (text.includes('大会教えて') || hasMention) {
-          await handleCupRequest(event);
+        // 個人チャットかどうか
+        const isPrivateChat = event.source.type === 'user';
+        
+        // 「〇月の大会」の〇を取り出す正規表現
+        const monthMatch = text.match(/(\d+)月の?大会/);
+        const targetMonth = monthMatch ? parseInt(monthMatch[1], 10) : null;
+        
+        // 個人チャットなら「大会」という文字だけで反応、グループならメンションか「大会教えて」で反応
+        if (text.includes('大会教えて') || hasMention || monthMatch || (isPrivateChat && text.includes('大会'))) {
+          await handleCupRequest(event, targetMonth);
         }
       } else if (event.type === 'postback') {
         // ボタンが押された場合 (action=attend&date=2026-07-10&title=...)
@@ -35,11 +42,11 @@ router.post('/webhook', async (req, res) => {
   res.status(200).send('OK');
 });
 
-async function handleCupRequest(event) {
+async function handleCupRequest(event, targetMonth = null) {
   const replyToken = event.replyToken;
   
   // 1. スクレイピング実行
-  const cups = await scrapeCups();
+  const cups = await scrapeCups(targetMonth);
   
   if (!cups || cups.length === 0) {
     await replyMessage(replyToken, {

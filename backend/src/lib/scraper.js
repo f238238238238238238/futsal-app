@@ -1,6 +1,6 @@
 import * as cheerio from 'cheerio';
 
-export async function scrapeCups() {
+export async function scrapeCups(targetMonth = null) {
   try {
     const res = await fetch('https://zfutsal.com/nagoya/cup/');
     const html = await res.text();
@@ -13,10 +13,16 @@ export async function scrapeCups() {
     
     // 今後2ヶ月分の週末のダミー大会データを生成 (LaBOLAのスクレイピングが動的レンダリングのため)
     const today = new Date();
-    for (let i = 1; i <= 3; i++) {
+    for (let i = 1; i <= 8; i++) {
       const d = new Date(today);
       d.setDate(today.getDate() + (i * 7)); // 1週間後、2週間後...
       const month = d.getMonth() + 1;
+      
+      // もし特定の月が指定されていて、その月と違う場合はスキップ
+      if (targetMonth && targetMonth !== month) {
+        continue;
+      }
+      
       const date = d.getDate();
       events.push(`${month}月${date}日 10:00〜14:00 エンジョイクラス`);
     }
