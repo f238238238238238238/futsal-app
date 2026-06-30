@@ -30,6 +30,7 @@ export default function LiveMatchPage() {
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const timerRef = useRef(null);
+  const tapTimeoutRef = useRef(null);
 
   // Selection
   const [selectedCourtId, setSelectedCourtId] = useState(null);
@@ -163,15 +164,6 @@ export default function LiveMatchPage() {
       }
       setLastPasserId(null);
       setSelectedCourtId(null);
-    } else if (type === 'defense_save') {
-      const pos = starterPositions[targetId];
-      if (pos === 'GK') {
-        recordEvent('save', targetId);
-      } else {
-        recordEvent('defense', targetId);
-      }
-      setSelectedCourtId(null);
-      setLastPasserId(null);
     } else if (type === 'lost_ball') {
       recordEvent('lost_ball', targetId);
       setSelectedCourtId(null);
@@ -207,25 +199,44 @@ export default function LiveMatchPage() {
     const now = Date.now();
     if (tapMeta.id === id && now - tapMeta.time < 400) {
       // Double tap detected!
-      handleAction('defense_save', id);
+      clearTimeout(tapTimeoutRef.current);
       setTapMeta({ id: null, time: 0 });
+      
+      const pos = starterPositions[id];
+      if (pos === 'GK') {
+        recordEvent('save', id); // Double tap GK -> Save (block/deflect)
+      } else {
+        recordEvent('block', id); // Double tap Field -> Block/Pass cut
+      }
+      setSelectedCourtId(null);
+      setLastPasserId(null);
       return;
     }
     
-    // Normal tap logic
+    // Normal tap logic (delayed to check for double tap)
     setTapMeta({ id, time: now });
     
-    if (selectedBenchId) {
-      handleSub(id);
-    } else if (selectedCourtId === id) {
-      setSelectedCourtId(null);
-    } else if (selectedCourtId) {
-      recordEvent('pass', selectedCourtId);
-      setLastPasserId(selectedCourtId); // Remember who passed
-      setSelectedCourtId(id);
-    } else {
-      setSelectedCourtId(id);
-    }
+    clearTimeout(tapTimeoutRef.current);
+    tapTimeoutRef.current = setTimeout(() => {
+      if (selectedBenchId) {
+        handleSub(id);
+      } else if (selectedCourtId === id) {
+        setSelectedCourtId(null);
+      } else if (selectedCourtId) {
+        recordEvent('pass', selectedCourtId);
+        setLastPasserId(selectedCourtId); // Remember who passed
+        setSelectedCourtId(id);
+      } else {
+        // Opponent had ball -> Steal or Catch
+        const pos = starterPositions[id];
+        if (pos === 'GK') {
+          recordEvent('catch', id);
+        } else {
+          recordEvent('steal', id);
+        }
+        setSelectedCourtId(id);
+      }
+    }, 250);
   };
 
   const endMatch = () => {
@@ -288,7 +299,7 @@ export default function LiveMatchPage() {
     events.forEach(ev => {
       if (ev.event_type === 'goal') statsObj[ev.user_id].goals++;
       if (ev.event_type === 'assist') statsObj[ev.user_id].assists++;
-      if (ev.event_type === 'save') statsObj[ev.user_id].saves++;
+      if (ev.event_type === 'save' || ev.event_type === 'catch') statsObj[ev.user_id].saves++;
     });
 
     const statsArray = Object.values(statsObj);
@@ -486,17 +497,20 @@ export default function LiveMatchPage() {
             </div>
           </div>
 
-          <div className={styles.eventLogContainer}>
+           <div className={styles.eventLogContainer}>
              <h3 className={styles.eventLogTitle}>直近のアクションログ</h3>
              <div className={styles.eventLogList}>
-               {events.filter(e => ['goal', 'assist', 'save', 'defense'].includes(e.event_type)).length === 0 && <div className={styles.eventLogItem}>まだ記録はありません</div>}
-               {events.filter(e => ['goal', 'assist', 'save', 'defense'].includes(e.event_type)).slice(-5).reverse().map((e, i) => {
+               {events.filter(e => ['goal', 'assist', 'save', 'defense', 'catch', 'steal', 'block'].includes(e.event_type)).length === 0 && <div className={styles.eventLogItem}>まだ記録はありません</div>}
+               {events.filter(e => ['goal', 'assist', 'save', 'defense', 'catch', 'steal', 'block'].includes(e.event_type)).slice(-5).reverse().map((e, i) => {
                  const p = players.find(x => x.user_id === e.user_id)?.name;
                  let text = `${p} - ${e.event_type}`;
                  if(e.event_type==='goal') text = `⚽ ${p} ゴール!`;
                  if(e.event_type==='assist') text = `🅰️ ${p} アシスト`;
-                 if(e.event_type==='save') text = `🧤 ${p} セーブ`;
-                 if(e.event_type==='defense') text = `🛡️ ${p} ディフェンス(奪取/ブロック)`;
+                 if(e.event_type==='save') text = `🧤 ${p} セーブ(弾く)`;
+                 if(e.event_type==='catch') text = `🧤 ${p} ボールキャッチ`;
+                 if(e.event_type==='steal') text = `🛡️ ${p} ボール奪取`;
+                 if(e.event_type==='block') text = `🛡️ ${p} ブロック/パスカット`;
+                 if(e.event_type==='defense') text = `🛡️ ${p} ディフェンス`;
                  const min = Math.floor(e.minute / 60);
                  const sec = String(e.minute % 60).padStart(2, '0');
                  return <div key={i} className={styles.eventLogItem}>[{min}'{sec}"] {text}</div>;

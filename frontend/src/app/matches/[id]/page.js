@@ -94,13 +94,18 @@ export default function MatchDetailPage() {
     switch (ev.event_type) {
       case 'goal': return `⚽ ${name} がゴール！`;
       case 'assist': return `🅰️ ${name} がアシスト！`;
-      case 'save': return `🧤 ${name} がファインセーブ！`;
+      case 'save': return `🧤 ${name} がセーブ(弾く)！`;
+      case 'catch': return `🧤 ${name} がボールキャッチ！`;
       case 'shot': return `👟 ${name} がシュート！(ノーゴール)`;
-      case 'defense': return `🛡️ ${name} がディフェンス！(奪取/ブロック)`;
+      case 'defense': return `🛡️ ${name} がディフェンス！`;
+      case 'steal': return `🛡️ ${name} がボール奪取！`;
+      case 'block': return `🛡️ ${name} がブロック/パスカット！`;
       case 'sub_in': return `🔼 ${name} がピッチに入りました`;
       case 'sub_out': return `🔽 ${name} がベンチに下がりました`;
       case 'position_change': return `🔄 ${name} が ${ev.position || '別ポジション'} に変更`;
-      default: return `${name} のイベント`;
+      case 'pass': return `🔁 ${name} がパスを繋ぎました`;
+      case 'lost_ball': return `💥 ${name} がボールをロスト`;
+      default: return `${name} - ${ev.event_type}`;
     }
   };
 
