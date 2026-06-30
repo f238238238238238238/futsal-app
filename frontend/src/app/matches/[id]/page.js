@@ -57,7 +57,7 @@ export default function MatchDetailPage() {
     return POSITIONS[pos] || POSITIONS['default'];
   };
 
-  const triggerAnimation = (ev) => {
+  const triggerAnimation = (ev, evIndex) => {
     const pPos = getPlayerPosition(ev.user_id, ev.minute);
     
     switch (ev.event_type) {
@@ -80,12 +80,26 @@ export default function MatchDetailPage() {
         setBallState({ top: `calc(${pPos.top} + 15%)`, left: `calc(${pPos.left} + 15%)`, opacity: 0 });
         break;
       case 'goal':
-        // ジャンプしてゴール決めた人の場所へ (transitionを一度無効にするため工夫が必要ですが、React状態だけで擬似的に表現)
+        let goalCount = 0;
+        if (evIndex !== undefined) {
+          for(let i=0; i<=evIndex; i++) {
+            if(sortedEvents[i].event_type === 'goal' && sortedEvents[i].user_id === ev.user_id) {
+              goalCount++;
+            }
+          }
+        }
+        const isHattrick = goalCount === 3;
+
+        // ジャンプしてゴール決めた人の場所へ
         setBallState({ top: pPos.top, left: pPos.left, opacity: 1 });
         setTimeout(() => {
           setBallState({ top: '0%', left: '50%', opacity: 1 });
           setTimeout(() => {
-            setEffect({ key: Date.now(), type: 'goal', top: '50%', left: '50%', emoji: 'GOAL!! 🎉' });
+            if (isHattrick) {
+              setEffect({ key: Date.now(), type: 'hattrick', top: '50%', left: '50%', emoji: 'HATTRICK!!! 🎩✨🔥' });
+            } else {
+              setEffect({ key: Date.now(), type: 'goal', top: '50%', left: '50%', emoji: 'GOAL!! 🎉' });
+            }
           }, 400);
         }, 50);
         break;
@@ -118,7 +132,7 @@ export default function MatchDetailPage() {
     const timer = setTimeout(() => {
       setMinute(nextEvent.minute);
       setPlayIndex(nextIdx);
-      triggerAnimation(nextEvent);
+      triggerAnimation(nextEvent, nextIdx);
     }, delay);
     
     return () => clearTimeout(timer);
@@ -135,7 +149,7 @@ export default function MatchDetailPage() {
     setPlayIndex(idx);
     
     if (idx >= 0) {
-      triggerAnimation(sortedEvents[idx]);
+      triggerAnimation(sortedEvents[idx], idx);
     } else {
       setBallState({ ...ballState, opacity: 0 });
     }
@@ -374,6 +388,14 @@ export default function MatchDetailPage() {
                   <div 
                     key={effect.key}
                     className={styles.missText}
+                  >
+                    {effect.emoji}
+                  </div>
+                )}
+                {effect && effect.type === 'hattrick' && (
+                  <div 
+                    key={effect.key}
+                    className={styles.hattrickText}
                   >
                     {effect.emoji}
                   </div>

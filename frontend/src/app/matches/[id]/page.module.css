@@ -379,6 +379,24 @@
   animation: goalPopOut 2s forwards;
 }
 
+.hattrickText {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 5rem;
+  font-weight: 900;
+  text-align: center;
+  white-space: nowrap;
+  background-image: linear-gradient(to right, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3);
+  -webkit-background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 10px 10px rgba(0,0,0,0.8));
+  z-index: 50;
+  pointer-events: none;
+  animation: hattrickPop 3s forwards;
+}
+
 @keyframes effectPopOut {
   0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
   20% { opacity: 1; transform: translate(-50%, -100%) scale(1.3); }
@@ -392,4 +410,14 @@
   30% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(0deg); }
   80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
   100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
+}
+
+@keyframes hattrickPop {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.1) rotate(-720deg); }
+  10% { opacity: 1; transform: translate(-50%, -50%) scale(1.4) rotate(10deg); }
+  15% { transform: translate(-50%, -50%) scale(1.2) rotate(-10deg); }
+  20% { transform: translate(-50%, -50%) scale(1.3) rotate(10deg); }
+  25% { transform: translate(-50%, -50%) scale(1.2) rotate(0deg); }
+  80% { opacity: 1; transform: translate(-50%, -50%) scale(1.2) rotate(0deg); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(2) rotate(0deg); }
 }
