@@ -125,7 +125,8 @@ export default function MatchDetailPage() {
       <div className={styles.pageHeader}>
         <div className={styles.headerBg} />
         <h1 className={styles.pageTitle}>MATCH DETAIL</h1>
-        <p className={styles.pageSubtitle}>{match.competition_name || '練習試合'} vs {match.opponent_name}</p>
+        <div style={{ color: 'var(--color-primary-400)', fontWeight: 600, marginBottom: '0.5rem', letterSpacing: '0.1em', position: 'relative', zIndex: 1 }}>{match.competition_name || '練習試合'}</div>
+        <p className={styles.pageSubtitle}>FUMINTUS vs {match.opponent_name}</p>
         <p style={{ marginTop: '0.5rem', fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-primary-400)', position: 'relative', zIndex: 1 }}>
           {match.our_score} - {match.opponent_score}
         </p>
