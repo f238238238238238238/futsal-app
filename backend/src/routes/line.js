@@ -6,11 +6,10 @@ const router = Router();
 
 // LINE Webhook Endpoint
 router.post('/webhook', async (req, res) => {
-  // LINE platform expects a 200 OK immediately
-  res.status(200).send('OK');
-
   const events = req.body.events;
-  if (!events || events.length === 0) return;
+  if (!events || events.length === 0) {
+    return res.status(200).send('OK');
+  }
 
   for (const event of events) {
     try {
@@ -29,6 +28,9 @@ router.post('/webhook', async (req, res) => {
       console.error('LINE Webhook Error:', err);
     }
   }
+
+  // Vercel(Serverless)環境では、処理が全て終わってからレスポンスを返さないとプロセスが強制停止される
+  res.status(200).send('OK');
 });
 
 async function handleCupRequest(event) {
