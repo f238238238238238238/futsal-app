@@ -89,15 +89,18 @@ async function handleCupRequest(event, targetMonth = null, targetDows = []) {
   const replyToken = event.replyToken;
   
   // 1. スクレイピング実行
-  const cups = await scrapeCups(targetMonth, targetDows);
+  const scrapeResult = await scrapeCups(targetMonth, targetDows);
   
-  if (!cups || cups.length === 0) {
+  if (!scrapeResult || !scrapeResult.success) {
+    const errorMsg = scrapeResult ? scrapeResult.debugInfo : "Unknown error";
     await replyMessage(replyToken, {
       type: 'text',
-      text: '現在取得できる大会情報がありませんでした。'
+      text: `エラーが発生しました。\nデバッグ情報:\n${errorMsg}`
     });
     return;
   }
+
+  const cups = scrapeResult.data;
 
   // 2. 文字列のみのテキストメッセージを構築
   // 取得したリストをフォーマットしてテキストにする

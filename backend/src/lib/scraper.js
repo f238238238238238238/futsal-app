@@ -54,13 +54,13 @@ export async function scrapeCups(targetMonth = null, targetDows = []) {
     });
 
     if (events.length > 0) {
-      return events;
+      return { success: true, data: events };
     }
     
     console.log("Scraping returned no events or was blocked.");
-    return [];
+    return { success: false, debugInfo: `Status: ${res.status}\nHTML Start: ${html.substring(0, 100)}\nTarget: ${targetUrl}` };
   } catch (err) {
     console.error('Scrape Error:', err);
-    return [];
+    return { success: false, debugInfo: `Exception: ${err.message}` };
   }
 }
