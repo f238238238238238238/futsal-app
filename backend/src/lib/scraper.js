@@ -76,7 +76,7 @@ export async function scrapeCups(targetMonth = null, targetDows = []) {
       const dowJa = ['日', '月', '火', '水', '木', '金', '土'][d.getDay()];
       dummyEvents.push({
         dateText: `${d.getFullYear()}/${monthStr}/${dateStr}（${dowJa}）10:00〜12:00`,
-        title: `開催決定！残り1枠！【特別☆ビギナークラス】フットサル大会`
+        title: `【Z FUTSAL名古屋】開催決定！残り1枠！ビギナー大会`
       });
       if (dummyEvents.length >= 10) break;
     }
