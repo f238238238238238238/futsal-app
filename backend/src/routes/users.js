@@ -132,12 +132,12 @@ router.get('/:id', async (req, res) => {
       const matchesPlayed = parseInt(row.matches_played, 10);
       const minutesPlayed = parseInt(row.minutes_played, 10);
       
-      // 各スタッツの計算（60〜90に収めつつ、ずば抜けた人は100になるように調整）
-      // score = 60 + 20 * sqrt(value / average)
+      // 各スタッツの計算（50〜100に収めつつ、ずば抜けた人は100になるように調整）
+      // score = 50 + 25 * sqrt(value / average)
       const calcStat = (value, avg) => {
-        if (value <= 0) return 60;
+        if (value <= 0) return 50;
         const ratio = value / avg;
-        return Math.min(100, Math.round(60 + 20 * Math.sqrt(ratio)));
+        return Math.min(100, Math.round(50 + 25 * Math.sqrt(ratio)));
       };
 
       const passSuccessRate = (passes + lost) > 0 ? (passes / (passes + lost)) * 100 : 0;
