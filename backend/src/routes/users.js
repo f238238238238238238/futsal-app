@@ -124,7 +124,7 @@ router.get('/:id', async (req, res) => {
       const passes = yEvents.pass || 0;
       const lost = yEvents.lost_ball || 0;
       const shots = yEvents.shot || 0;
-      const defense = yEvents.defense || 0;
+      const defense = (yEvents.defense || 0) + (yEvents.steal || 0) + (yEvents.block || 0) + (yEvents.cut || 0);
       
       const goals = parseInt(row.goals, 10);
       const assists = parseInt(row.assists, 10);
@@ -132,22 +132,32 @@ router.get('/:id', async (req, res) => {
       const matchesPlayed = parseInt(row.matches_played, 10);
       const minutesPlayed = parseInt(row.minutes_played, 10);
       
+      // 各スタッツの計算（60〜90に収めつつ、ずば抜けた人は100になるように調整）
+      // score = 60 + 20 * sqrt(value / average)
+      const calcStat = (value, avg) => {
+        if (value <= 0) return 60;
+        const ratio = value / avg;
+        return Math.min(100, Math.round(60 + 20 * Math.sqrt(ratio)));
+      };
+
       const passSuccessRate = (passes + lost) > 0 ? (passes / (passes + lost)) * 100 : 0;
       const passesPerMatch = matchesPlayed > 0 ? passes / matchesPlayed : 0;
-      const calculated_technique = Math.min(100, Math.round(50 + (passSuccessRate / 2) + (passesPerMatch * 2) + assists));
+      const techContribution = (passSuccessRate / 20) + (passesPerMatch / 2) + (matchesPlayed > 0 ? (assists / matchesPlayed * 3) : 0);
+      const calculated_technique = calcStat(techContribution, 6.0);
 
       const offContribution = matchesPlayed > 0 ? (goals * 2 + assists) / matchesPlayed : 0;
-      const calculated_offense = Math.min(100, Math.round(50 + offContribution * 15));
+      const calculated_offense = calcStat(offContribution, 1.5);
 
-      const defContribution = matchesPlayed > 0 ? (defense + saves) / matchesPlayed : 0;
-      const calculated_defense = Math.min(100, Math.round(50 + defContribution * 15));
+      const defContribution = matchesPlayed > 0 ? (defense + saves * 2) / matchesPlayed : 0;
+      const calculated_defense = calcStat(defContribution, 4.0);
 
       const totalShots = goals + shots;
       const shotAccuracy = totalShots > 0 ? (goals / totalShots) * 100 : 0;
-      const calculated_kick = Math.min(100, Math.round(50 + (shotAccuracy / 2) + (totalShots * 2)));
+      const kickContribution = (shotAccuracy / 10) + (matchesPlayed > 0 ? (totalShots / matchesPlayed * 2) + (goals / matchesPlayed * 3) : 0);
+      const calculated_kick = calcStat(kickContribution, 8.5);
 
       const avgMinutes = matchesPlayed > 0 ? minutesPlayed / matchesPlayed : 0;
-      const calculated_stamina = Math.min(100, Math.round(50 + avgMinutes * 1.2));
+      const calculated_stamina = calcStat(avgMinutes, 20.0);
 
       matchStatsByYear[row.year] = {
         matches_played: matchesPlayed,
