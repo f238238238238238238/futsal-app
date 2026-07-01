@@ -365,20 +365,42 @@ export default function MatchDetailPage() {
           <div className={styles.middleColumn}>
             <div className={styles.sectionBox}>
               <h2 className={styles.sectionTitle}>フォーメーション</h2>
-              <div className={styles.pitchContainer}>
-                <div className={styles.pitchLines} />
-                <div className={styles.pitchPenaltyAreaTop} />
-                <div className={styles.pitchPenaltyAreaBottom} />
-                
-                {/* ⚽ アニメーション用ボール */}
-                <div 
-                  className={styles.ball} 
-                  style={{ top: ballState.top, left: ballState.left, opacity: ballState.opacity }}
-                >
-                  ⚽
+              <div className={styles.pitchWrapper}>
+                <div className={styles.pitchContainer}>
+                  <div className={styles.pitchLines} />
+                  <div className={styles.pitchPenaltyAreaTop} />
+                  <div className={styles.pitchPenaltyAreaBottom} />
+                  
+                  {/* ⚽ アニメーション用ボール */}
+                  <div 
+                    className={styles.ball} 
+                    style={{ top: ballState.top, left: ballState.left, opacity: ballState.opacity }}
+                  >
+                    ⚽
+                  </div>
+
+                  {onPitch.map(p => {
+                    const pos = POSITIONS[p.position] || POSITIONS['default'];
+                    return (
+                      <div 
+                        key={p.user_id} 
+                        className={styles.playerDot}
+                        style={{ top: pos.top, left: pos.left }}
+                      >
+                        <div className={styles.playerDotAvatar}>
+                          {p.photo_url ? (
+                            <img src={getImageUrl(p.photo_url)} alt={p.name} className={styles.playerDotImg} />
+                          ) : (
+                            <span style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{p.jersey_number}</span>
+                          )}
+                        </div>
+                        <div className={styles.playerDotLabel}>{p.name}</div>
+                      </div>
+                    );
+                  })}
                 </div>
 
-                {/* ✨ アニメーション用エフェクト */}
+                {/* ✨ アニメーション用エフェクト (pitchContainerの外に出すことでクリップされないようにする) */}
                 {effect && effect.type === 'badge' && (
                   <div 
                     key={effect.key}
@@ -412,26 +434,6 @@ export default function MatchDetailPage() {
                     {effect.emoji}
                   </div>
                 )}
-
-                {onPitch.map(p => {
-                  const pos = POSITIONS[p.position] || POSITIONS['default'];
-                  return (
-                    <div 
-                      key={p.user_id} 
-                      className={styles.playerDot}
-                      style={{ top: pos.top, left: pos.left }}
-                    >
-                      <div className={styles.playerDotAvatar}>
-                        {p.photo_url ? (
-                          <img src={getImageUrl(p.photo_url)} alt={p.name} className={styles.playerDotImg} />
-                        ) : (
-                          <span style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{p.jersey_number}</span>
-                        )}
-                      </div>
-                      <div className={styles.playerDotLabel}>{p.name}</div>
-                    </div>
-                  );
-                })}
               </div>
             </div>
           </div>

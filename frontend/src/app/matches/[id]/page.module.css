@@ -170,15 +170,20 @@
 }
 
 /* Pitch / Formation */
-.pitchContainer {
+.pitchWrapper {
   position: relative;
   width: 100%;
   aspect-ratio: 2 / 3;
+  margin: 0 auto;
+}
+
+.pitchContainer {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
   background: #2b7a2b; /* Green pitch */
   border: 4px solid white;
   border-radius: 4px;
   overflow: hidden;
-  margin: 0 auto;
 }
 
 .pitchLines {
