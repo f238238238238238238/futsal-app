@@ -357,7 +357,7 @@
 }
 
 .goalText {
-  position: absolute;
+  position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -365,13 +365,13 @@
   font-weight: 900;
   color: #FFD700;
   text-shadow: 0 4px 10px rgba(0,0,0,0.8), 0 0 20px #FF4500;
-  z-index: 40;
+  z-index: 9999;
   pointer-events: none;
   animation: goalPopOut 2s forwards;
 }
 
 .missText {
-  position: absolute;
+  position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -379,13 +379,13 @@
   font-weight: 900;
   color: #a0c4ff;
   text-shadow: 0 4px 10px rgba(0,0,0,0.8), 0 0 20px #219ebc;
-  z-index: 40;
+  z-index: 9999;
   pointer-events: none;
   animation: goalPopOut 2s forwards;
 }
 
 .hattrickText {
-  position: absolute;
+  position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -397,7 +397,7 @@
   -webkit-background-clip: text;
   color: transparent;
   filter: drop-shadow(0 10px 10px rgba(0,0,0,0.8));
-  z-index: 50;
+  z-index: 9999;
   pointer-events: none;
   animation: hattrickPop 3s forwards;
 }
