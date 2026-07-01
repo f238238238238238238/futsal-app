@@ -5,22 +5,23 @@ export async function scrapeCups(targetMonth = null, targetDows = []) {
     // 正しい「名古屋駅前」の裏側URL（3014）に変更
     const baseTargetUrl = 'https://yoyaku.labola.jp/r/shop/3014/event/tournament/?embed=normal&category=futsal';
     const zenRowsApiKey = '1710b358a20644f03a1cc0b017e59ba81492686c';
-    // premium_proxy=true, antibot=true, js_render=true, wait=8000 を全て追加して最強設定でアクセス
-    const targetUrl = `https://api.zenrows.com/v1/?apikey=${zenRowsApiKey}&url=${encodeURIComponent(baseTargetUrl)}&antibot=true&premium_proxy=true&js_render=true&wait=8000`;
     
-    console.log(`Fetching via ZenRows premium proxy...`);
+    console.log(`Fetching multiple pages via ZenRows...`);
+    const pages = [1, 2];
+    const fetchPromises = pages.map(page => {
+      const pageUrl = `${baseTargetUrl}&page=${page}`;
+      const targetUrl = `https://api.zenrows.com/v1/?apikey=${zenRowsApiKey}&url=${encodeURIComponent(pageUrl)}&antibot=true&premium_proxy=true&js_render=true&wait=8000`;
+      return fetch(targetUrl).then(r => r.text());
+    });
     
-    const res = await fetch(targetUrl);
-    const html = await res.text();
-    console.log(`Fetch status: ${res.status}, HTML length: ${html.length}`);
-    
-    const $ = cheerio.load(html);
-    
+    const htmls = await Promise.all(fetchPromises);
     const events = [];
     
-    $('.date').each((i, el) => {
-      const dateText = $(el).text().trim();
-      const titleText = $(el).next('h2').text().trim();
+    for (const html of htmls) {
+      const $ = cheerio.load(html);
+      $('.date').each((i, el) => {
+        const dateText = $(el).text().trim();
+        const titleText = $(el).next('h2').text().trim();
       
       if (dateText && titleText) {
         // e.g., "2026/06/30（火）21:00〜23:00｜フットサル大会"
@@ -50,14 +51,15 @@ export async function scrapeCups(targetMonth = null, targetDows = []) {
           title: titleText
         });
       }
-    });
+      });
+    }
 
     if (events.length > 0) {
       return { success: true, data: events };
     }
     
     console.log("Scraping returned no events or was blocked.");
-    return { success: false, debugInfo: `Status: ${res.status}\nHTML Start: ${html.substring(0, 100)}\nTarget: ${targetUrl}` };
+    return { success: false, debugInfo: `Empty response or blocked.` };
   } catch (err) {
     console.error('Scrape Error:', err);
     return { success: false, debugInfo: `Exception: ${err.message}` };

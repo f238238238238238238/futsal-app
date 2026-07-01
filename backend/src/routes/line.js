@@ -104,11 +104,11 @@ async function handleCupRequest(event, targetMonth = null, targetDows = []) {
 
   // 2. 文字列のみのテキストメッセージを構築
   // 取得したリストをフォーマットしてテキストにする
-  let textMessages = cups.slice(0, 20).map(cup => {
+  let textMessages = cups.slice(0, 50).map(cup => {
     return `${cup.dateText}\n${cup.title}`;
   }).join('\n\n');
 
-  if (cups.length > 20) {
+  if (cups.length > 50) {
     textMessages += `\n\n※他にも大会がありますが、長すぎるため省略しました。`;
   }
 
