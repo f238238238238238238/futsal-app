@@ -2,8 +2,8 @@ import * as cheerio from 'cheerio';
 
 export async function scrapeCups(targetMonth = null, targetDows = []) {
   try {
-    // 正しい「名古屋駅前」のURL（3014）に戻す
-    const baseTargetUrl = 'https://labola.jp/r/event/3014/tournament';
+    // 正しい「名古屋駅前」の裏側URL（3014）に変更
+    const baseTargetUrl = 'https://yoyaku.labola.jp/r/shop/3014/event/tournament/?embed=normal&category=futsal';
     const zenRowsApiKey = '1710b358a20644f03a1cc0b017e59ba81492686c';
     // premium_proxy=true, antibot=true, js_render=true, wait=8000 を全て追加して最強設定でアクセス
     const targetUrl = `https://api.zenrows.com/v1/?apikey=${zenRowsApiKey}&url=${encodeURIComponent(baseTargetUrl)}&antibot=true&premium_proxy=true&js_render=true&wait=8000`;
