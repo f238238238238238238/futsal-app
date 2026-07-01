@@ -2,16 +2,14 @@ import * as cheerio from 'cheerio';
 
 export async function scrapeCups(targetMonth = null, targetDows = []) {
   try {
-    const targetUrl = 'https://yoyaku.labola.jp/r/shop/3464/event/tournament/?embed=normal&category=futsal';
-    console.log(`Fetching from ${targetUrl} directly...`);
+    const baseTargetUrl = 'https://yoyaku.labola.jp/r/shop/3464/event/tournament/?embed=normal&category=futsal';
+    const zenRowsApiKey = '1710b358a20644f03a1cc0b017e59ba81492686c';
+    // premium_proxy=true と antibot=true を追加して強力なプロキシ経由でアクセス
+    const targetUrl = `https://api.zenrows.com/v1/?apikey=${zenRowsApiKey}&url=${encodeURIComponent(baseTargetUrl)}&antibot=true&premium_proxy=true`;
     
-    const res = await fetch(targetUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-        'Accept-Language': 'ja,en-US;q=0.7,en;q=0.3'
-      }
-    });
+    console.log(`Fetching via ZenRows premium proxy...`);
+    
+    const res = await fetch(targetUrl);
     const html = await res.text();
     console.log(`Fetch status: ${res.status}, HTML length: ${html.length}`);
     
