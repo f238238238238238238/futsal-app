@@ -64,9 +64,13 @@ export default function MatchDetailPage() {
       case 'pass':
       case 'steal':
       case 'catch':
+      case 'assist':
         setBallState({ top: pPos.top, left: pPos.left, opacity: 1 });
         if(ev.event_type === 'steal' || ev.event_type === 'catch') {
           setEffect({ key: Date.now(), type: 'badge', top: pPos.top, left: pPos.left, emoji: ev.event_type === 'steal' ? '🛡️' : '🧤' });
+        }
+        if(ev.event_type === 'assist') {
+          setEffect({ key: Date.now(), type: 'badge', top: pPos.top, left: pPos.left, emoji: '🅰️' });
         }
         break;
       case 'lost_ball':
@@ -90,9 +94,10 @@ export default function MatchDetailPage() {
         }
         const isHattrick = goalCount === 3;
 
-        // ジャンプしてゴール決めた人の場所へ
+        // まずゴール決めた人へパスアニメーション(400ms)
         setBallState({ top: pPos.top, left: pPos.left, opacity: 1 });
         setTimeout(() => {
+          // パス完了後にゴールへシュート
           setBallState({ top: '0%', left: '50%', opacity: 1 });
           setTimeout(() => {
             if (isHattrick) {
@@ -101,7 +106,7 @@ export default function MatchDetailPage() {
               setEffect({ key: Date.now(), type: 'goal', top: '50%', left: '50%', emoji: 'GOAL!! 🎉' });
             }
           }, 400);
-        }, 50);
+        }, 400);
         break;
       case 'shot':
         setBallState({ top: pPos.top, left: pPos.left, opacity: 1 });
@@ -110,7 +115,7 @@ export default function MatchDetailPage() {
           setTimeout(() => {
             setEffect({ key: Date.now(), type: 'miss', top: '50%', left: '50%', emoji: 'NO GOAL 😱' });
           }, 400);
-        }, 50);
+        }, 400);
         break;
       default:
         break;
