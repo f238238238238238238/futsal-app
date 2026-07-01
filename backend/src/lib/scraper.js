@@ -4,8 +4,8 @@ export async function scrapeCups(targetMonth = null, targetDows = []) {
   try {
     const baseTargetUrl = 'https://yoyaku.labola.jp/r/shop/3464/event/tournament/?embed=normal&category=futsal';
     const zenRowsApiKey = '1710b358a20644f03a1cc0b017e59ba81492686c';
-    // premium_proxy=true と antibot=true を追加して強力なプロキシ経由でアクセス
-    const targetUrl = `https://api.zenrows.com/v1/?apikey=${zenRowsApiKey}&url=${encodeURIComponent(baseTargetUrl)}&antibot=true&premium_proxy=true`;
+    // premium_proxy=true, antibot=true, js_render=true を全て追加して最強設定でアクセス
+    const targetUrl = `https://api.zenrows.com/v1/?apikey=${zenRowsApiKey}&url=${encodeURIComponent(baseTargetUrl)}&antibot=true&premium_proxy=true&js_render=true`;
     
     console.log(`Fetching via ZenRows premium proxy...`);
     
