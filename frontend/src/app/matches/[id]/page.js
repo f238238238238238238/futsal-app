@@ -105,6 +105,12 @@ export default function MatchDetailPage() {
             } else {
               setEffect({ key: Date.now(), type: 'goal', top: '50%', left: '50%', emoji: 'GOAL!! 🎉' });
             }
+            
+            // 演出終了後(約1.5秒〜2秒後)にコート中央へボールをリセット
+            setTimeout(() => {
+              setBallState({ top: '50%', left: '50%', opacity: 1 });
+            }, 2000);
+
           }, 400);
         }, 400);
         break;
@@ -118,6 +124,7 @@ export default function MatchDetailPage() {
         }, 400);
         break;
       default:
+        // それ以外のイベントでも必要に応じて中央リセットなどを入れるか検討
         break;
     }
   };
