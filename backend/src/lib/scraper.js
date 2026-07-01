@@ -1,15 +1,18 @@
 import * as cheerio from 'cheerio';
+import { exec } from 'child_process';
+import util from 'util';
+
+const execPromise = util.promisify(exec);
 
 export async function scrapeCups(targetMonth = null, targetDows = []) {
   try {
-    const targetUrl = encodeURIComponent('https://labola.jp/r/event/3014/tournament');
-    const zenRowsApiKey = '1710b358a20644f03a1cc0b017e59ba81492686c';
-    const zenRowsUrl = `https://api.zenrows.com/v1/?apikey=${zenRowsApiKey}&url=${targetUrl}`;
+    const targetUrl = 'https://labola.jp/r/event/3014/tournament';
+    console.log(`Fetching from ${targetUrl} using curl...`);
     
-    console.log("Fetching from ZenRows API...");
-    const res = await fetch(zenRowsUrl);
-    const status = res.status;
-    const html = await res.text();
+    // AWS WAF等のNode.js(fetch)に対するTLSフィンガープリント弾きを回避するため、
+    // OSネイティブのcurlコマンドを使用してHTMLを取得します。
+    const { stdout: html } = await execPromise(`curl -sL "${targetUrl}"`);
+    
     const $ = cheerio.load(html);
     
     const events = [];
