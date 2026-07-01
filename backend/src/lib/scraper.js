@@ -5,8 +5,15 @@ export async function scrapeCups(targetMonth = null, targetDows = []) {
     const targetUrl = 'https://yoyaku.labola.jp/r/shop/3464/event/tournament/?embed=normal&category=futsal';
     console.log(`Fetching from ${targetUrl} directly...`);
     
-    const res = await fetch(targetUrl);
+    const res = await fetch(targetUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'ja,en-US;q=0.7,en;q=0.3'
+      }
+    });
     const html = await res.text();
+    console.log(`Fetch status: ${res.status}, HTML length: ${html.length}`);
     
     const $ = cheerio.load(html);
     

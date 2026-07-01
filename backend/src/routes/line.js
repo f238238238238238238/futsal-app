@@ -21,8 +21,8 @@ router.post('/webhook', async (req, res) => {
         // 個人チャットかどうか
         const isPrivateChat = event.source.type === 'user';
         
-        // 「〇月の大会」の〇を取り出す正規表現
-        const monthMatch = text.match(/(\d+)月の?大会/);
+        // 「〇月の〜」の〇を取り出す正規表現（「7月の大会」「7月の予定」などに対応）
+        const monthMatch = text.match(/(\d+)月の?/);
         const targetMonth = monthMatch ? parseInt(monthMatch[1], 10) : null;
 
         // 「金土日」などの曜日指定を取り出す
@@ -99,72 +99,20 @@ async function handleCupRequest(event, targetMonth = null, targetDows = []) {
     return;
   }
 
-  // 2. Flex Messageの構築
-  // 取得したリストをフォーマットしてボタンを付ける
-  const bubbles = cups.slice(0, 10).map((cup, i) => {
-    // cup.dateText: "2026/06/30（火）21:00〜23:00"
-    // cup.title: "満員御礼【特別☆ビギナークラス】..."
-    const dMatch = cup.dateText.match(/(\d{4})\/(\d{2})\/(\d{2})/);
-    const dStr = dMatch ? `${dMatch[1]}-${dMatch[2]}-${dMatch[3]}` : `date_${i}`;
-    
-    // データ長制限のためタイトルは15文字程度に切り詰め
-    const shortTitle = cup.title.substring(0, 15);
-    
-    return {
-      type: "bubble",
-      body: {
-        type: "box",
-        layout: "vertical",
-        contents: [
-          {
-            type: "text",
-            text: cup.dateText,
-            weight: "bold",
-            color: "#1DB446",
-            size: "sm"
-          },
-          {
-            type: "text",
-            text: cup.title,
-            weight: "bold",
-            size: "md",
-            margin: "md",
-            wrap: true
-          }
-        ]
-      },
-      footer: {
-        type: "box",
-        layout: "vertical",
-        spacing: "sm",
-        contents: [
-          {
-            type: "button",
-            style: "primary",
-            height: "sm",
-            action: {
-              type: "postback",
-              label: "参加する(〇)",
-              data: `action=attend&d=${dStr}&t=${encodeURIComponent(shortTitle)}`,
-              displayText: "参加します"
-            }
-          }
-        ],
-        flex: 0
-      }
-    };
+  // 2. 文字列のみのテキストメッセージを構築
+  // 取得したリストをフォーマットしてテキストにする
+  let textMessages = cups.slice(0, 20).map(cup => {
+    return `${cup.dateText}\n${cup.title}`;
+  }).join('\n\n');
+
+  if (cups.length > 20) {
+    textMessages += `\n\n※他にも大会がありますが、長すぎるため省略しました。`;
+  }
+
+  await replyMessage(replyToken, {
+    type: 'text',
+    text: textMessages
   });
-
-  const flexMessage = {
-    type: 'flex',
-    altText: '大会情報',
-    contents: {
-      type: 'carousel',
-      contents: bubbles
-    }
-  };
-
-  await replyMessage(replyToken, flexMessage);
 }
 
 async function handlePostback(event) {
