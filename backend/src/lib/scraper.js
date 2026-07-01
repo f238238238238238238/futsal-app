@@ -3,7 +3,7 @@ import * as cheerio from 'cheerio';
 export async function scrapeCups(targetMonth = null, targetDows = []) {
   try {
     const targetUrl = encodeURIComponent('https://labola.jp/r/event/3014/tournament');
-    const zenRowsApiKey = '1710b358a28644f03a1cc0b017e59ba81492686c';
+    const zenRowsApiKey = '1710b358a20644f03a1cc0b017e59ba81492686c';
     const zenRowsUrl = `https://api.zenrows.com/v1/?apikey=${zenRowsApiKey}&url=${targetUrl}`;
     
     console.log("Fetching from ZenRows API...");
