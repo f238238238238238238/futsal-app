@@ -169,7 +169,7 @@ router.get('/defense', async (req, res) => {
     let query = `
       SELECT u.user_id, u.name, u.photo_url, COUNT(me.event_id) as total_defense
       FROM users u
-      JOIN match_events me ON u.user_id = me.user_id AND me.event_type = 'defense'
+      JOIN match_events me ON u.user_id = me.user_id AND me.event_type IN ('defense', 'steal', 'block', 'cut')
     `;
     const params = [];
     if (year && year !== 'all') {
