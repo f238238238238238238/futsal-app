@@ -2,10 +2,10 @@ import * as cheerio from 'cheerio';
 
 export async function scrapeCups(targetMonth = null, targetDows = []) {
   try {
-    const gasUrl = 'https://script.google.com/macros/s/AKfycbyxFCoC5lGzBm1SwdHrjvdUl9e6cijiot6ikZbPZvJB08mxKcfGmwfead3GCinAVDKEDQ/exec';
-    console.log(`Fetching from GAS endpoint...`);
+    const targetUrl = 'https://yoyaku.labola.jp/r/shop/3464/event/tournament/?embed=normal&category=futsal';
+    console.log(`Fetching from ${targetUrl} directly...`);
     
-    const res = await fetch(gasUrl);
+    const res = await fetch(targetUrl);
     const html = await res.text();
     
     const $ = cheerio.load(html);
