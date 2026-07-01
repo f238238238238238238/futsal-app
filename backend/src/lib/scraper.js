@@ -1,17 +1,12 @@
 import * as cheerio from 'cheerio';
-import { exec } from 'child_process';
-import util from 'util';
-
-const execPromise = util.promisify(exec);
 
 export async function scrapeCups(targetMonth = null, targetDows = []) {
   try {
-    const targetUrl = 'https://labola.jp/r/event/3014/tournament';
-    console.log(`Fetching from ${targetUrl} using curl...`);
+    const gasUrl = 'https://script.google.com/macros/s/AKfycbyxFCoC5lGzBm1SwdHrjvdUl9e6cijiot6ikZbPZvJB08mxKcfGmwfead3GCinAVDKEDQ/exec';
+    console.log(`Fetching from GAS endpoint...`);
     
-    // AWS WAF等のNode.js(fetch)に対するTLSフィンガープリント弾きを回避するため、
-    // OSネイティブのcurlコマンドを使用してHTMLを取得します。
-    const { stdout: html } = await execPromise(`curl -sL "${targetUrl}"`);
+    const res = await fetch(gasUrl);
+    const html = await res.text();
     
     const $ = cheerio.load(html);
     
