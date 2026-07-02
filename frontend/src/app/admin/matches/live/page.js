@@ -43,7 +43,18 @@ export default function LiveMatchPage() {
   const [isSwapMode, setIsSwapMode] = useState(false);
   const [swapSourceId, setSwapSourceId] = useState(null);
 
+  const [setupSelectedPos, setSetupSelectedPos] = useState(null);
   const [attendingIds, setAttendingIds] = useState([]);
+
+  const pitchRef = useRef(null);
+
+  useEffect(() => {
+    if (phase === 'playing' && pitchRef.current) {
+      setTimeout(() => {
+        pitchRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+    }
+  }, [phase]);
 
   useEffect(() => {
     getPlayers().then(res => {
@@ -123,30 +134,30 @@ export default function LiveMatchPage() {
 
   // Handlers
   const handleSetupBenchTap = (id) => {
-    if (courtIds.length >= 5) {
-      alert('スタメンは5名までです');
+    if (!setupSelectedPos) {
+      alert('先にピッチのポジション（＋マーク）をタップしてください');
       return;
     }
-    const positions = ['Pivo', 'Ala L', 'Ala R', 'Fixo', 'GK'];
-    const takenPositions = Object.values(starterPositions);
-    const availablePos = positions.find(p => !takenPositions.includes(p));
     
     setCourtIds(prev => [...prev, id]);
     setBenchIds(prev => prev.filter(x => x !== id));
-    if (availablePos) {
-      setStarterPositions(prev => ({ ...prev, [id]: availablePos }));
-    }
+    setStarterPositions(prev => ({ ...prev, [id]: setupSelectedPos }));
+    setSetupSelectedPos(null);
   };
 
-  const handleSetupCourtTap = (id) => {
-    if (!id) return;
-    setCourtIds(prev => prev.filter(x => x !== id));
-    setBenchIds(prev => [...prev, id]);
-    setStarterPositions(prev => {
-      const next = { ...prev };
-      delete next[id];
-      return next;
-    });
+  const handleSetupCourtTap = (pos, playerId) => {
+    if (playerId) {
+      setCourtIds(prev => prev.filter(x => x !== playerId));
+      setBenchIds(prev => [...prev, playerId]);
+      setStarterPositions(prev => {
+        const next = { ...prev };
+        delete next[playerId];
+        return next;
+      });
+      setSetupSelectedPos(pos); // Keep it selected to replace
+    } else {
+      setSetupSelectedPos(pos);
+    }
   };
 
   const startMatch = () => {
@@ -437,11 +448,13 @@ export default function LiveMatchPage() {
                     const player = players.find(p => p.user_id === playerId);
                     const posClass = pos.replace(' ', ''); // e.g. Ala L -> AlaL
                     
+                    const isSelected = setupSelectedPos === pos;
+
                     return (
                       <div 
                         key={pos} 
-                        className={`${styles.pitchSlot} ${styles['pos' + posClass]}`}
-                        onClick={() => handleSetupCourtTap(playerId)}
+                        className={`${styles.pitchSlot} ${styles['pos' + posClass]} ${isSelected ? styles.selectedSlot : ''}`}
+                        onClick={() => handleSetupCourtTap(pos, playerId)}
                       >
                         {player ? (
                           <>
@@ -551,7 +564,7 @@ export default function LiveMatchPage() {
           <div className={styles.playArea}>
             <div className={styles.courtSection}>
               <h2 className={styles.sectionTitle}>コート (出場中)</h2>
-              <div className={styles.pitchContainer}>
+              <div className={styles.pitchContainer} ref={pitchRef}>
                 <div className={styles.pitchCenterLine} />
                 <div className={styles.pitchCenterCircle} />
                 <div className={styles.pitchPenaltyAreaTop} />
