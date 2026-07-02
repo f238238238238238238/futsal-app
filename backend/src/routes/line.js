@@ -446,6 +446,8 @@ async function getLineProfile(userId, groupId = null) {
     console.error('getLineProfile error:', err);
     return null;
   }
+}
+
 router.get('/cups', async (req, res) => {
   try {
     const { targetMonth, targetDows, luid } = req.query;
