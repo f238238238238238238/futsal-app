@@ -19,7 +19,7 @@ router.get('/reminders', async (req, res) => {
     const eventsRes = await db.query(`
       SELECT event_id, title, date_time 
       FROM events 
-      WHERE date_time LIKE $1 AND event_type = 'match'
+      WHERE date_time LIKE $1 AND event_type = 'match' AND title LIKE '%【開催確定】%'
     `, [`${targetDateStr}%`]);
 
     if (eventsRes.rows.length === 0) {

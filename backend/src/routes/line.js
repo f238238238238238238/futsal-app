@@ -46,9 +46,15 @@ router.post('/webhook', async (req, res) => {
         }
         
         // メンションがあるか、個人チャットの場合のみ反応する
-        const shouldRespond = isPrivateChat || hasMention;
+        const isTargeted = isPrivateChat || text.includes('@FAY');
         
-        if (shouldRespond) {
+        if (isTargeted) {
+          const gatherMatch = text.match(/(\d+)日の集まり/);
+          if (gatherMatch) {
+            await handleGatheringRequest(event, gatherMatch[1]);
+            return;
+          }
+
           if (text.includes('大会教えて') || text.includes('大会') || monthMatch || dows.length > 0 || text.includes('参加不可')) {
             await handleCupRequest(event, targetMonth, dows);
           }
@@ -85,6 +91,38 @@ async function handleHoldEvent(event, dayStr) {
   }
 }
 
+async function handleGatheringRequest(event, day) {
+  const replyToken = event.replyToken;
+  const db = getDb();
+  
+  // Like "10日"
+  const dateStrLike = `%-${day.padStart(2, '0')}%`;
+
+  const dbEventsRes = await db.query(`
+    SELECT e.event_id, e.date_time, u.name 
+    FROM events e
+    JOIN attendances a ON e.event_id = a.event_id AND a.status = 'present'
+    JOIN users u ON a.user_id = u.user_id
+    WHERE e.event_type = 'match' AND e.date_time LIKE $1
+  `, [dateStrLike]);
+
+  if (dbEventsRes.rows.length === 0) {
+    await replyMessage(replyToken, {
+      type: 'text',
+      text: `${day}日の大会にはまだ誰も参加予定がいません。`
+    });
+    return;
+  }
+
+  const count = dbEventsRes.rows.length;
+  const names = dbEventsRes.rows.map(r => r.name).join(', ');
+
+  await replyMessage(replyToken, {
+    type: 'text',
+    text: `${day}日の集まり状況\n\n【現在の参加予定者: ${count}名】\n${names}`
+  });
+}
+
 async function handleCupRequest(event, targetMonth = null, targetDows = []) {
   const replyToken = event.replyToken;
   
@@ -100,143 +138,126 @@ async function handleCupRequest(event, targetMonth = null, targetDows = []) {
     return;
   }
 
-  const cups = scrapeResult.data.slice(0, 10);
+  // カルーセルの制限や文字数制限を考慮し、50件取得して分割する
+  const cups = scrapeResult.data.slice(0, 50);
 
-  const db = getDb();
-  const today = new Date().toISOString().split('T')[0];
-  const dbEventsRes = await db.query(`
-    SELECT e.event_id, e.date_time, u.name 
-    FROM events e
-    LEFT JOIN attendances a ON e.event_id = a.event_id AND a.status = 'present'
-    LEFT JOIN users u ON a.user_id = u.user_id
-    WHERE e.event_type = 'match' AND e.date_time >= $1
-  `, [today]);
-
-  const eventMap = {};
-  for (const row of dbEventsRes.rows) {
-    const d = row.date_time.split(' ')[0]; // Extract date
-    if (!eventMap[d]) {
-      eventMap[d] = { eventId: row.event_id, names: [] };
-    }
-    if (row.name) {
-      eventMap[d].names.push(row.name);
-    }
+  const chunkSize = 10;
+  const chunkedCups = [];
+  for (let i = 0; i < cups.length; i += chunkSize) {
+    chunkedCups.push(cups.slice(i, i + chunkSize));
   }
 
-  const flexContents = cups.map(cup => {
-    const isoDate = cup.isoDate || "";
-    let attendees = [];
-    if (isoDate && eventMap[isoDate]) {
-      attendees = eventMap[isoDate].names;
-    }
-    
-    const count = attendees.length;
-    const namesStr = count > 0 ? attendees.join(', ') : 'なし';
-    const availColor = cup.availability.includes('空き') ? '#00B900' : (cup.availability.includes('残り') ? '#F39C12' : '#E74C3C');
+  const messages = chunkedCups.slice(0, 5).map((chunk, index) => {
+    const flexContents = chunk.map(cup => {
+      const isoDate = cup.isoDate || "";
+      const availColor = cup.availability.includes('空き') ? '#00B900' : (cup.availability.includes('残り') ? '#F39C12' : '#E74C3C');
 
-    return {
-      type: "box",
-      layout: "vertical",
-      margin: "lg",
-      spacing: "sm",
-      contents: [
+      const contents = [
         {
           type: "text",
           text: `📅 ${cup.dateText}`,
           weight: "bold",
           size: "sm",
           color: "#555555"
-        },
-        {
+        }
+      ];
+
+      if (cup.availability !== '情報なし') {
+        contents.push({
           type: "text",
           text: `[ ${cup.availability} ]`,
           weight: "bold",
           size: "xs",
           color: availColor
-        },
-        {
-          type: "text",
-          text: `🏆 ${cup.title}`,
-          size: "sm",
-          wrap: true,
-          weight: "bold"
-        },
-        {
-          type: "text",
-          text: `👥 参加予定: ${count}名 (${namesStr})`,
-          size: "xs",
-          color: "#888888",
-          wrap: true
-        },
-        {
+        });
+      }
+
+      contents.push({
+        type: "text",
+        text: `🏆 ${cup.title}`,
+        size: "sm",
+        wrap: true,
+        weight: "bold"
+      });
+
+      contents.push({
+        type: "box",
+        layout: "horizontal",
+        spacing: "sm",
+        margin: "md",
+        contents: [
+          {
+            type: "button",
+            style: "primary",
+            height: "sm",
+            action: {
+              type: "postback",
+              label: "参加する",
+              data: `action=attend&d=${isoDate}&t=${cup.title.substring(0, 30)}`
+            }
+          },
+          {
+            type: "button",
+            style: "secondary",
+            height: "sm",
+            action: {
+              type: "postback",
+              label: "参加不可",
+              data: `action=absent&d=${isoDate}&t=${cup.title.substring(0, 30)}`
+            }
+          }
+        ]
+      });
+
+      contents.push({
+        type: "separator",
+        margin: "lg"
+      });
+
+      return {
+        type: "box",
+        layout: "vertical",
+        margin: "lg",
+        spacing: "sm",
+        contents: contents
+      };
+    });
+
+    return {
+      type: "flex",
+      altText: `大会の予定一覧 (${index + 1}/${chunkedCups.length})`,
+      contents: {
+        type: "bubble",
+        header: {
           type: "box",
-          layout: "horizontal",
-          spacing: "sm",
-          margin: "md",
+          layout: "vertical",
           contents: [
             {
-              type: "button",
-              style: "primary",
-              height: "sm",
-              action: {
-                type: "postback",
-                label: "参加する",
-                data: `action=attend&d=${isoDate}&t=${cup.title.substring(0, 30)}`
-              }
+              type: "text",
+              text: index === 0 ? "大会一覧" : `大会一覧 (続き)`,
+              weight: "bold",
+              size: "xl"
             },
             {
-              type: "button",
-              style: "secondary",
-              height: "sm",
-              action: {
-                type: "postback",
-                label: "参加不可",
-                data: `action=absent&d=${isoDate}&t=${cup.title.substring(0, 30)}`
-              }
+              type: "text",
+              text: "タップして出欠を登録してください",
+              size: "xs",
+              color: "#888888"
             }
           ]
         },
-        {
-          type: "separator",
-          margin: "lg"
+        body: {
+          type: "box",
+          layout: "vertical",
+          contents: flexContents
         }
-      ]
+      }
     };
   });
 
-  const flexMessage = {
-    type: "flex",
-    altText: "大会の予定一覧",
-    contents: {
-      type: "bubble",
-      header: {
-        type: "box",
-        layout: "vertical",
-        contents: [
-          {
-            type: "text",
-            text: "大会一覧",
-            weight: "bold",
-            size: "xl"
-          },
-          {
-            type: "text",
-            text: "タップして出欠を登録してください",
-            size: "xs",
-            color: "#888888"
-          }
-        ]
-      },
-      body: {
-        type: "box",
-        layout: "vertical",
-        contents: flexContents
-      }
-    }
-  };
-
-  await replyMessage(replyToken, flexMessage);
+  await replyMessage(replyToken, messages);
 }
+
 
 async function handlePostback(event) {
   const replyToken = event.replyToken;
