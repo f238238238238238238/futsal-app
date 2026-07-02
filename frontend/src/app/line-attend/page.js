@@ -29,8 +29,9 @@ function LineAttendContent() {
 
     const fetchCups = async () => {
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-        const res = await fetch(`${baseUrl}/api/line/cups?luid=${luid}&targetMonth=${targetMonth}&targetDows=${targetDows}`);
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+        const cleanApiUrl = apiUrl.endsWith('/api') ? apiUrl.replace(/\/api$/, '') : apiUrl;
+        const res = await fetch(`${cleanApiUrl}/api/line/cups?luid=${luid}&targetMonth=${targetMonth}&targetDows=${targetDows}`);
         if (!res.ok) {
           const errData = await res.json();
           throw new Error(errData.error || "大会情報の取得に失敗しました");
@@ -76,8 +77,9 @@ function LineAttendContent() {
         }))
       };
 
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-      const res = await fetch(`${baseUrl}/api/line/batch_attend`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      const cleanApiUrl = apiUrl.endsWith('/api') ? apiUrl.replace(/\/api$/, '') : apiUrl;
+      const res = await fetch(`${cleanApiUrl}/api/line/batch_attend`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

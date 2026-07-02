@@ -126,7 +126,7 @@ async function handleGatheringRequest(event, day) {
 async function handleCupRequest(event, targetMonth = null, targetDows = []) {
   const replyToken = event.replyToken;
   const userId = event.source.userId;
-  const baseUrl = process.env.FRONTEND_URL || "https://futsal-app.vercel.app";
+  const baseUrl = process.env.FRONTEND_URL || "https://futsal-frontend-ten.vercel.app";
   
   // 1. スクレイピング実行
   const scrapeResult = await scrapeCups(targetMonth, targetDows);
