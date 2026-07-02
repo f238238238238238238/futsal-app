@@ -26,10 +26,12 @@ export async function scrapeCups(targetMonth = null, targetDows = []) {
       if (dateText && titleText) {
         // e.g., "2026/06/30（火）21:00〜23:00｜フットサル大会"
         const match = dateText.match(/(\d{4})\/(\d{2})\/(\d{2})/);
+        let isoDate = null;
         if (match) {
           const y = parseInt(match[1], 10);
           const m = parseInt(match[2], 10);
           const d = parseInt(match[3], 10);
+          isoDate = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
           
           if (targetMonth && targetMonth !== m) {
             return; // skip this iteration
@@ -44,11 +46,21 @@ export async function scrapeCups(targetMonth = null, targetDows = []) {
           }
         }
         
+        let availability = "情報なし";
+        const parentText = $(el).parent().text() || "";
+        const parentHtml = $(el).parent().html() || "";
+        if (parentHtml.includes('受付終了') || parentText.includes('受付終了')) availability = '受付終了';
+        else if (parentHtml.includes('キャンセル待ち') || parentText.includes('キャンセル待ち')) availability = 'キャンセル待ち';
+        else if (parentHtml.includes('残りわずか') || parentText.includes('残りわずか') || parentHtml.includes('△')) availability = '残りわずか';
+        else if (parentHtml.includes('空き') || parentText.includes('空き') || parentHtml.includes('〇') || parentHtml.includes('◎')) availability = '空きあり';
+
         // フォーマット整形
         const cleanDate = dateText.split('｜')[0];
         events.push({
           dateText: cleanDate,
-          title: titleText
+          title: titleText,
+          isoDate,
+          availability
         });
       }
       });

@@ -14,6 +14,7 @@ import fumindorRoutes from './routes/fumindor.js';
 import settingsRoutes from './routes/settings.js';
 import uploadRoutes from './routes/upload.js';
 import lineRoutes from './routes/line.js';
+import cronRoutes from './routes/cron.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -45,6 +46,7 @@ app.use('/api/events', eventsRoutes);
 app.use('/api/attendances', attendancesRoutes);
 app.use('/api/news', newsRoutes);
 app.use('/api/line', lineRoutes);
+app.use('/api/cron', cronRoutes);
 app.use('/api/fumindor', fumindorRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/upload', uploadRoutes);
