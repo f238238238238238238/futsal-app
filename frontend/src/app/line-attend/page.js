@@ -20,6 +20,10 @@ function LineAttendContent() {
   // Local state for toggled attendance
   const [attendances, setAttendances] = useState({}); 
 
+  const [requiresLinking, setRequiresLinking] = useState(false);
+  const [unlinkedUsers, setUnlinkedUsers] = useState([]);
+  const [linking, setLinking] = useState(false);
+
   useEffect(() => {
     if (!luid) {
       setError("LINEのユーザー情報が取得できません。LINEアプリから開き直してください。");
@@ -27,34 +31,66 @@ function LineAttendContent() {
       return;
     }
 
-    const fetchCups = async () => {
-      try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-        const cleanApiUrl = apiUrl.endsWith('/api') ? apiUrl.replace(/\/api$/, '') : apiUrl;
-        const res = await fetch(`${cleanApiUrl}/api/line/cups?luid=${luid}&targetMonth=${targetMonth}&targetDows=${targetDows}`);
-        if (!res.ok) {
-          const errData = await res.json();
-          throw new Error(errData.error || "大会情報の取得に失敗しました");
-        }
-        const data = await res.json();
-        setUser(data.user);
-        setCups(data.cups);
-        
-        // init attendances
-        const atts = {};
-        data.cups.forEach(c => {
-          atts[c.isoDate] = c.myStatus || 'absent';
-        });
-        setAttendances(atts);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchCups();
   }, [luid, targetMonth, targetDows]);
+
+  const fetchCups = async () => {
+    setLoading(true);
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      const cleanApiUrl = apiUrl.endsWith('/api') ? apiUrl.replace(/\/api$/, '') : apiUrl;
+      const res = await fetch(`${cleanApiUrl}/api/line/cups?luid=${luid}&targetMonth=${targetMonth}&targetDows=${targetDows}`);
+      
+      const data = await res.json();
+
+      if (res.ok && data.requiresLinking) {
+        setRequiresLinking(true);
+        setUnlinkedUsers(data.unlinkedUsers || []);
+        return;
+      }
+
+      if (!res.ok) {
+        throw new Error(data.error || "大会情報の取得に失敗しました");
+      }
+      
+      setRequiresLinking(false);
+      setUser(data.user);
+      setCups(data.cups);
+      
+      // init attendances
+      const atts = {};
+      data.cups.forEach(c => {
+        atts[c.isoDate] = c.myStatus || 'absent';
+      });
+      setAttendances(atts);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLink = async (userId) => {
+    setLinking(true);
+    setError(null);
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      const cleanApiUrl = apiUrl.endsWith('/api') ? apiUrl.replace(/\/api$/, '') : apiUrl;
+      const res = await fetch(`${cleanApiUrl}/api/line/link`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ luid, userId })
+      });
+      
+      if (!res.ok) throw new Error("紐付けに失敗しました");
+      
+      await fetchCups();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLinking(false);
+    }
+  };
 
   const toggleStatus = (isoDate) => {
     setAttendances(prev => ({
@@ -116,6 +152,39 @@ function LineAttendContent() {
       <div className={styles.container}>
         <div className={styles.errorAlert}>
           <strong>エラー:</strong> {error}
+        </div>
+      </div>
+    );
+  }
+
+  if (requiresLinking) {
+    return (
+      <div className={styles.container}>
+        <header className={styles.header}>
+          <h2 className={styles.headerTitle}>LINEアカウントの連携</h2>
+          <p className={styles.headerSubtitle}>あなたはどの選手ですか？名前を選択してください。</p>
+        </header>
+        
+        <div className={styles.list}>
+          {unlinkedUsers.length === 0 ? (
+            <p className={styles.empty}>連携可能な選手がいません。管理者に連絡してください。</p>
+          ) : (
+            unlinkedUsers.map(u => (
+              <div key={u.user_id} className={styles.card}>
+                <div className={styles.cardInfo}>
+                  <div className={styles.title}>{u.name}</div>
+                </div>
+                <button 
+                  className={styles.saveBtn} 
+                  style={{ width: 'auto', padding: '8px 16px', margin: '0' }}
+                  onClick={() => handleLink(u.user_id)}
+                  disabled={linking}
+                >
+                  {linking ? '処理中...' : 'これを選択'}
+                </button>
+              </div>
+            ))
+          )}
         </div>
       </div>
     );

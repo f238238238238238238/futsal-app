@@ -455,9 +455,26 @@ router.get('/cups', async (req, res) => {
     
     // Check user
     if (!luid) return res.status(400).json({ error: 'Missing luid' });
-    const userRes = await db.query('SELECT user_id, name FROM users WHERE line_user_id = $1', [luid]);
+    let userRes = await db.query('SELECT user_id, name FROM users WHERE line_user_id = $1', [luid]);
+    
+    // Auto link attempt if user not found
     if (userRes.rows.length === 0) {
-      return res.status(404).json({ error: 'User not linked' });
+      const profile = await getLineProfile(luid);
+      if (profile && profile.displayName) {
+        const lineName = profile.displayName;
+        const autoLinkRes = await db.query('SELECT user_id, name FROM users WHERE line_user_id IS NULL AND line_name = $1', [lineName]);
+        if (autoLinkRes.rows.length > 0) {
+          const u = autoLinkRes.rows[0];
+          await db.query('UPDATE users SET line_user_id = $1 WHERE user_id = $2', [luid, u.user_id]);
+          userRes = await db.query('SELECT user_id, name FROM users WHERE line_user_id = $1', [luid]);
+        }
+      }
+    }
+
+    if (userRes.rows.length === 0) {
+      // User is still not linked, return unlinked users
+      const unlinkedRes = await db.query('SELECT user_id, name FROM users WHERE line_user_id IS NULL ORDER BY name');
+      return res.json({ requiresLinking: true, unlinkedUsers: unlinkedRes.rows });
     }
     const user = userRes.rows[0];
 
@@ -494,6 +511,21 @@ router.get('/cups', async (req, res) => {
     res.json({ user, cups });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/link', async (req, res) => {
+  try {
+    const { luid, userId } = req.body;
+    if (!luid || !userId) {
+      return res.status(400).json({ error: 'Missing parameters' });
+    }
+    const db = getDb();
+    await db.query('UPDATE users SET line_user_id = $1 WHERE user_id = $2', [luid, userId]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
   }
 });
 
