@@ -34,11 +34,14 @@ export default function LiveMatchPage() {
 
   // Selection
   const [selectedCourtId, setSelectedCourtId] = useState(null);
-  const [selectedBenchId, setSelectedBenchId] = useState(null);
+  const [selectedBenchId, setSelectedBenchId] = useState(null); // Keep for legacy logic if needed, or remove? We will handle bench taps differently.
   const [tapMeta, setTapMeta] = useState({ id: null, time: 0 });
   
   const [lastPasserId, setLastPasserId] = useState(null);
-  const [selectingPosition, setSelectingPosition] = useState(null);
+
+  // Swap Mode
+  const [isSwapMode, setIsSwapMode] = useState(false);
+  const [swapSourceId, setSwapSourceId] = useState(null);
 
   const [attendingIds, setAttendingIds] = useState([]);
 
@@ -119,18 +122,31 @@ export default function LiveMatchPage() {
   }, [isRunning]);
 
   // Handlers
-  const toggleSetupStarter = (id) => {
-    if (courtIds.includes(id)) {
-      setCourtIds(prev => prev.filter(x => x !== id));
-      setBenchIds(prev => [...prev, id]);
-    } else {
-      if (courtIds.length >= 5) {
-        alert('スタメンは5名までです');
-        return;
-      }
-      setBenchIds(prev => prev.filter(x => x !== id));
-      setCourtIds(prev => [...prev, id]);
+  const handleSetupBenchTap = (id) => {
+    if (courtIds.length >= 5) {
+      alert('スタメンは5名までです');
+      return;
     }
+    const positions = ['Pivo', 'Ala L', 'Ala R', 'Fixo', 'GK'];
+    const takenPositions = Object.values(starterPositions);
+    const availablePos = positions.find(p => !takenPositions.includes(p));
+    
+    setCourtIds(prev => [...prev, id]);
+    setBenchIds(prev => prev.filter(x => x !== id));
+    if (availablePos) {
+      setStarterPositions(prev => ({ ...prev, [id]: availablePos }));
+    }
+  };
+
+  const handleSetupCourtTap = (id) => {
+    if (!id) return;
+    setCourtIds(prev => prev.filter(x => x !== id));
+    setBenchIds(prev => [...prev, id]);
+    setStarterPositions(prev => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
   };
 
   const startMatch = () => {
@@ -174,28 +190,64 @@ export default function LiveMatchPage() {
     }
   };
 
-  const handleSub = (courtIdToSub) => {
-    if (!courtIdToSub || !selectedBenchId) return;
-    
-    const pos = starterPositions[courtIdToSub];
+  const handlePlayingPlayerTap = (id) => {
+    if (isSwapMode) {
+      if (!swapSourceId) {
+        setSwapSourceId(id);
+      } else {
+        if (swapSourceId === id) {
+          setSwapSourceId(null);
+          return;
+        }
+        // Swap logic
+        const isSourceCourt = courtIds.includes(swapSourceId);
+        const isTargetCourt = courtIds.includes(id);
 
-    recordEvent('sub_out', courtIdToSub);
-    recordEvent('sub_in', selectedBenchId, pos ? { position: pos } : {});
-
-    setCourtIds(prev => [...prev.filter(id => id !== courtIdToSub), selectedBenchId]);
-    setBenchIds(prev => [...prev.filter(id => id !== selectedBenchId), courtIdToSub]);
-    
-    if (pos) {
-      setStarterPositions(prev => ({ ...prev, [selectedBenchId]: pos }));
+        if (isSourceCourt && isTargetCourt) {
+          // Position change
+          const pos1 = starterPositions[swapSourceId];
+          const pos2 = starterPositions[id];
+          setStarterPositions(prev => {
+            const next = { ...prev };
+            if (pos2) next[swapSourceId] = pos2; else delete next[swapSourceId];
+            if (pos1) next[id] = pos1; else delete next[id];
+            return next;
+          });
+        } else if (isSourceCourt && !isTargetCourt) {
+          // Sub: swapSourceId out, id in
+          recordEvent('sub_out', swapSourceId);
+          const pos = starterPositions[swapSourceId];
+          recordEvent('sub_in', id, pos ? { position: pos } : {});
+          setCourtIds(prev => [...prev.filter(x => x !== swapSourceId), id]);
+          setBenchIds(prev => [...prev.filter(x => x !== id), swapSourceId]);
+          setStarterPositions(prev => {
+            const next = { ...prev };
+            delete next[swapSourceId];
+            if (pos) next[id] = pos;
+            return next;
+          });
+        } else if (!isSourceCourt && isTargetCourt) {
+          // Sub: id out, swapSourceId in
+          recordEvent('sub_out', id);
+          const pos = starterPositions[id];
+          recordEvent('sub_in', swapSourceId, pos ? { position: pos } : {});
+          setCourtIds(prev => [...prev.filter(x => x !== id), swapSourceId]);
+          setBenchIds(prev => [...prev.filter(x => x !== swapSourceId), id]);
+          setStarterPositions(prev => {
+            const next = { ...prev };
+            delete next[id];
+            if (pos) next[swapSourceId] = pos;
+            return next;
+          });
+        }
+        setSwapSourceId(null);
+      }
+      return;
     }
-    
-    if (selectedCourtId === courtIdToSub) {
-      setSelectedCourtId(null);
-    }
-    setSelectedBenchId(null);
-  };
 
-  const handleCourtPlayerClick = (id) => {
+    // NORMAL MODE
+    if (!courtIds.includes(id)) return; // Bench taps do nothing in normal mode
+
     const now = Date.now();
     if (tapMeta.id === id && now - tapMeta.time < 400) {
       // Double tap detected!
@@ -204,30 +256,26 @@ export default function LiveMatchPage() {
       
       const pos = starterPositions[id];
       if (pos === 'GK') {
-        recordEvent('save', id); // Double tap GK -> Save (block/deflect)
+        recordEvent('save', id);
       } else {
-        recordEvent('block', id); // Double tap Field -> Block/Pass cut
+        recordEvent('block', id);
       }
       setSelectedCourtId(null);
       setLastPasserId(null);
       return;
     }
     
-    // Normal tap logic (delayed to check for double tap)
     setTapMeta({ id, time: now });
     
     clearTimeout(tapTimeoutRef.current);
     tapTimeoutRef.current = setTimeout(() => {
-      if (selectedBenchId) {
-        handleSub(id);
-      } else if (selectedCourtId === id) {
+      if (selectedCourtId === id) {
         setSelectedCourtId(null);
       } else if (selectedCourtId) {
         recordEvent('pass', selectedCourtId);
-        setLastPasserId(selectedCourtId); // Remember who passed
+        setLastPasserId(selectedCourtId);
         setSelectedCourtId(id);
       } else {
-        // Opponent had ball -> Steal or Catch
         const pos = starterPositions[id];
         if (pos === 'GK') {
           recordEvent('catch', id);
@@ -375,8 +423,8 @@ export default function LiveMatchPage() {
 
             {attendingIds.length > 0 && (
               <>
-                <h3 style={{ marginTop: '30px', color: 'var(--color-gold)' }}>スタメン選択 (フォーメーション)</h3>
-                <p style={{ fontSize: '0.8rem', color: '#888', marginBottom: '10px' }}>各ポジションをタップして選手を割り当ててください</p>
+                <h3 style={{ marginTop: '30px', color: 'var(--color-gold)' }}>スタメン選択</h3>
+                <p style={{ fontSize: '0.8rem', color: '#888', marginBottom: '10px' }}>下のベンチメンバーをタップしてピッチに配置してください。<br/>ピッチの選手をタップするとベンチに戻ります。</p>
                 <div className={styles.pitchContainer}>
                   <div className={styles.pitchCenterLine} />
                   <div className={styles.pitchCenterCircle} />
@@ -384,15 +432,16 @@ export default function LiveMatchPage() {
                   <div className={styles.pitchPenaltyAreaBottom} />
                   
                   {['Pivo', 'Ala L', 'Ala R', 'Fixo', 'GK'].map(pos => {
-                    const playerId = Object.keys(starterPositions).find(id => starterPositions[id] === pos);
-                    const player = players.find(p => p.user_id == playerId);
+                    const playerIdStr = Object.keys(starterPositions).find(id => starterPositions[id] === pos);
+                    const playerId = playerIdStr ? Number(playerIdStr) : null;
+                    const player = players.find(p => p.user_id === playerId);
                     const posClass = pos.replace(' ', ''); // e.g. Ala L -> AlaL
                     
                     return (
                       <div 
                         key={pos} 
                         className={`${styles.pitchSlot} ${styles['pos' + posClass]}`}
-                        onClick={() => setSelectingPosition(pos)}
+                        onClick={() => handleSetupCourtTap(playerId)}
                       >
                         {player ? (
                           <>
@@ -409,59 +458,27 @@ export default function LiveMatchPage() {
                     );
                   })}
                 </div>
-              </>
-            )}
 
-            {/* Player Selection Modal for Pitch */}
-            {selectingPosition && (
-              <div className={styles.modalOverlay} onClick={() => setSelectingPosition(null)}>
-                <div className={styles.modal} onClick={e => e.stopPropagation()}>
-                  <h3>{selectingPosition} を選択</h3>
-                  <div className={styles.startersGrid}>
-                    {players.filter(p => attendingIds.includes(p.user_id)).map(p => {
-                      const isSelected = Object.keys(starterPositions).includes(String(p.user_id));
-                      return (
-                        <div
-                          key={p.user_id}
-                          className={`${styles.playerSelectCard} ${isSelected ? styles.selected : ''}`}
-                          onClick={() => {
-                            const newPositions = { ...starterPositions };
-                            const oldUserId = Object.keys(newPositions).find(id => newPositions[id] === selectingPosition);
-                            if (oldUserId) delete newPositions[oldUserId];
-                            
-                            newPositions[p.user_id] = selectingPosition;
-                            setStarterPositions(newPositions);
-                            
-                            const currentCourt = Object.keys(newPositions).map(Number);
-                            setCourtIds(currentCourt);
-                            setBenchIds(attendingIds.filter(id => !currentCourt.includes(id)));
-                            
-                            setSelectingPosition(null);
-                          }}
-                        >
-                          <img src={p.photo_url ? getImageUrl(p.photo_url) : '/default-avatar.png'} alt={p.name} className={styles.avatarSmall} />
-                          <div className={styles.jersey}>#{p.jersey_number || '-'}</div>
-                          <div className={styles.playerName}>{p.name}</div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className={styles.modalActions}>
-                    <button className={`${styles.modalBtn} ${styles.secondary}`} onClick={() => {
-                      const newPositions = { ...starterPositions };
-                      const oldUserId = Object.keys(newPositions).find(id => newPositions[id] === selectingPosition);
-                      if (oldUserId) delete newPositions[oldUserId];
-                      
-                      setStarterPositions(newPositions);
-                      const currentCourt = Object.keys(newPositions).map(Number);
-                      setCourtIds(currentCourt);
-                      setBenchIds(attendingIds.filter(id => !currentCourt.includes(id)));
-                      setSelectingPosition(null);
-                    }}>未選択にする</button>
-                    <button className={`${styles.modalBtn} ${styles.secondary}`} onClick={() => setSelectingPosition(null)}>キャンセル</button>
-                  </div>
+                <h3 style={{ marginTop: '20px', color: '#ccc' }}>ベンチメンバー</h3>
+                <div className={styles.startersGrid}>
+                  {benchIds.map(id => {
+                    const p = players.find(x => x.user_id === id);
+                    if (!p) return null;
+                    return (
+                      <div
+                        key={p.user_id}
+                        className={styles.playerSelectCard}
+                        onClick={() => handleSetupBenchTap(p.user_id)}
+                      >
+                        <img src={p.photo_url ? getImageUrl(p.photo_url) : '/default-avatar.png'} alt={p.name} className={styles.avatarSmall} />
+                        <div className={styles.jersey}>#{p.jersey_number || '-'}</div>
+                        <div className={styles.playerName}>{p.name}</div>
+                      </div>
+                    );
+                  })}
+                  {benchIds.length === 0 && <div style={{ color: '#888', padding: '10px' }}>全員ピッチに出ています</div>}
                 </div>
-              </div>
+              </>
             )}
 
             <button className={styles.startBtn} onClick={handleStartMatch} disabled={courtIds.length === 0 || !matchInfo.opponent_name}>
@@ -518,29 +535,46 @@ export default function LiveMatchPage() {
              </div>
           </div>
 
-          {selectedBenchId && (
-            <div style={{ textAlign: 'center', marginBottom: '10px', color: 'var(--color-gold)', fontWeight: 'bold' }}>
-              交代するピッチの選手をタップしてください
-            </div>
-          )}
+          <div className={styles.modeToggleContainer}>
+            <span style={{color: !isSwapMode ? 'var(--color-white)' : '#666', fontWeight: !isSwapMode ? 'bold' : 'normal'}}>通常 (パス)</span>
+            <label className={styles.switch}>
+              <input type="checkbox" checked={isSwapMode} onChange={e => {
+                setIsSwapMode(e.target.checked);
+                setSwapSourceId(null);
+                setSelectedCourtId(null);
+              }} />
+              <span className={`${styles.slider} ${styles.round}`}></span>
+            </label>
+            <span style={{color: isSwapMode ? 'var(--color-gold)' : '#666', fontWeight: isSwapMode ? 'bold' : 'normal'}}>交代・配置変更</span>
+          </div>
 
           <div className={styles.playArea}>
             <div className={styles.courtSection}>
               <h2 className={styles.sectionTitle}>コート (出場中)</h2>
-              <div className={styles.playerList}>
-                {courtIds.map(id => {
-                  const p = players.find(x => x.user_id === id);
-                  if (!p) return null;
+              <div className={styles.pitchContainer}>
+                <div className={styles.pitchCenterLine} />
+                <div className={styles.pitchCenterCircle} />
+                <div className={styles.pitchPenaltyAreaTop} />
+                <div className={styles.pitchPenaltyAreaBottom} />
+                
+                {['Pivo', 'Ala L', 'Ala R', 'Fixo', 'GK'].map(pos => {
+                  const playerIdStr = Object.keys(starterPositions).find(id => starterPositions[id] === pos);
+                  const playerId = playerIdStr ? Number(playerIdStr) : null;
+                  const player = players.find(p => p.user_id === playerId);
+                  const posClass = pos.replace(' ', ''); // e.g. Ala L -> AlaL
+                  
+                  if (!player) return null;
+                  
+                  const isSelected = isSwapMode ? swapSourceId === playerId : selectedCourtId === playerId;
+                  
                   return (
                     <div 
-                      key={id} 
-                      className={`${styles.playerRow} ${selectedCourtId === id ? styles.selected : ''}`}
-                      onClick={() => handleCourtPlayerClick(id)}
+                      key={pos} 
+                      className={`${styles.pitchSlot} ${styles['pos' + posClass]} ${isSelected ? styles.selectedSlot : ''}`}
+                      onClick={() => handlePlayingPlayerTap(playerId)}
                     >
-                      <img src={p.photo_url ? getImageUrl(p.photo_url) : '/default-avatar.png'} className={styles.playerRowAvatar} />
-                      <div className={styles.playerRowInfo}>
-                        <div className={styles.playerRowName}>#{p.jersey_number} {p.name}</div>
-                      </div>
+                      <img src={player.photo_url ? getImageUrl(player.photo_url) : '/default-avatar.png'} className={styles.pitchSlotAvatar} alt={player.name} />
+                      <div className={styles.pitchSlotName}>{player.name}</div>
                     </div>
                   );
                 })}
@@ -553,11 +587,12 @@ export default function LiveMatchPage() {
                 {benchIds.map(id => {
                   const p = players.find(x => x.user_id === id);
                   if (!p) return null;
+                  const isSelected = isSwapMode && swapSourceId === id;
                   return (
                     <div 
                       key={id} 
-                      className={`${styles.playerRow} ${selectedBenchId === id ? styles.selected : ''}`}
-                      onClick={() => setSelectedBenchId(id === selectedBenchId ? null : id)}
+                      className={`${styles.playerRow} ${isSelected ? styles.selected : ''}`}
+                      onClick={() => handlePlayingPlayerTap(id)}
                     >
                       <img src={p.photo_url ? getImageUrl(p.photo_url) : '/default-avatar.png'} className={styles.playerRowAvatar} />
                       <div className={styles.playerRowInfo}>
@@ -570,20 +605,18 @@ export default function LiveMatchPage() {
             </div>
           </div>
 
-          {/* Action Panel */}
-          {selectedCourtId && (
-            <div className={styles.actionPanel}>
-              <button className={`${styles.actionBtn} ${styles.btnGoal}`} onClick={() => handleAction('goal')}>
-                <span style={{ fontSize: '1.5rem' }}>⚽</span> ゴール
-              </button>
-              <button className={`${styles.actionBtn} ${styles.btnShot}`} onClick={() => handleAction('shot')}>
-                <span style={{ fontSize: '1.5rem' }}>👟</span> シュート
-              </button>
-              <button className={`${styles.actionBtn} ${styles.btnRecovery}`} onClick={() => handleAction('lost_ball')}>
-                 <span style={{ fontSize: '1.5rem' }}>💥</span> ロスト
-              </button>
-            </div>
-          )}
+          {/* Fixed Action Panel */}
+          <div className={styles.fixedActionBar}>
+            <button className={`${styles.fixedActionBtn} ${styles.btnGoal}`} onClick={() => handleAction('goal')} disabled={!selectedCourtId && !isSwapMode}>
+              <span className={styles.btnEmoji}>⚽</span><br/>ゴール
+            </button>
+            <button className={`${styles.fixedActionBtn} ${styles.btnShot}`} onClick={() => handleAction('shot')} disabled={!selectedCourtId && !isSwapMode}>
+              <span className={styles.btnEmoji}>👟</span><br/>シュート
+            </button>
+            <button className={`${styles.fixedActionBtn} ${styles.btnRecovery}`} onClick={() => handleAction('lost_ball')} disabled={!selectedCourtId && !isSwapMode}>
+               <span className={styles.btnEmoji}>💥</span><br/>ロスト
+            </button>
+          </div>
         </div>
       )}
 
