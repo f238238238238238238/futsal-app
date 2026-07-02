@@ -125,6 +125,8 @@ async function handleGatheringRequest(event, day) {
 
 async function handleCupRequest(event, targetMonth = null, targetDows = []) {
   const replyToken = event.replyToken;
+  const userId = event.source.userId;
+  const baseUrl = process.env.FRONTEND_URL || "https://futsal-app.vercel.app";
   
   // 1. スクレイピング実行
   const scrapeResult = await scrapeCups(targetMonth, targetDows);
@@ -138,9 +140,7 @@ async function handleCupRequest(event, targetMonth = null, targetDows = []) {
     return;
   }
 
-  // カルーセルの制限や文字数制限を考慮し、50件取得して分割する
   const cups = scrapeResult.data.slice(0, 50);
-
   const chunkSize = 10;
   const chunkedCups = [];
   for (let i = 0; i < cups.length; i += chunkSize) {
@@ -148,8 +148,8 @@ async function handleCupRequest(event, targetMonth = null, targetDows = []) {
   }
 
   const messages = chunkedCups.slice(0, 5).map((chunk, index) => {
+    const isLast = index === Math.min(chunkedCups.length, 5) - 1;
     const flexContents = chunk.map(cup => {
-      const isoDate = cup.isoDate || "";
       const availColor = cup.availability.includes('空き') ? '#00B900' : (cup.availability.includes('残り') ? '#F39C12' : '#E74C3C');
 
       const contents = [
@@ -181,35 +181,6 @@ async function handleCupRequest(event, targetMonth = null, targetDows = []) {
       });
 
       contents.push({
-        type: "box",
-        layout: "horizontal",
-        spacing: "sm",
-        margin: "md",
-        contents: [
-          {
-            type: "button",
-            style: "primary",
-            height: "sm",
-            action: {
-              type: "postback",
-              label: "参加する",
-              data: `action=attend&d=${isoDate}&t=${cup.title.substring(0, 30)}`
-            }
-          },
-          {
-            type: "button",
-            style: "secondary",
-            height: "sm",
-            action: {
-              type: "postback",
-              label: "参加不可",
-              data: `action=absent&d=${isoDate}&t=${cup.title.substring(0, 30)}`
-            }
-          }
-        ]
-      });
-
-      contents.push({
         type: "separator",
         margin: "lg"
       });
@@ -223,35 +194,53 @@ async function handleCupRequest(event, targetMonth = null, targetDows = []) {
       };
     });
 
+    const webLinkUrl = `${baseUrl}/line-attend?luid=${userId}&month=${targetMonth || ''}&dows=${targetDows.join(',') || ''}`;
+
+    const bubble = {
+      type: "bubble",
+      header: {
+        type: "box",
+        layout: "vertical",
+        contents: [
+          {
+            type: "text",
+            text: index === 0 ? "大会一覧" : `大会一覧 (続き)`,
+            weight: "bold",
+            size: "xl"
+          }
+        ]
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        contents: flexContents
+      }
+    };
+
+    if (isLast) {
+      bubble.footer = {
+        type: "box",
+        layout: "vertical",
+        spacing: "sm",
+        contents: [
+          {
+            type: "button",
+            style: "primary",
+            height: "sm",
+            action: {
+              type: "uri",
+              label: "出欠を一括登録する",
+              uri: webLinkUrl
+            }
+          }
+        ]
+      };
+    }
+
     return {
       type: "flex",
       altText: `大会の予定一覧 (${index + 1}/${chunkedCups.length})`,
-      contents: {
-        type: "bubble",
-        header: {
-          type: "box",
-          layout: "vertical",
-          contents: [
-            {
-              type: "text",
-              text: index === 0 ? "大会一覧" : `大会一覧 (続き)`,
-              weight: "bold",
-              size: "xl"
-            },
-            {
-              type: "text",
-              text: "タップして出欠を登録してください",
-              size: "xs",
-              color: "#888888"
-            }
-          ]
-        },
-        body: {
-          type: "box",
-          layout: "vertical",
-          contents: flexContents
-        }
-      }
+      contents: bubble
     };
   });
 
@@ -457,6 +446,124 @@ async function getLineProfile(userId, groupId = null) {
     console.error('getLineProfile error:', err);
     return null;
   }
-}
+router.get('/cups', async (req, res) => {
+  try {
+    const { targetMonth, targetDows, luid } = req.query;
+    const db = getDb();
+    
+    // Check user
+    if (!luid) return res.status(400).json({ error: 'Missing luid' });
+    const userRes = await db.query('SELECT user_id, name FROM users WHERE line_user_id = $1', [luid]);
+    if (userRes.rows.length === 0) {
+      return res.status(404).json({ error: 'User not linked' });
+    }
+    const user = userRes.rows[0];
+
+    // Scrape
+    let tMonth = targetMonth ? parseInt(targetMonth, 10) : null;
+    let tDows = targetDows ? targetDows.split(',').map(Number) : [];
+    const scrapeResult = await scrapeCups(tMonth, tDows);
+    if (!scrapeResult || !scrapeResult.success) {
+      return res.status(500).json({ error: 'Scraping failed' });
+    }
+
+    // Get current attendances for this user
+    const today = new Date().toISOString().split('T')[0];
+    const myAttRes = await db.query(`
+      SELECT e.date_time, a.status 
+      FROM attendances a 
+      JOIN events e ON a.event_id = e.event_id 
+      WHERE a.user_id = $1 AND e.event_type = 'match' AND e.date_time >= $2
+    `, [user.user_id, today]);
+
+    const statusMap = {};
+    for (const row of myAttRes.rows) {
+      const d = row.date_time.split(' ')[0];
+      statusMap[d] = row.status; // 'present' or 'absent'
+    }
+
+    const cups = scrapeResult.data.map(c => {
+      return {
+        ...c,
+        myStatus: statusMap[c.isoDate] || null
+      };
+    });
+
+    res.json({ user, cups });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/batch_attend', async (req, res) => {
+  try {
+    const { luid, attendances } = req.body;
+    const db = getDb();
+
+    if (!luid) return res.status(400).json({ error: 'Missing luid' });
+    const userRes = await db.query('SELECT user_id, name FROM users WHERE line_user_id = $1', [luid]);
+    if (userRes.rows.length === 0) {
+      return res.status(404).json({ error: 'User not linked' });
+    }
+    const user = userRes.rows[0];
+
+    let confirmedDates = [];
+
+    await db.query('BEGIN');
+    try {
+      for (const att of attendances) {
+        let eventId;
+        let eventRes = await db.query('SELECT event_id, title FROM events WHERE date_time LIKE $1', [`${att.isoDate}%`]);
+        if (eventRes.rows.length > 0) {
+          eventId = eventRes.rows[0].event_id;
+        } else {
+          const insertRes = await db.query(
+            "INSERT INTO events (title, event_type, date_time, location, description) VALUES ($1, 'match', $2, 'Z FUTSAL SPORT 名古屋駅前', 'LINEからの自動登録') RETURNING event_id",
+            [`[大会] ${att.title.substring(0, 30)}...`, att.isoDate]
+          );
+          eventId = insertRes.rows[0].event_id;
+        }
+
+        const attRes = await db.query('SELECT attendance_id FROM attendances WHERE event_id = $1 AND user_id = $2', [eventId, user.user_id]);
+        if (attRes.rows.length === 0) {
+          await db.query("INSERT INTO attendances (event_id, user_id, status) VALUES ($1, $2, $3)", [eventId, user.user_id, att.status]);
+        } else {
+          await db.query("UPDATE attendances SET status = $3 WHERE event_id = $1 AND user_id = $2", [eventId, user.user_id, att.status]);
+        }
+
+        if (att.status === 'present') {
+          const countRes = await db.query(`SELECT count(*) FROM attendances WHERE event_id = $1 AND status = 'present'`, [eventId]);
+          const count = parseInt(countRes.rows[0].count, 10);
+          if (count === 7) {
+            await db.query("UPDATE events SET title = replace(title, '[大会]', '【開催確定】') WHERE event_id = $1", [eventId]);
+            confirmedDates.push(att.isoDate);
+          }
+        }
+      }
+      await db.query('COMMIT');
+    } catch (e) {
+      await db.query('ROLLBACK');
+      throw e;
+    }
+
+    if (confirmedDates.length > 0) {
+      const msgs = confirmedDates.map(d => ({
+        type: 'text',
+        text: `🎉【開催確定】参加者が7名に達したため、${d} の大会への参加が確定しました！`
+      }));
+      const LINE_ACCESS_TOKEN = process.env.LINE_ACCESS_TOKEN || "YomQr1v0D19HjVSmaIbPsnO4HOylAYo68w7EpsiM1mGIwJQIf2mZr+gy7zjGASYfa3nOtSHTXOECRv9FMdyejs8DlJl+FDDs3l5q75Yfa64ph7+Xupq5a3ofdsg4z/oJ5O/1sgUsgGLemz23LhO0cQdB04t89/1O/w1cDnyilFU=";
+      await fetch('https://api.line.me/v2/bot/message/broadcast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${LINE_ACCESS_TOKEN}` },
+        body: JSON.stringify({ messages: msgs })
+      });
+    }
+
+    res.json({ success: true, confirmedCount: confirmedDates.length });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 export default router;
