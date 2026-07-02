@@ -126,11 +126,22 @@ function LineAttendContent() {
       }
       
       const data = await res.json();
-      let msg = '出欠の保存が完了しました！LINEの画面を閉じてください。';
+      let msg = '出欠の保存が完了しました！\n画面は自動的に閉じます...';
       if (data.confirmedCount > 0) {
         msg += `\n（${data.confirmedCount}件の大会が新しく開催確定しました🎉）`;
       }
       setSuccessMsg(msg);
+      
+      // Attempt to close the LIFF window automatically
+      try {
+        const liff = (await import('@line/liff')).default;
+        await liff.init({ liffId: process.env.NEXT_PUBLIC_LIFF_ID || "2010559166-fEgR6Hi9" });
+        if (liff.isInClient()) {
+          setTimeout(() => liff.closeWindow(), 1500);
+        }
+      } catch (e) {
+        console.error("LIFF init failed", e);
+      }
     } catch (err) {
       setError(err.message);
     } finally {

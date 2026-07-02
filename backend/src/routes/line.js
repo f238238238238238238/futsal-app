@@ -194,7 +194,8 @@ async function handleCupRequest(event, targetMonth = null, targetDows = []) {
       };
     });
 
-    const webLinkUrl = `${baseUrl}/line-attend?luid=${userId}&month=${targetMonth || ''}&dows=${targetDows.join(',') || ''}`;
+    const liffId = process.env.LIFF_ID || "2010559166-fEgR6Hi9";
+    const webLinkUrl = `https://liff.line.me/${liffId}?luid=${userId}&month=${targetMonth || ''}&dows=${targetDows.join(',') || ''}`;
 
     const bubble = {
       type: "bubble",
