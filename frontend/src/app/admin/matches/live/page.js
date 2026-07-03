@@ -295,7 +295,7 @@ export default function LiveMatchPage() {
         setEvents(prev => {
           const newEvents = [...prev];
           for (let i = newEvents.length - 1; i >= 0; i--) {
-            if (newEvents[i].user_id === targetId && (newEvents[i].event_type === 'steal' || newEvents[i].event_type === 'catch')) {
+            if (newEvents[i].user_id === targetId && ['steal', 'catch', 'block', 'pass_cut', 'lost_ball'].includes(newEvents[i].event_type)) {
                const pos = starterPositions[targetId] || '';
                newEvents[i] = { ...newEvents[i], event_type: pos.includes('GK') ? 'save' : 'block' };
                break;
@@ -572,11 +572,16 @@ export default function LiveMatchPage() {
           <div className={styles.eventLogContainer} style={{marginTop: '20px'}}>
              <h3 className={styles.eventLogTitle}>直近のアクションログ</h3>
              <div className={styles.eventLogList}>
-               {events.filter(e => ['goal', 'assist', 'save', 'catch', 'steal', 'sub_in', 'sub_out', 'position_change'].includes(e.event_type)).slice(-5).reverse().map((e, i) => {
+               {events.filter(e => ['goal', 'assist', 'save', 'catch', 'steal', 'block', 'pass_cut', 'sub_in', 'sub_out', 'position_change', 'lost_ball'].includes(e.event_type)).slice(-5).reverse().map((e, i) => {
                  const p = players.find(x => x.user_id === e.user_id)?.name;
                  const min = Math.floor(e.minute / 60);
                  const sec = String(e.minute % 60).padStart(2, '0');
-                 return <div key={i} className={styles.eventLogItem}>[{min}&apos;{sec}&quot;] {p} - {e.event_type}</div>;
+                 const eventNames = {
+                   goal: '⚽ ゴール', assist: '🅰️ アシスト', save: '🧤 セーブ', catch: '👐 キャッチ',
+                   steal: '⚔️ 奪取', block: '🛡️ ブロック', pass_cut: '✂️ パスカット', lost_ball: '💥 ロスト',
+                   sub_in: '🔄 IN', sub_out: '🔄 OUT', position_change: '↔️ 配置変更'
+                 };
+                 return <div key={i} className={styles.eventLogItem}>[{min}&apos;{sec}&quot;] {p} - {eventNames[e.event_type] || e.event_type}</div>;
                })}
              </div>
           </div>
