@@ -97,7 +97,7 @@ router.get('/:id', async (req, res) => {
         COUNT(a.event_id) as present_count
       FROM attendances a
       JOIN events e ON a.event_id = e.event_id
-      WHERE a.user_id = $1 AND a.status = 'present' AND e.date_time::timestamp < CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Tokyo'
+      WHERE a.user_id = $1 AND a.status = 'present' AND e.is_held = true
       GROUP BY EXTRACT(YEAR FROM e.date_time::timestamp)
     `, [req.params.id]);
 

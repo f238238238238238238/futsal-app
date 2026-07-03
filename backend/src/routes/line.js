@@ -215,141 +215,54 @@ async function handleHelpRequest(event) {
 
 async function handleCupRequest(event, targetMonth = null, targetDows = []) {
   const replyToken = event.replyToken;
-  const userId = event.source.userId;
-  const baseUrl = process.env.FRONTEND_URL || "https://futsal-frontend-ten.vercel.app";
   
-  // 1. スクレイピング実行
-  const scrapeResult = await scrapeCups(targetMonth, targetDows);
+  // Construct the LIFF URL
+  // We use process.env.LIFF_URL or fallback. The frontend URL can also be passed but LIFF URL format is line://app/LIFF_ID
+  const liffId = process.env.LIFF_ID || process.env.NEXT_PUBLIC_LIFF_ID || "1234567890-AbcdEfgh";
+  let liffUrl = `https://liff.line.me/${liffId}`;
   
-  if (!scrapeResult || !scrapeResult.success) {
-    const errorMsg = scrapeResult ? scrapeResult.debugInfo : "Unknown error";
-    await replyMessage(replyToken, {
-      type: 'text',
-      text: `エラーが発生しました。\nデバッグ情報:\n${errorMsg}`
-    });
-    return;
+  const params = new URLSearchParams();
+  if (targetMonth !== null) params.append('month', targetMonth);
+  if (targetDows && targetDows.length > 0) params.append('dows', targetDows.join(','));
+  
+  if (params.toString()) {
+    liffUrl += `?${params.toString()}`;
   }
 
-  const cups = scrapeResult.data.slice(0, 50);
-  const chunkSize = 10;
-  const chunkedCups = [];
-  for (let i = 0; i < cups.length; i += chunkSize) {
-    chunkedCups.push(cups.slice(i, i + chunkSize));
+  let filterText = "すべての大会";
+  if (targetMonth !== null && targetDows.length > 0) {
+    filterText = `${targetMonth}月の土日などの大会`;
+  } else if (targetMonth !== null) {
+    filterText = `${targetMonth}月の大会`;
+  } else if (targetDows.length > 0) {
+    filterText = `土日などの大会`;
   }
 
-  const messages = chunkedCups.slice(0, 5).map((chunk, index) => {
-    const isLast = index === Math.min(chunkedCups.length, 5) - 1;
-    const flexContents = chunk.map(cup => {
-      const availColor = cup.availability.includes('空き') ? '#00B900' : (cup.availability.includes('残り') ? '#F39C12' : '#E74C3C');
-
-      const contents = [
+  const bubble = {
+    type: "bubble",
+    body: {
+      type: "box", layout: "vertical", spacing: "md",
+      contents: [
+        { type: "text", text: "📋 一括出欠登録", weight: "bold", size: "xl", color: "#1DB446" },
+        { type: "text", text: `以下のボタンから専用画面を開き、「${filterText}」の出欠を一括で登録できます。`, wrap: true, size: "sm", color: "#555555" }
+      ]
+    },
+    footer: {
+      type: "box", layout: "vertical",
+      contents: [
         {
-          type: "text",
-          text: `📅 ${cup.dateText}`,
-          weight: "bold",
-          size: "sm",
-          color: "#555555"
+          type: "button", style: "primary", color: "#1DB446",
+          action: { type: "uri", label: "専用画面を開く", uri: liffUrl }
         }
-      ];
+      ]
+    }
+  };
 
-      if (cup.availability !== '情報なし') {
-        contents.push({
-          type: "text",
-          text: `[ ${cup.availability} ]`,
-          weight: "bold",
-          size: "xs",
-          color: availColor
-        });
-      }
-
-      contents.push({
-        type: "text",
-        text: `🏆 ${cup.title}`,
-        size: "sm",
-        wrap: true,
-        weight: "bold"
-      });
-
-      const timeMatch = cup.dateText.match(/(\d{1,2}:\d{2}.*\d{1,2}:\d{2})/);
-      const timeStr = timeMatch ? timeMatch[1] : '';
-      const pParts = cup.isoDate.split('-');
-      const mDate = pParts.length >= 3 ? `${parseInt(pParts[1], 10)}月${parseInt(pParts[2], 10)}日` : cup.isoDate;
-      const shortTitle = cup.title.substring(0, 40);
-
-      contents.push({
-        type: "box",
-        layout: "horizontal",
-        spacing: "sm",
-        margin: "md",
-        contents: [
-          {
-            type: "button",
-            style: "primary",
-            height: "sm",
-            action: {
-              type: "postback",
-              label: "参加",
-              data: `action=attend&d=${cup.isoDate}&t=${shortTitle}&time=${timeStr}`,
-              displayText: `${mDate}参加します`
-            }
-          },
-          {
-            type: "button",
-            style: "secondary",
-            height: "sm",
-            action: {
-              type: "postback",
-              label: "不参加",
-              data: `action=absent&d=${cup.isoDate}&t=${shortTitle}&time=${timeStr}`,
-              displayText: `${mDate}不参加です`
-            }
-          }
-        ]
-      });
-
-      contents.push({
-        type: "separator",
-        margin: "lg"
-      });
-
-      return {
-        type: "box",
-        layout: "vertical",
-        margin: "lg",
-        spacing: "sm",
-        contents: contents
-      };
-    });
-
-    const bubble = {
-      type: "bubble",
-      header: {
-        type: "box",
-        layout: "vertical",
-        contents: [
-          {
-            type: "text",
-            text: index === 0 ? "大会一覧" : `大会一覧 (続き)`,
-            weight: "bold",
-            size: "xl"
-          }
-        ]
-      },
-      body: {
-        type: "box",
-        layout: "vertical",
-        contents: flexContents
-      }
-    };
-
-    return {
-      type: "flex",
-      altText: `大会の予定一覧 (${index + 1}/${chunkedCups.length})`,
-      contents: bubble
-    };
+  await replyMessage(replyToken, {
+    type: 'flex',
+    altText: '一括出欠登録画面',
+    contents: bubble
   });
-
-  await replyMessage(replyToken, messages);
 }
 
 

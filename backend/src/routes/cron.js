@@ -9,12 +9,12 @@ router.get('/reminders', async (req, res) => {
   
   try {
     const db = getDb();
-    // 1. 過去データのクリーンアップ
+    // 1. 過去データのクリーンアップ (開催された大会は履歴として残す)
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
     
     try {
-      const delRes = await db.query(`DELETE FROM events WHERE date_time < $1 AND event_type = 'match'`, [todayStr]);
+      const delRes = await db.query(`DELETE FROM events WHERE date_time < $1 AND event_type = 'match' AND (is_held IS NULL OR is_held = false)`, [todayStr]);
       console.log(`Cleaned up ${delRes.rowCount} past events.`);
     } catch (e) {
       console.error('Cleanup error:', e);
