@@ -410,10 +410,7 @@ export default function LiveMatchPage() {
         className={`${styles.pitchSlot} ${styles['pos' + posClass]} ${isSelected ? styles.selectedSlot : ''}`}
         data-drop-target={pos}
         data-player-id={playerId || ''}
-        onClick={!player ? () => handleEmptySlotTap(pos) : undefined}
-        onTouchStart={!isSetup && player ? (e) => handleTouchStart(e, playerId, 'pitch') : undefined}
-        onTouchMove={!isSetup && player ? handleTouchMove : undefined}
-        onTouchEnd={!isSetup && player ? handleTouchEnd : undefined}
+        onClick={!player ? () => handleEmptySlotTap(pos) : () => handlePlayerTap(playerId, 'pitch')}
       >
         {player ? (
           <>
