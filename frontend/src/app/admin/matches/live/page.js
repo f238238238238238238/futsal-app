@@ -35,6 +35,10 @@ export default function LiveMatchPage() {
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const timerRef = useRef(null);
+  
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [phase]);
 
   // Selection
   const [selectedCourtId, setSelectedCourtId] = useState(null);
