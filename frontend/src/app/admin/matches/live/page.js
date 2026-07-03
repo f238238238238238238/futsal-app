@@ -579,20 +579,11 @@ export default function LiveMatchPage() {
                  const p = players.find(x => x.user_id === e.user_id)?.name;
                  const min = Math.floor(e.minute / 60);
                  const sec = String(e.minute % 60).padStart(2, '0');
-                 return <div key={i} className={styles.eventLogItem}>[{min}'{sec}"] {p} - {e.event_type}</div>;
+                 return <div key={i} className={styles.eventLogItem}>[{min}&apos;{sec}&quot;] {p} - {e.event_type}</div>;
                })}
              </div>
           </div>
         </div>
-      )}
-
-      {/* Dragging Avatar Overlay */}
-      {draggedItem && (
-        <img 
-          src={getImageUrl(players.find(p => p.user_id === draggedItem.id)?.photo_url) || '/default-avatar.png'} 
-          className={styles.draggedAvatar}
-          style={{ left: draggedItem.x, top: draggedItem.y }}
-        />
       )}
 
       {/* FINISHED PHASE */}
