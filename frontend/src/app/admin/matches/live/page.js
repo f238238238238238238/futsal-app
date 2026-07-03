@@ -38,6 +38,7 @@ export default function LiveMatchPage() {
 
   // Selection
   const [selectedCourtId, setSelectedCourtId] = useState(null);
+  const [selectionTime, setSelectionTime] = useState(null);
   const [lastPasserId, setLastPasserId] = useState(null);
 
   const [setupSelectedPos, setSetupSelectedPos] = useState(null);
@@ -163,20 +164,26 @@ export default function LiveMatchPage() {
         }
       }
 
-      if (origin === 'bench') return;
+      if (origin === 'bench') {
+        setSelectionTime(null);
+        return;
+      }
 
       if (selectedCourtId === id) {
         setSelectedCourtId(null); 
+        setSelectionTime(null);
       } else if (selectedCourtId) {
         recordEvent('pass', selectedCourtId);
         setLastPasserId(selectedCourtId);
         setSelectedCourtId(id);
+        setSelectionTime(Date.now());
       } else {
         const pos = starterPositions[id] || '';
         if (pos.includes('GK')) recordEvent('catch', id);
         else recordEvent('steal', id);
         setSelectedCourtId(id);
         setLastPasserId(null);
+        setSelectionTime(Date.now());
       }
     }
   };
@@ -280,8 +287,11 @@ export default function LiveMatchPage() {
       }
       setLastPasserId(null);
       setSelectedCourtId(null);
+      setSelectionTime(null);
     } else if (type === 'lost_ball') {
-      if (lastPasserId === null) {
+      const holdDuration = (Date.now() - selectionTime) / 1000;
+      // If no pass preceded, AND it was lost within 3 seconds, it's a block/save.
+      if (lastPasserId === null && holdDuration <= 3) {
         setEvents(prev => {
           const newEvents = [...prev];
           for (let i = newEvents.length - 1; i >= 0; i--) {
@@ -298,9 +308,11 @@ export default function LiveMatchPage() {
       }
       setSelectedCourtId(null);
       setLastPasserId(null);
+      setSelectionTime(null);
     } else {
       recordEvent(type, targetId); // shot
       setSelectedCourtId(null);
+      setSelectionTime(null);
     }
   };
 
