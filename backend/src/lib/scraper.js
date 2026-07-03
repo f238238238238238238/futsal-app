@@ -4,13 +4,12 @@ export async function scrapeCups(targetMonth = null, targetDows = []) {
   try {
     // 正しい「名古屋駅前」の裏側URL（3014）に変更
     const baseTargetUrl = 'https://yoyaku.labola.jp/r/shop/3014/event/tournament/?embed=normal&category=futsal';
-    const zenRowsApiKey = '1710b358a20644f03a1cc0b017e59ba81492686c';
-    
-    console.log(`Fetching multiple pages via ZenRows...`);
+    const scraperApiKey = process.env.SCRAPER_API_KEY || 'c49ad1f5f652264dc835066a9da33872';
+    console.log(`Fetching multiple pages via ScraperAPI...`);
     const pages = [1, 2];
     const fetchPromises = pages.map(page => {
       const pageUrl = `${baseTargetUrl}&page=${page}`;
-      const targetUrl = `https://api.zenrows.com/v1/?apikey=${zenRowsApiKey}&url=${encodeURIComponent(pageUrl)}&antibot=true&premium_proxy=true&js_render=true&wait=8000`;
+      const targetUrl = `http://api.scraperapi.com/?api_key=${scraperApiKey}&render=true&url=${encodeURIComponent(pageUrl)}`;
       return fetch(targetUrl).then(r => r.text());
     });
     
