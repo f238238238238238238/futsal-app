@@ -55,6 +55,11 @@ router.post('/webhook', async (req, res) => {
             return;
           }
 
+          if (text.includes('ヘルプ') || text.includes('使い方') || text.includes('メニュー')) {
+            await handleHelpRequest(event);
+            return;
+          }
+
           if (text.includes('現在開催予定の大会を教えて')) {
             await handleScheduledCupsRequest(event);
             return;
@@ -151,6 +156,45 @@ async function handleScheduledCupsRequest(event) {
   await replyMessage(replyToken, {
     type: 'text',
     text: `🎉 現在開催予定の大会\n\n${textLines.join('\n\n')}`
+  });
+}
+
+async function handleHelpRequest(event) {
+  const replyToken = event.replyToken;
+
+  const bubble = {
+    type: "bubble",
+    header: {
+      type: "box", layout: "vertical",
+      contents: [
+        { type: "text", text: "🤖 FAY Bot 使い方ガイド", weight: "bold", size: "lg", color: "#1DB446" }
+      ]
+    },
+    body: {
+      type: "box", layout: "vertical", spacing: "md",
+      contents: [
+        { type: "text", text: "以下のボタンをタップするか、Botにメンションして直接話しかけてみてください！", wrap: true, size: "sm" },
+        { type: "separator", margin: "md" },
+        {
+          type: "button", style: "primary", height: "sm", color: "#1DB446",
+          action: { type: "message", label: "📋 今月の大会一覧を見る", text: "@FAY 大会教えて" }
+        },
+        {
+          type: "button", style: "secondary", height: "sm",
+          action: { type: "message", label: "🔥 開催確定の大会を見る", text: "@FAY 現在開催予定の大会を教えて" }
+        },
+        {
+          type: "button", style: "secondary", height: "sm",
+          action: { type: "message", label: "👀 特定の日の情報を聞く", text: "@FAY 15日の情報を教えて" }
+        }
+      ]
+    }
+  };
+
+  await replyMessage(replyToken, {
+    type: 'flex',
+    altText: 'Botの使い方ガイド',
+    contents: bubble
   });
 }
 
