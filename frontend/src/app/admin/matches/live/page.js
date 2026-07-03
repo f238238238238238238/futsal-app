@@ -552,7 +552,7 @@ export default function LiveMatchPage() {
             </div>
 
             <div className={styles.benchSection} data-drop-target="bench">
-              <h2 className={styles.sectionTitle} style={{fontSize:'1rem'}}>ベンチ (ドラッグ＆ドロップで交代)</h2>
+              <h2 className={styles.sectionTitle} style={{fontSize:'1rem'}}>ベンチ</h2>
               <div className={styles.playerList}>
                 {benchIds.map(id => {
                   const p = players.find(x => x.user_id === id);
