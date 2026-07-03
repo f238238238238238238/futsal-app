@@ -38,6 +38,7 @@ export default function LiveMatchPage() {
 
   // Selection
   const [selectedCourtId, setSelectedCourtId] = useState(null);
+  const [selectedBenchId, setSelectedBenchId] = useState(null);
   const [lastPasserId, setLastPasserId] = useState(null);
 
   const [setupSelectedPos, setSetupSelectedPos] = useState(null);
@@ -167,7 +168,18 @@ export default function LiveMatchPage() {
         setSetupSelectedPos(null);
       }
     } else if (phase === 'playing') {
-      if (origin === 'bench') return; // Bench taps do nothing unless dragged
+      if (origin === 'bench') {
+        setSelectedBenchId(prev => prev === id ? null : id);
+        setSelectedCourtId(null); // clear court selection
+        return;
+      }
+
+      if (selectedBenchId) {
+        // Substitute Bench Player to Pitch
+        handleDrop(selectedBenchId, 'bench', starterPositions[id] || '', id);
+        setSelectedBenchId(null);
+        return;
+      }
 
       if (selectedCourtId === id) {
         setSelectedCourtId(null); // toggle off
@@ -182,6 +194,17 @@ export default function LiveMatchPage() {
         if (pos.includes('GK')) recordEvent('catch', id);
         else recordEvent('steal', id);
         setSelectedCourtId(id);
+      }
+    }
+  };
+
+  const handleEmptySlotTap = (pos) => {
+    if (phase === 'setup') {
+      setSetupSelectedPos(pos);
+    } else if (phase === 'playing') {
+      if (selectedBenchId) {
+        handleDrop(selectedBenchId, 'bench', pos, null);
+        setSelectedBenchId(null);
       }
     }
   };
@@ -375,7 +398,7 @@ export default function LiveMatchPage() {
         className={`${styles.pitchSlot} ${styles['pos' + posClass]} ${isSelected ? styles.selectedSlot : ''}`}
         data-drop-target={pos}
         data-player-id={playerId || ''}
-        onClick={isSetup && !player ? () => setSetupSelectedPos(pos) : undefined}
+        onClick={!player ? () => handleEmptySlotTap(pos) : undefined}
         onTouchStart={!isSetup && player ? (e) => handleTouchStart(e, playerId, 'pitch') : undefined}
         onTouchMove={!isSetup && player ? handleTouchMove : undefined}
         onTouchEnd={!isSetup && player ? handleTouchEnd : undefined}
@@ -521,13 +544,12 @@ export default function LiveMatchPage() {
                 {benchIds.map(id => {
                   const p = players.find(x => x.user_id === id);
                   if (!p) return null;
+                  const isSelected = selectedBenchId === id;
                   return (
                     <div 
                       key={id} 
-                      className={styles.playerRow}
-                      onTouchStart={(e) => handleTouchStart(e, id, 'bench')}
-                      onTouchMove={handleTouchMove}
-                      onTouchEnd={handleTouchEnd}
+                      className={`${styles.playerRow} ${isSelected ? styles.selected : ''}`}
+                      onClick={() => handlePlayerTap(id, 'bench')}
                     >
                       <img src={p.photo_url ? getImageUrl(p.photo_url) : '/default-avatar.png'} className={styles.playerRowAvatar} />
                       <div className={styles.playerRowName}>{p.name}</div>

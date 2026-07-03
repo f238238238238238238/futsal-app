@@ -85,7 +85,6 @@
   text-align: center;
   cursor: pointer;
   transition: all 0.2s;
-  touch-action: none;
 }
 
 .playerSelectCard.selected {
@@ -545,7 +544,11 @@
   border-radius: 10px;
   min-width: 80px;
   border: 2px solid transparent;
-  touch-action: none;
+}
+
+.playerRow.selected {
+  border-color: var(--color-gold);
+  background: rgba(197, 160, 89, 0.2);
 }
 
 .playerRowAvatar {
