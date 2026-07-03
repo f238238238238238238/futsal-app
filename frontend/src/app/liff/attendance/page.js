@@ -31,7 +31,11 @@ function AttendanceContent() {
         const month = searchParams.get('month');
         const dows = searchParams.get('dows') || searchParams.get('dow'); // API supports dows
         
-        let url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/cups`;
+        let baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        if (baseUrl.endsWith('/api')) {
+          baseUrl = baseUrl.slice(0, -4);
+        }
+        let url = `${baseUrl}/api/cups`;
         const params = new URLSearchParams();
         if (month) params.append('month', month);
         if (dows) params.append('dows', dows);
@@ -87,7 +91,12 @@ function AttendanceContent() {
         attendances: Object.values(attendances).filter(a => a.status !== 'pending')
       };
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/attendance/bulk`, {
+      let baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      if (baseUrl.endsWith('/api')) {
+        baseUrl = baseUrl.slice(0, -4);
+      }
+
+      const res = await fetch(`${baseUrl}/api/attendance/bulk`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
