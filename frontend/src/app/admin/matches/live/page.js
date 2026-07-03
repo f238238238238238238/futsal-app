@@ -297,7 +297,7 @@ export default function LiveMatchPage() {
           for (let i = newEvents.length - 1; i >= 0; i--) {
             if (newEvents[i].user_id === targetId && (newEvents[i].event_type === 'steal' || newEvents[i].event_type === 'catch')) {
                const pos = starterPositions[targetId] || '';
-               newEvents[i].event_type = pos.includes('GK') ? 'save' : 'block';
+               newEvents[i] = { ...newEvents[i], event_type: pos.includes('GK') ? 'save' : 'block' };
                break;
             }
           }
