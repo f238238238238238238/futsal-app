@@ -21,9 +21,16 @@ router.post('/webhook', async (req, res) => {
         // 個人チャットかどうか
         const isPrivateChat = event.source.type === 'user';
         
-        // 「〇月の〜」の〇を取り出す正規表現（「7月の大会」「7月の予定」などに対応）
+        // 「〇月の〜」の〇を取り出す正規表現（「7月の大会」「7月の予定」などに対応）、または「今月」「来月」
+        let targetMonth = null;
         const monthMatch = text.match(/(\d+)月の?/);
-        const targetMonth = monthMatch ? parseInt(monthMatch[1], 10) : null;
+        if (monthMatch) {
+          targetMonth = parseInt(monthMatch[1], 10);
+        } else if (text.includes('今月')) {
+          targetMonth = new Date().getMonth() + 1;
+        } else if (text.includes('来月')) {
+          targetMonth = (new Date().getMonth() + 1) % 12 + 1;
+        }
 
         // 「金土日」などの曜日指定を取り出す
         const dows = [];
@@ -65,7 +72,7 @@ router.post('/webhook', async (req, res) => {
             return;
           }
 
-          if (text.includes('大会教えて') || text.includes('大会') || monthMatch || dows.length > 0 || text.includes('参加不可')) {
+          if (text.includes('大会教えて') || text.includes('大会') || targetMonth !== null || dows.length > 0 || text.includes('参加不可')) {
             await handleCupRequest(event, targetMonth, dows);
           }
         }
@@ -173,12 +180,20 @@ async function handleHelpRequest(event) {
     body: {
       type: "box", layout: "vertical", spacing: "md",
       contents: [
-        { type: "text", text: "以下のボタンをタップするか、Botにメンションして直接話しかけてみてください！", wrap: true, size: "sm" },
-        { type: "separator", margin: "md" },
+        { type: "text", text: "▼ 大会を探す（タップで実行）", weight: "bold", size: "sm", color: "#555555" },
         {
-          type: "button", style: "primary", height: "sm", color: "#1DB446",
-          action: { type: "message", label: "📋 今月の大会一覧を見る", text: "@FAY 大会教えて" }
+          type: "box", layout: "horizontal", spacing: "sm",
+          contents: [
+            { type: "button", style: "primary", height: "sm", color: "#1DB446", action: { type: "message", label: "今月の土日", text: "@FAY 今月の土日の大会教えて" } },
+            { type: "button", style: "primary", height: "sm", color: "#1DB446", action: { type: "message", label: "来月の土日", text: "@FAY 来月の土日の大会教えて" } }
+          ]
         },
+        {
+          type: "button", style: "secondary", height: "sm",
+          action: { type: "message", label: "📋 すべての大会一覧を見る", text: "@FAY 大会教えて" }
+        },
+        { type: "separator", margin: "md" },
+        { type: "text", text: "▼ 開催状況・情報を確認する", weight: "bold", size: "sm", color: "#555555", margin: "md" },
         {
           type: "button", style: "secondary", height: "sm",
           action: { type: "message", label: "🔥 開催確定の大会を見る", text: "@FAY 現在開催予定の大会を教えて" }
