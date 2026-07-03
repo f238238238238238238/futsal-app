@@ -38,14 +38,15 @@ export default function LiveMatchPage() {
 
   // Selection
   const [selectedCourtId, setSelectedCourtId] = useState(null);
-  const [selectedBenchId, setSelectedBenchId] = useState(null);
   const [lastPasserId, setLastPasserId] = useState(null);
 
   const [setupSelectedPos, setSetupSelectedPos] = useState(null);
   const [attendingIds, setAttendingIds] = useState([]);
 
-  // Drag & Drop State
-  const [draggedItem, setDraggedItem] = useState(null);
+  // Swap / Sub State
+  const [swapSourceId, setSwapSourceId] = useState(null);
+  const [swapSourceOrigin, setSwapSourceOrigin] = useState(null);
+  const [lastTapInfo, setLastTapInfo] = useState({ id: null, time: 0 });
 
   useEffect(() => {
     getPlayers().then(res => {
@@ -115,45 +116,7 @@ export default function LiveMatchPage() {
     setEvents(prev => [...prev, { event_type: type, user_id: userId, minute: timerSeconds, ...extraData }]);
   };
 
-  // Drag & Drop Handlers
-  const handleTouchStart = (e, id, origin) => {
-    if (e.touches.length > 1) return;
-    const touch = e.touches[0];
-    setDraggedItem({ id, origin, x: touch.clientX, y: touch.clientY, startX: touch.clientX, startY: touch.clientY });
-  };
-
-  const handleTouchMove = (e) => {
-    if (!draggedItem) return;
-    // e.preventDefault() is handled by CSS touch-action: none
-    const touch = e.touches[0];
-    setDraggedItem(prev => ({ ...prev, x: touch.clientX, y: touch.clientY }));
-  };
-
-  const handleTouchEnd = (e) => {
-    if (!draggedItem) return;
-    const touch = e.changedTouches[0];
-    const dx = touch.clientX - draggedItem.startX;
-    const dy = touch.clientY - draggedItem.startY;
-    const dist = Math.sqrt(dx*dx + dy*dy);
-    
-    if (dist < 10) {
-      // It was a tap!
-      handlePlayerTap(draggedItem.id, draggedItem.origin);
-    } else {
-      // It was a drop!
-      // Temporarily hide the dragging avatar to find element underneath
-      const elem = document.elementFromPoint(touch.clientX, touch.clientY);
-      const dropZone = elem?.closest('[data-drop-target]');
-      
-      if (dropZone) {
-        const targetPos = dropZone.getAttribute('data-drop-target');
-        const targetIdStr = dropZone.getAttribute('data-player-id');
-        const targetId = targetIdStr ? Number(targetIdStr) : null;
-        handleDrop(draggedItem.id, draggedItem.origin, targetPos, targetId);
-      }
-    }
-    setDraggedItem(null);
-  };
+  // (Touch Handlers Removed)
 
   const handlePlayerTap = (id, origin) => {
     if (phase === 'setup') {
@@ -168,32 +131,52 @@ export default function LiveMatchPage() {
         setSetupSelectedPos(null);
       }
     } else if (phase === 'playing') {
-      if (origin === 'bench') {
-        setSelectedBenchId(prev => prev === id ? null : id);
-        setSelectedCourtId(null); // clear court selection
+      const now = Date.now();
+      const isDoubleTap = lastTapInfo.id === id && (now - lastTapInfo.time) < 400;
+      setLastTapInfo({ id, time: now });
+
+      if (isDoubleTap) {
+        setSwapSourceId(id);
+        setSwapSourceOrigin(origin);
+        setSelectedCourtId(null);
         return;
       }
 
-      if (selectedBenchId) {
-        // Substitute Bench Player to Pitch
-        handleDrop(selectedBenchId, 'bench', starterPositions[id] || '', id);
-        setSelectedBenchId(null);
-        return;
+      if (swapSourceId) {
+        if (swapSourceId === id) return; 
+        
+        if (swapSourceOrigin === 'bench' && origin === 'pitch') {
+          handleDrop(swapSourceId, 'bench', starterPositions[id] || '', id);
+          setSwapSourceId(null);
+          return;
+        } else if (swapSourceOrigin === 'pitch' && origin === 'pitch') {
+          handleDrop(swapSourceId, 'pitch', null, id);
+          setSwapSourceId(null);
+          return;
+        } else if (swapSourceOrigin === 'pitch' && origin === 'bench') {
+          handleDrop(swapSourceId, 'pitch', 'bench', id);
+          setSwapSourceId(null);
+          return;
+        } else if (swapSourceOrigin === 'bench' && origin === 'bench') {
+           setSwapSourceId(id);
+           return;
+        }
       }
+
+      if (origin === 'bench') return;
 
       if (selectedCourtId === id) {
-        setSelectedCourtId(null); // toggle off
+        setSelectedCourtId(null); 
       } else if (selectedCourtId) {
-        // Pass
         recordEvent('pass', selectedCourtId);
         setLastPasserId(selectedCourtId);
         setSelectedCourtId(id);
       } else {
-        // Select & Defense action
         const pos = starterPositions[id] || '';
         if (pos.includes('GK')) recordEvent('catch', id);
         else recordEvent('steal', id);
         setSelectedCourtId(id);
+        setLastPasserId(null);
       }
     }
   };
@@ -202,9 +185,12 @@ export default function LiveMatchPage() {
     if (phase === 'setup') {
       setSetupSelectedPos(pos);
     } else if (phase === 'playing') {
-      if (selectedBenchId) {
-        handleDrop(selectedBenchId, 'bench', pos, null);
-        setSelectedBenchId(null);
+      if (swapSourceId && swapSourceOrigin === 'bench') {
+        handleDrop(swapSourceId, 'bench', pos, null);
+        setSwapSourceId(null);
+      } else if (swapSourceId && swapSourceOrigin === 'pitch') {
+        handleDrop(swapSourceId, 'pitch', pos, null);
+        setSwapSourceId(null);
       }
     }
   };
@@ -295,7 +281,21 @@ export default function LiveMatchPage() {
       setLastPasserId(null);
       setSelectedCourtId(null);
     } else if (type === 'lost_ball') {
-      recordEvent('lost_ball', targetId);
+      if (lastPasserId === null) {
+        setEvents(prev => {
+          const newEvents = [...prev];
+          for (let i = newEvents.length - 1; i >= 0; i--) {
+            if (newEvents[i].user_id === targetId && (newEvents[i].event_type === 'steal' || newEvents[i].event_type === 'catch')) {
+               const pos = starterPositions[targetId] || '';
+               newEvents[i].event_type = pos.includes('GK') ? 'save' : 'block';
+               break;
+            }
+          }
+          return newEvents;
+        });
+      } else {
+        recordEvent('lost_ball', targetId);
+      }
       setSelectedCourtId(null);
       setLastPasserId(null);
     } else {

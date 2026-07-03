@@ -451,6 +451,12 @@
   transform: scale(1.1);
 }
 
+.pitchSlot.selectedSlot .pitchSlotEmpty {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: var(--color-gold);
+  transform: scale(1.1);
+}
+
 /* Dragging Avatar Overlay */
 .draggedAvatar {
   position: fixed;
