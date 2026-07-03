@@ -377,45 +377,21 @@ async function handlePostback(event) {
     const lineName = profile.displayName;
     
     const userResult = await db.query('SELECT user_id, name, line_user_id FROM users WHERE line_user_id = $1 OR (line_user_id IS NULL AND line_name = $2)', [userId, lineName]);
-    const user = userResult.rows[0];
+    let user = userResult.rows[0];
 
     if (user && !user.line_user_id) {
       await db.query('UPDATE users SET line_user_id = $1 WHERE user_id = $2', [userId, user.user_id]);
     }
 
     if (!user) {
-      const unlinkedRes = await db.query('SELECT user_id, name FROM users WHERE line_user_id IS NULL');
-      if (unlinkedRes.rows.length === 0) {
-        await replyMessage(replyToken, { type: 'text', text: '紐付け可能なユーザーがいません。管理者に連絡して選手登録をしてください。' });
-        return;
-      }
-      const buttons = unlinkedRes.rows.slice(0, 15).map(u => ({
-        type: "button",
-        style: "secondary",
-        height: "sm",
-        action: {
-          type: "postback",
-          label: u.name,
-          data: `action=link&uid=${u.user_id}`
-        }
-      }));
-      await replyMessage(replyToken, {
-        type: 'flex',
-        altText: 'ユーザー紐付け',
-        contents: {
-          type: "bubble",
-          body: {
-            type: "box",
-            layout: "vertical",
-            spacing: "sm",
-            contents: [
-              { type: "text", text: "LINEアカウントの紐付けが完了していません。ご自身のアカウントを選択してください。", wrap: true, weight: "bold" },
-              ...buttons
-            ]
-          }
-        }
-      });
-      return;
+      // ユーザーが見つからない場合はLINE名で自動新規登録
+      const dummyEmail = `line_${userId}@futsal.local`;
+      const dummyHash = 'auto_created_no_password';
+      const insertUserRes = await db.query(`
+        INSERT INTO users (name, email, password_hash, role, line_user_id, line_name) 
+        VALUES ($1, $2, $3, 'player', $4, $5) RETURNING user_id, name
+      `, [lineName, dummyEmail, dummyHash, userId, lineName]);
+      user = insertUserRes.rows[0];
     }
 
     const dateStr = data.get('d');
