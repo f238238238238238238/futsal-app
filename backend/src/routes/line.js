@@ -49,9 +49,14 @@ router.post('/webhook', async (req, res) => {
         const isTargeted = isPrivateChat || text.includes('@FAY');
         
         if (isTargeted) {
-          const gatherMatch = text.match(/(\d+)日の集まり/);
+          const gatherMatch = text.match(/(\d+)日の集まり/) || text.match(/(\d+)日の情報を教えて/);
           if (gatherMatch) {
             await handleGatheringRequest(event, gatherMatch[1]);
+            return;
+          }
+
+          if (text.includes('現在開催予定の大会を教えて')) {
+            await handleScheduledCupsRequest(event);
             return;
           }
 
@@ -99,7 +104,7 @@ async function handleGatheringRequest(event, day) {
   const dateStrLike = `%-${day.padStart(2, '0')}%`;
 
   const dbEventsRes = await db.query(`
-    SELECT e.event_id, e.date_time, u.name 
+    SELECT e.event_id, e.date_time, e.location, e.description, u.name 
     FROM events e
     JOIN attendances a ON e.event_id = a.event_id AND a.status = 'present'
     JOIN users u ON a.user_id = u.user_id
@@ -116,10 +121,36 @@ async function handleGatheringRequest(event, day) {
 
   const count = dbEventsRes.rows.length;
   const names = dbEventsRes.rows.map(r => r.name).join(', ');
+  const loc = dbEventsRes.rows[0].location || '未定';
+  const time = dbEventsRes.rows[0].description || '未定';
 
   await replyMessage(replyToken, {
     type: 'text',
-    text: `${day}日の集まり状況\n\n【現在の参加予定者: ${count}名】\n${names}`
+    text: `${day}日の集まり状況\n\n【時間】${time}\n【場所】${loc}\n【現在の参加予定者: ${count}名】\n${names}`
+  });
+}
+
+async function handleScheduledCupsRequest(event) {
+  const replyToken = event.replyToken;
+  const db = getDb();
+
+  const res = await db.query(`
+    SELECT title, date_time, description, location
+    FROM events
+    WHERE title LIKE '%【開催確定】%' AND date_time >= CURRENT_DATE
+    ORDER BY date_time ASC
+  `);
+
+  if (res.rows.length === 0) {
+    await replyMessage(replyToken, { type: 'text', text: '現在開催が確定している大会はありません😢' });
+    return;
+  }
+
+  const textLines = res.rows.map(r => `・${r.date_time} ${r.description || ''}\n  ${r.title}`);
+  
+  await replyMessage(replyToken, {
+    type: 'text',
+    text: `🎉 現在開催予定の大会\n\n${textLines.join('\n\n')}`
   });
 }
 
@@ -180,6 +211,43 @@ async function handleCupRequest(event, targetMonth = null, targetDows = []) {
         weight: "bold"
       });
 
+      const timeMatch = cup.dateText.match(/(\d{1,2}:\d{2}.*\d{1,2}:\d{2})/);
+      const timeStr = timeMatch ? timeMatch[1] : '';
+      const pParts = cup.isoDate.split('-');
+      const mDate = pParts.length >= 3 ? `${parseInt(pParts[1], 10)}月${parseInt(pParts[2], 10)}日` : cup.isoDate;
+      const shortTitle = cup.title.substring(0, 40);
+
+      contents.push({
+        type: "box",
+        layout: "horizontal",
+        spacing: "sm",
+        margin: "md",
+        contents: [
+          {
+            type: "button",
+            style: "primary",
+            height: "sm",
+            action: {
+              type: "postback",
+              label: "参加",
+              data: `action=attend&d=${cup.isoDate}&t=${shortTitle}&time=${timeStr}`,
+              displayText: `${mDate}参加します`
+            }
+          },
+          {
+            type: "button",
+            style: "secondary",
+            height: "sm",
+            action: {
+              type: "postback",
+              label: "不参加",
+              data: `action=absent&d=${cup.isoDate}&t=${shortTitle}&time=${timeStr}`,
+              displayText: `${mDate}不参加です`
+            }
+          }
+        ]
+      });
+
       contents.push({
         type: "separator",
         margin: "lg"
@@ -193,9 +261,6 @@ async function handleCupRequest(event, targetMonth = null, targetDows = []) {
         contents: contents
       };
     });
-
-    const liffId = process.env.LIFF_ID || "2010559166-fEgR6Hi9";
-    const webLinkUrl = `https://liff.line.me/${liffId}?luid=${userId}&month=${targetMonth || ''}&dows=${targetDows.join(',') || ''}`;
 
     const bubble = {
       type: "bubble",
@@ -217,26 +282,6 @@ async function handleCupRequest(event, targetMonth = null, targetDows = []) {
         contents: flexContents
       }
     };
-
-    if (isLast) {
-      bubble.footer = {
-        type: "box",
-        layout: "vertical",
-        spacing: "sm",
-        contents: [
-          {
-            type: "button",
-            style: "primary",
-            height: "sm",
-            action: {
-              type: "uri",
-              label: "出欠を一括登録する",
-              uri: webLinkUrl
-            }
-          }
-        ]
-      };
-    }
 
     return {
       type: "flex",
@@ -316,16 +361,22 @@ async function handlePostback(event) {
 
     const dateStr = data.get('d');
     const shortTitle = data.get('t');
+    const timeStr = data.get('time') || '';
 
     // イベントを探すか作成する
-    let eventRes = await db.query('SELECT event_id FROM events WHERE date_time LIKE $1', [`${dateStr}%`]);
+    let eventRes = await db.query('SELECT event_id, title, description FROM events WHERE date_time LIKE $1', [`${dateStr}%`]);
     let eventId;
+    let eventDescription = timeStr;
     if (eventRes.rows.length > 0) {
       eventId = eventRes.rows[0].event_id;
+      eventDescription = eventRes.rows[0].description || timeStr;
+      if (timeStr && !eventRes.rows[0].description) {
+        await db.query("UPDATE events SET description = $1 WHERE event_id = $2", [timeStr, eventId]);
+      }
     } else {
       const insertRes = await db.query(
-        "INSERT INTO events (title, event_type, date_time, location, description) VALUES ($1, 'match', $2, 'Z FUTSAL SPORT 名古屋駅前', 'LINEからの自動登録') RETURNING event_id",
-        [`[大会] ${shortTitle}...`, dateStr]
+        "INSERT INTO events (title, event_type, date_time, location, description) VALUES ($1, 'match', $2, 'Z FUTSAL SPORT 名古屋駅前', $3) RETURNING event_id",
+        [`[大会] ${shortTitle}`, dateStr, timeStr]
       );
       eventId = insertRes.rows[0].event_id;
     }
@@ -355,24 +406,18 @@ async function handlePostback(event) {
       const count = listRes.rows.length;
       const names = listRes.rows.map(r => r.name).join(', ');
 
-      const msgs = [
-        {
-          type: 'text',
-          text: `${displayDate}：${user.name}さんが「参加(〇)」として登録されました！\n\n【現在の参加予定者: ${count}名】\n${names}`
-        }
-      ];
-
       if (count === 7) {
         await db.query("UPDATE events SET title = replace(title, '[大会]', '【開催確定】') WHERE event_id = $1", [eventId]);
-        msgs.push({
+        await replyMessage(replyToken, {
           type: 'text',
-          text: `🎉【開催確定】参加者が7名に達したため、${displayDate} の大会への参加が確定しました！`
+          text: `🎉 7人集まったため開催します！\n\n【日時】${displayDate} ${eventDescription}\n【場所】Z FUTSAL SPORT 名古屋駅前\n【参加メンバー】\n${names}`
         });
       }
 
-      await replyMessage(replyToken, msgs);
-
     } else if (action === 'absent') {
+      const oldListRes = await db.query(`SELECT count(*) as c FROM attendances WHERE event_id = $1 AND status = 'present'`, [eventId]);
+      const oldCount = parseInt(oldListRes.rows[0].c, 10);
+
       const attRes = await db.query('SELECT attendance_id FROM attendances WHERE event_id = $1 AND user_id = $2', [eventId, user.user_id]);
       if (attRes.rows.length === 0) {
         await db.query("INSERT INTO attendances (event_id, user_id, status) VALUES ($1, $2, 'absent')", [eventId, user.user_id]);
@@ -386,11 +431,43 @@ async function handlePostback(event) {
         WHERE a.event_id = $1 AND a.status = 'present'
       `, [eventId]);
       const count = listRes.rows.length;
+      const names = listRes.rows.map(r => r.name).join(', ');
 
-      await replyMessage(replyToken, {
-        type: 'text',
-        text: `${displayDate}：${user.name}さんが「参加不可(✕)」として登録されました。\n\n【現在の参加予定者: ${count}名】`
-      });
+      if (oldCount >= 7 && count < 7) {
+        await db.query("UPDATE events SET title = replace(title, '【開催確定】', '[大会]') WHERE event_id = $1", [eventId]);
+        
+        // 再募集用にFlex Messageのボタンも送る
+        const bubble = {
+          type: "bubble",
+          body: {
+            type: "box", layout: "vertical", spacing: "sm",
+            contents: [
+              { type: "text", text: `⚠️ 参加者が7人未満（現在${count}名）になったため開催を一時取りやめます😢`, wrap: true, weight: "bold" },
+              { type: "text", text: "ほかに参加できる方はいますか？\n", wrap: true },
+              { type: "text", text: `【現在の参加メンバー】\n${names}`, wrap: true, color: "#555555" }
+            ]
+          },
+          footer: {
+            type: "box", layout: "horizontal", spacing: "sm",
+            contents: [
+              {
+                type: "button", style: "primary", height: "sm",
+                action: { type: "postback", label: "参加", data: `action=attend&d=${dateStr}&t=${shortTitle}&time=${eventDescription}`, displayText: `${displayDate}参加します` }
+              },
+              {
+                type: "button", style: "secondary", height: "sm",
+                action: { type: "postback", label: "不参加", data: `action=absent&d=${dateStr}&t=${shortTitle}&time=${eventDescription}`, displayText: `${displayDate}不参加です` }
+              }
+            ]
+          }
+        };
+
+        await replyMessage(replyToken, {
+          type: 'flex',
+          altText: '開催取りやめと再募集',
+          contents: bubble
+        });
+      }
     }
   }
 }
