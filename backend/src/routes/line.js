@@ -55,7 +55,7 @@ router.post('/webhook', async (req, res) => {
             return;
           }
 
-          if (text.includes('ヘルプ') || text.includes('使い方') || text.includes('メニュー')) {
+          if (text.includes('ヘルプ') || text.includes('使い方') || text.includes('メニュー') || text.trim() === '@FAY') {
             await handleHelpRequest(event);
             return;
           }
