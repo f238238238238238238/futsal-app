@@ -159,11 +159,6 @@ function AttendanceContent() {
                 <div className="mb-3">
                   <div className="flex items-center justify-between mb-1">
                     <span className="font-bold text-gray-800 text-lg">{mDate}</span>
-                    {cup.availability !== '情報なし' && (
-                      <span className="text-xs px-2 py-1 bg-gray-100 rounded-full font-medium text-gray-600">
-                        {cup.availability}
-                      </span>
-                    )}
                   </div>
                   <div className="text-sm text-gray-600 mb-1">{timeStr}</div>
                   <div className="text-sm font-medium text-gray-900 leading-tight">🏆 {cup.title}</div>

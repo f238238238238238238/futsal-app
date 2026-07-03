@@ -29,8 +29,16 @@ export function initializeDb() {
     const schemaPath = path.join(__dirname, 'schema.sql');
     if (fs.existsSync(schemaPath)) {
       const schema = fs.readFileSync(schemaPath, 'utf8');
-      pool.query(schema).then(() => {
-        console.log('Database schema initialized successfully.');
+      pool.query(schema).then(async () => {
+        await pool.query(`
+      CREATE TABLE IF NOT EXISTS api_cache (
+        key VARCHAR(255) PRIMARY KEY,
+        data JSONB NOT NULL,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    
+    console.log('Database initialized successfully');
       }).catch(err => {
         console.error('Error initializing database schema:', err);
       });
