@@ -25,6 +25,13 @@ export const metadata = {
   keywords: "フットサル, futsal, チーム, 成績, ランキング",
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
 export default function RootLayout({ children }) {
   return (
     <html

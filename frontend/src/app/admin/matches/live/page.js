@@ -46,12 +46,6 @@ export default function LiveMatchPage() {
   // Drag & Drop State
   const [draggedItem, setDraggedItem] = useState(null);
 
-  // To prevent scrolling on mobile entirely
-  useEffect(() => {
-    document.body.style.overscrollBehavior = 'none';
-    return () => { document.body.style.overscrollBehavior = 'auto'; };
-  }, []);
-
   useEffect(() => {
     getPlayers().then(res => {
       const ps = res.users || res || [];
@@ -509,14 +503,14 @@ export default function LiveMatchPage() {
               <div className={styles.pitchPenaltyAreaTop} />
               <div className={styles.pitchPenaltyAreaBottom} />
               
-              {/* Action Zones Overlay (Only active when someone is selected) */}
-              <div className={styles.actionZoneGoal} style={{ pointerEvents: selectedCourtId ? 'auto' : 'none', opacity: selectedCourtId ? 1 : 0 }} onClick={() => handleAction('goal')}>⚽ ゴール</div>
-              <div className={styles.actionZoneMissL} style={{ pointerEvents: selectedCourtId ? 'auto' : 'none', opacity: selectedCourtId ? 1 : 0 }} onClick={() => handleAction('shot')}>ノーゴール</div>
-              <div className={styles.actionZoneMissR} style={{ pointerEvents: selectedCourtId ? 'auto' : 'none', opacity: selectedCourtId ? 1 : 0 }} onClick={() => handleAction('shot')}>ノーゴール</div>
-              <div className={styles.actionZoneLost} style={{ pointerEvents: selectedCourtId ? 'auto' : 'none', opacity: selectedCourtId ? 1 : 0 }} onClick={() => handleAction('lost_ball')}>💥 ロスト</div>
+              {/* Action Zones Overlay */}
+              <div className={styles.actionZoneGoal} style={{ pointerEvents: selectedCourtId ? 'auto' : 'none', opacity: selectedCourtId ? 1 : 0.4 }} onClick={() => handleAction('goal')}>⚽ ゴール</div>
+              <div className={styles.actionZoneMissL} style={{ pointerEvents: selectedCourtId ? 'auto' : 'none', opacity: selectedCourtId ? 1 : 0.4 }} onClick={() => handleAction('shot')}>ノーゴール</div>
+              <div className={styles.actionZoneMissR} style={{ pointerEvents: selectedCourtId ? 'auto' : 'none', opacity: selectedCourtId ? 1 : 0.4 }} onClick={() => handleAction('shot')}>ノーゴール</div>
+              <div className={styles.actionZoneLost} style={{ pointerEvents: selectedCourtId ? 'auto' : 'none', opacity: selectedCourtId ? 1 : 0.4 }} onClick={() => handleAction('lost_ball')}>💥 ロスト</div>
               
               {/* Concede is a global action, but maybe we only show it when selected to avoid misclicks, or keep it always active. The user said: 失点も自分のゴールエリアに配置してほしい */}
-              <div className={styles.actionZoneConcede} onClick={() => handleAction('concede')}>📉 失点</div>
+              <div className={styles.actionZoneConcede} style={{ pointerEvents: selectedCourtId ? 'auto' : 'none', opacity: selectedCourtId ? 1 : 0.4 }} onClick={() => handleAction('concede')}>📉 失点</div>
 
               {positions.map(pos => renderPitchSlot(pos, false))}
             </div>
