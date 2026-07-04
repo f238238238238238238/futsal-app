@@ -52,7 +52,8 @@ function AttendanceContent() {
         // Initialize attendances state
         const initialAtt = {};
         data.forEach(cup => {
-          initialAtt[cup.dateText] = {
+          const key = cup.isoDate + '|' + cup.title;
+          initialAtt[key] = {
             dateStr: cup.isoDate,
             shortTitle: cup.title.substring(0, 40),
             timeStr: cup.dateText.match(/(\d{1,2}:\d{2}.*\d{1,2}:\d{2})/) ? cup.dateText.match(/(\d{1,2}:\d{2}.*\d{1,2}:\d{2})/)[1] : '',
@@ -72,11 +73,11 @@ function AttendanceContent() {
     initLiff();
   }, [searchParams]);
 
-  const handleStatusChange = (dateText, status) => {
+  const handleStatusChange = (key, status) => {
     setAttendances(prev => ({
       ...prev,
-      [dateText]: {
-        ...prev[dateText],
+      [key]: {
+        ...prev[key],
         status
       }
     }));
@@ -154,7 +155,8 @@ function AttendanceContent() {
             const timeStr = timeMatch ? timeMatch[1] : '';
             const pParts = cup.isoDate.split('-');
             const mDate = pParts.length >= 3 ? `${parseInt(pParts[1], 10)}月${parseInt(pParts[2], 10)}日` : cup.isoDate;
-            const currentStatus = attendances[cup.dateText]?.status || 'pending';
+            const key = cup.isoDate + '|' + cup.title;
+            const currentStatus = attendances[key]?.status || 'pending';
 
             return (
               <div key={i} className={styles.cupCard}>
@@ -166,19 +168,19 @@ function AttendanceContent() {
 
                 <div className={styles.buttonGroup}>
                   <button
-                    onClick={() => handleStatusChange(cup.dateText, 'present')}
+                    onClick={() => handleStatusChange(key, 'present')}
                     className={`${styles.statusBtn} ${currentStatus === 'present' ? styles.activePresent : ''}`}
                   >
                     参加
                   </button>
                   <button
-                    onClick={() => handleStatusChange(cup.dateText, 'absent')}
+                    onClick={() => handleStatusChange(key, 'absent')}
                     className={`${styles.statusBtn} ${currentStatus === 'absent' ? styles.activeAbsent : ''}`}
                   >
                     不参加
                   </button>
                   <button
-                    onClick={() => handleStatusChange(cup.dateText, 'pending')}
+                    onClick={() => handleStatusChange(key, 'pending')}
                     className={`${styles.statusBtn} ${currentStatus === 'pending' ? styles.activePending : ''}`}
                   >
                     未定
