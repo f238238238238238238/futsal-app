@@ -3,15 +3,13 @@ import * as cheerio from 'cheerio';
 export async function scrapeCups(targetMonth = null, targetDows = []) {
   try {
     const baseTargetUrl = 'https://yoyaku.labola.jp/r/shop/3014/event/tournament/?embed=normal&category=futsal';
-    console.log(`Fetching multiple pages directly...`);
+    const scraperApiKey = process.env.SCRAPER_API_KEY || 'c49ad1f5f652264dc835066a9da33872';
+    console.log(`Fetching multiple pages via ScraperAPI (fast mode)...`);
     const pages = [1, 2];
     const fetchPromises = pages.map(page => {
       const pageUrl = `${baseTargetUrl}&page=${page}`;
-      return fetch(pageUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-        }
-      }).then(r => r.text());
+      const targetUrl = `http://api.scraperapi.com/?api_key=${scraperApiKey}&url=${encodeURIComponent(pageUrl)}`;
+      return fetch(targetUrl).then(r => r.text());
     });
     
     const htmls = await Promise.all(fetchPromises);
