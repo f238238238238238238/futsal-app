@@ -557,7 +557,7 @@ export default function LiveMatchPage() {
                 {benchIds.map(id => {
                   const p = players.find(x => x.user_id === id);
                   if (!p) return null;
-                  const isSelected = selectedBenchId === id;
+                  const isSelected = swapSourceId === id;
                   return (
                     <div 
                       key={id} 
