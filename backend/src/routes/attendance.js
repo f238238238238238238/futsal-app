@@ -38,13 +38,17 @@ router.post('/bulk', async (req, res) => {
       if (!dateStr || !shortTitle || !status || status === 'pending') continue;
 
       // Find or create event
-      let eventRes = await db.query('SELECT event_id, title, description FROM events WHERE date_time LIKE $1', [`${dateStr}%`]);
+      // Because dateStr is stored in date_time and timeStr in description
+      let eventRes;
+      if (timeStr) {
+        eventRes = await db.query('SELECT event_id, title, description FROM events WHERE date_time = $1 AND description = $2', [dateStr, timeStr]);
+      } else {
+        eventRes = await db.query('SELECT event_id, title, description FROM events WHERE date_time = $1 AND (description IS NULL OR description = \'\')', [dateStr]);
+      }
+
       let eventId;
       if (eventRes.rows.length > 0) {
         eventId = eventRes.rows[0].event_id;
-        if (timeStr && !eventRes.rows[0].description) {
-          await db.query("UPDATE events SET description = $1 WHERE event_id = $2", [timeStr, eventId]);
-        }
       } else {
         const insertRes = await db.query(
           "INSERT INTO events (title, event_type, date_time, location, description) VALUES ($1, 'match', $2, 'Z FUTSAL SPORT 名古屋駅前', $3) RETURNING event_id",
