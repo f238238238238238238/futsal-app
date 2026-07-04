@@ -21,7 +21,15 @@ export default function LiveMatchPage() {
   // State
   const [phase, setPhase] = useState('setup'); // setup, playing, finished
   const [matchMode, setMatchMode] = useState('external'); // external, intra
-  const [matchInfo, setMatchInfo] = useState({ date: new Date().toISOString().slice(0,10), opponent_name: '', competition_name: '' });
+  const [matchInfo, setMatchInfo] = useState({ 
+    date: new Date().toISOString().slice(0,10), 
+    opponent_name: '', 
+    competition_name: '',
+    team1_name: 'RED',
+    team2_name: 'BLUE'
+  });
+  
+  const [availableEvents, setAvailableEvents] = useState([]);
   
   const [courtIds, setCourtIds] = useState([]);
   const [benchIds, setBenchIds] = useState([]);
@@ -70,6 +78,8 @@ export default function LiveMatchPage() {
       try {
         const eventsRes = await getEvents();
         const evs = eventsRes.events || [];
+        setAvailableEvents(evs);
+        
         const targetEvent = evs.find(e => e.date_time && e.date_time.startsWith(matchInfo.date));
         if (targetEvent) {
           const attRes = await getEventAttendances(targetEvent.event_id);
@@ -363,7 +373,7 @@ export default function LiveMatchPage() {
 
     const payload = {
       date: matchInfo.date,
-      opponent_name: matchMode === 'intra' ? '紅白戦' : matchInfo.opponent_name,
+      opponent_name: matchMode === 'intra' ? `紅白戦 (${matchInfo.team1_name || 'RED'} vs ${matchInfo.team2_name || 'BLUE'})` : matchInfo.opponent_name,
       competition_name: matchInfo.competition_name,
       our_score: score.us,
       opponent_score: score.opponent,
@@ -435,13 +445,16 @@ export default function LiveMatchPage() {
     );
   };
 
-  const positions = matchMode === 'intra' ? POSITIONS_INTRA : POSITIONS_EXTERNAL;
+  const positions = matchMode === 'intra' ? 
+    [`${matchInfo.team1_name || 'RED'}_Pivo`, `${matchInfo.team1_name || 'RED'}_AlaL`, `${matchInfo.team1_name || 'RED'}_AlaR`, `${matchInfo.team1_name || 'RED'}_Fixo`, `${matchInfo.team1_name || 'RED'}_GK`, 
+     `${matchInfo.team2_name || 'BLUE'}_Pivo`, `${matchInfo.team2_name || 'BLUE'}_AlaL`, `${matchInfo.team2_name || 'BLUE'}_AlaR`, `${matchInfo.team2_name || 'BLUE'}_Fixo`, `${matchInfo.team2_name || 'BLUE'}_GK`] 
+    : POSITIONS_EXTERNAL;
 
   return (
     <div className={styles.livePage}>
       <header className={styles.liveHeader}>
         <Link href="/admin/matches" className={styles.backBtn}>✕</Link>
-        <div className={styles.headerTitle}>{matchMode === 'intra' ? '🔴 RED vs BLUE 🔵' : 'LIVE MATCH'}</div>
+        <div className={styles.headerTitle}>{matchMode === 'intra' ? `🔴 ${matchInfo.team1_name || 'RED'} vs ${matchInfo.team2_name || 'BLUE'} 🔵` : 'LIVE MATCH'}</div>
         <div style={{ width: '40px' }} />
       </header>
 
@@ -459,10 +472,41 @@ export default function LiveMatchPage() {
               <label className={styles.formLabel}>日付</label>
               <input type="date" className={styles.formInput} value={matchInfo.date} onChange={e => setMatchInfo({...matchInfo, date: e.target.value})} />
             </div>
+
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>大会名 / イベント名</label>
+              <input 
+                type="text" 
+                list="competitions"
+                className={styles.formInput} 
+                value={matchInfo.competition_name} 
+                onChange={e => setMatchInfo({...matchInfo, competition_name: e.target.value})} 
+                placeholder="大会名を入力・選択" 
+              />
+              <datalist id="competitions">
+                {availableEvents.map(e => (
+                  <option key={e.event_id} value={e.title.replace(/^\[大会\]\s*/, '')} />
+                ))}
+              </datalist>
+            </div>
+
             {matchMode === 'external' && (
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>対戦相手</label>
                 <input type="text" className={styles.formInput} value={matchInfo.opponent_name} onChange={e => setMatchInfo({...matchInfo, opponent_name: e.target.value})} placeholder="例: FC東京" />
+              </div>
+            )}
+
+            {matchMode === 'intra' && (
+              <div style={{display: 'flex', gap: '10px'}}>
+                <div className={styles.formGroup} style={{flex: 1}}>
+                  <label className={styles.formLabel}>チーム1 (RED)</label>
+                  <input type="text" className={styles.formInput} value={matchInfo.team1_name} onChange={e => setMatchInfo({...matchInfo, team1_name: e.target.value})} placeholder="RED" />
+                </div>
+                <div className={styles.formGroup} style={{flex: 1}}>
+                  <label className={styles.formLabel}>チーム2 (BLUE)</label>
+                  <input type="text" className={styles.formInput} value={matchInfo.team2_name} onChange={e => setMatchInfo({...matchInfo, team2_name: e.target.value})} placeholder="BLUE" />
+                </div>
               </div>
             )}
             
@@ -518,7 +562,7 @@ export default function LiveMatchPage() {
           
           <div className={styles.scoreboard}>
             <div className={styles.scoreBox}>
-              <div className={styles.scoreLabel}>{matchMode === 'intra' ? 'RED' : 'OURS'}</div>
+              <div className={styles.scoreLabel}>{matchMode === 'intra' ? (matchInfo.team1_name || 'RED') : 'OURS'}</div>
               <div className={styles.scoreValue}>{score.us}</div>
             </div>
             <div className={styles.timerBox}>
@@ -530,7 +574,7 @@ export default function LiveMatchPage() {
               </div>
             </div>
             <div className={styles.scoreBox}>
-              <div className={styles.scoreLabel}>{matchMode === 'intra' ? 'BLUE' : 'OPPONENT'}</div>
+              <div className={styles.scoreLabel}>{matchMode === 'intra' ? (matchInfo.team2_name || 'BLUE') : 'OPPONENT'}</div>
               <div className={styles.scoreValue}>{score.opponent}</div>
             </div>
           </div>
