@@ -270,6 +270,9 @@ export default function LiveMatchPage() {
       // Concede doesn't strictly need a selected player, but if one is selected we can record a 'defense_error' or similar if we wanted.
       // For now, it just adds to opponent score.
       setScore(s => ({ ...s, opponent: s.opponent + 1 }));
+      if (selectedCourtId) {
+        setSelectedCourtId(null);
+      }
       return;
     }
 
@@ -546,7 +549,7 @@ export default function LiveMatchPage() {
               <div className={styles.actionZoneLost} style={{ pointerEvents: selectedCourtId ? 'auto' : 'none', opacity: selectedCourtId ? 1 : 0.4 }} onClick={() => handleAction('lost_ball')}>💥 ロスト</div>
               
               {/* Concede is a global action, but maybe we only show it when selected to avoid misclicks, or keep it always active. The user said: 失点も自分のゴールエリアに配置してほしい */}
-              <div className={styles.actionZoneConcede} style={{ pointerEvents: !selectedCourtId ? 'auto' : 'none', opacity: !selectedCourtId ? 1 : 0.4 }} onClick={() => handleAction('concede')}>📉 失点</div>
+              <div className={styles.actionZoneConcede} style={{ pointerEvents: 'auto', opacity: 1 }} onClick={() => handleAction('concede')}>📉 失点</div>
 
               {positions.map(pos => renderPitchSlot(pos, false))}
             </div>
