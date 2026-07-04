@@ -351,8 +351,7 @@ export default function LiveMatchPage() {
 
   const handleSaveMatch = async () => {
     const statsObj = {};
-    const playedSet = new Set([...initialStarters, ...courtIds]);
-    events.forEach(e => playedSet.add(e.user_id));
+    const playedSet = new Set([...attendingIds]);
 
     playedSet.forEach(uid => {
       statsObj[uid] = {

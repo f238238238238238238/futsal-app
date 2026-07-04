@@ -12,6 +12,16 @@ const POSITIONS = {
   'Ala L': { top: '45%', left: '20%' },
   'Ala R': { top: '45%', left: '80%' },
   'Pivo': { top: '25%', left: '50%' },
+  'red_GK': { top: '92%', left: '50%' },
+  'red_Fixo': { top: '75%', left: '50%' },
+  'red_AlaL': { top: '60%', left: '20%' },
+  'red_AlaR': { top: '60%', left: '80%' },
+  'red_Pivo': { top: '55%', left: '50%' },
+  'blue_GK': { top: '8%', left: '50%' },
+  'blue_Fixo': { top: '25%', left: '50%' },
+  'blue_AlaL': { top: '40%', left: '80%' },
+  'blue_AlaR': { top: '40%', left: '20%' },
+  'blue_Pivo': { top: '45%', left: '50%' },
   'default': { top: '50%', left: '50%' }
 };
 
