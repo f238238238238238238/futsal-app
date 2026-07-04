@@ -3,6 +3,8 @@ import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import liff from '@line/liff';
 
+import styles from './liff.module.css';
+
 function AttendanceContent() {
   const searchParams = useSearchParams();
   const [cups, setCups] = useState([]);
@@ -118,35 +120,35 @@ function AttendanceContent() {
     }
   };
 
-  if (loading) return <div className="p-8 text-center text-gray-500">読み込み中...</div>;
-  if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
+  if (loading) return <div className={styles.centerState} style={{color: '#888'}}>読み込み中...</div>;
+  if (error) return <div className={styles.centerState} style={{color: '#e74c3c'}}>{error}</div>;
   if (success) return (
-    <div className="p-8 text-center">
-      <div className="text-5xl mb-4">🎉</div>
-      <h2 className="text-xl font-bold text-green-600 mb-2">保存が完了しました！</h2>
-      <p className="text-gray-600">この画面は自動的に閉じます。</p>
+    <div className={styles.centerState}>
+      <div className={styles.successIcon}>🎉</div>
+      <h2 className={styles.successTitle}>保存が完了しました！</h2>
+      <p className={styles.successText}>この画面は自動的に閉じます。</p>
     </div>
   );
 
   return (
-    <div className="max-w-md mx-auto p-4 pb-32">
-      <div className="mb-6 flex items-center space-x-3">
+    <div className={styles.container}>
+      <div className={styles.header}>
         {profile?.pictureUrl && (
-          <img src={profile.pictureUrl} alt="profile" className="w-10 h-10 rounded-full shadow-md" />
+          <img src={profile.pictureUrl} alt="profile" className={styles.profileImg} />
         )}
-        <h1 className="text-xl font-bold text-gray-800">
+        <h1 className={styles.title}>
           出欠の一括登録
         </h1>
       </div>
 
-      <p className="text-sm text-gray-600 mb-6 bg-blue-50 p-3 rounded-lg border border-blue-100">
+      <p className={styles.instruction}>
         参加・不参加を選択して、一番下の「保存する」ボタンを押してください。
       </p>
 
       {cups.length === 0 ? (
-        <div className="text-center text-gray-500 py-10">該当する大会が見つかりませんでした。</div>
+        <div className={styles.emptyState}>該当する大会が見つかりませんでした。</div>
       ) : (
-        <div className="space-y-4">
+        <div className={styles.cupList}>
           {cups.map((cup, i) => {
             const timeMatch = cup.dateText.match(/(\d{1,2}:\d{2}.*\d{1,2}:\d{2})/);
             const timeStr = timeMatch ? timeMatch[1] : '';
@@ -155,31 +157,29 @@ function AttendanceContent() {
             const currentStatus = attendances[cup.isoDate]?.status || 'pending';
 
             return (
-              <div key={i} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                <div className="mb-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold text-gray-800 text-lg">{mDate}</span>
-                  </div>
-                  <div className="text-sm text-gray-600 mb-1">{timeStr}</div>
-                  <div className="text-sm font-medium text-gray-900 leading-tight">🏆 {cup.title}</div>
+              <div key={i} className={styles.cupCard}>
+                <div className={styles.cardHeader}>
+                  <span className={styles.date}>{mDate}</span>
                 </div>
+                <div className={styles.time}>{timeStr}</div>
+                <div className={styles.cupTitle}>🏆 {cup.title}</div>
 
-                <div className="grid grid-cols-3 gap-2">
+                <div className={styles.buttonGroup}>
                   <button
                     onClick={() => handleStatusChange(cup.isoDate, 'present')}
-                    className={`py-2 text-sm font-bold rounded-lg transition-colors ${currentStatus === 'present' ? 'bg-[#1DB446] text-white shadow-md' : 'bg-gray-100 text-gray-500'}`}
+                    className={`${styles.statusBtn} ${currentStatus === 'present' ? styles.activePresent : ''}`}
                   >
                     参加
                   </button>
                   <button
                     onClick={() => handleStatusChange(cup.isoDate, 'absent')}
-                    className={`py-2 text-sm font-bold rounded-lg transition-colors ${currentStatus === 'absent' ? 'bg-red-500 text-white shadow-md' : 'bg-gray-100 text-gray-500'}`}
+                    className={`${styles.statusBtn} ${currentStatus === 'absent' ? styles.activeAbsent : ''}`}
                   >
                     不参加
                   </button>
                   <button
                     onClick={() => handleStatusChange(cup.isoDate, 'pending')}
-                    className={`py-2 text-sm font-bold rounded-lg transition-colors ${currentStatus === 'pending' ? 'bg-gray-700 text-white shadow-md' : 'bg-gray-100 text-gray-500'}`}
+                    className={`${styles.statusBtn} ${currentStatus === 'pending' ? styles.activePending : ''}`}
                   >
                     未定
                   </button>
@@ -191,15 +191,15 @@ function AttendanceContent() {
       )}
 
       {cups.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/90 backdrop-blur-md border-t border-gray-200">
-          <div className="max-w-md mx-auto">
+        <div className={styles.bottomBar}>
+          <div className={styles.bottomBarInner}>
             <button
               onClick={handleSave}
               disabled={saving}
-              className="w-full py-4 bg-[#1DB446] text-white text-lg font-bold rounded-xl shadow-lg hover:bg-[#199d3d] active:scale-95 transition-all flex justify-center items-center"
+              className={styles.saveBtn}
             >
               {saving ? (
-                <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <div className={styles.spinner}></div>
               ) : (
                 "一括で保存する"
               )}
@@ -213,7 +213,7 @@ function AttendanceContent() {
 
 export default function AttendancePage() {
   return (
-    <Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
+    <Suspense fallback={<div className={styles.centerState} style={{color: '#888'}}>読み込み中...</div>}>
       <AttendanceContent />
     </Suspense>
   );
