@@ -150,7 +150,7 @@ export default function LiveMatchPage() {
       const isDoubleTap = lastTapInfo.id === id && (now - lastTapInfo.time) < 400;
       setLastTapInfo({ id, time: now });
 
-      if (isDoubleTap) {
+      if (isDoubleTap || (!swapSourceId && origin === 'bench')) {
         setSwapSourceId(id);
         setSwapSourceOrigin(origin);
         setSelectedCourtId(null);
