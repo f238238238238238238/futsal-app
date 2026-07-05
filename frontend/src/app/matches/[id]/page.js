@@ -50,7 +50,13 @@ export default function MatchDetailPage() {
     return [...match.events].sort((a,b) => a.minute - b.minute);
   }, [match]);
 
-  const getPlayerPosition = (userId, currentMin) => {
+  const getPlayerPosition = (userId, currentMin, evPos) => {
+    if (!userId && evPos && (evPos.startsWith('dummy_') || evPos === 'opponent')) {
+      return POSITIONS[evPos] || POSITIONS['default'];
+    }
+    if (userId && typeof userId === 'string' && (userId.startsWith('dummy_') || userId === 'opponent')) {
+      return POSITIONS[userId] || POSITIONS['default'];
+    }
     let pos = '';
     const starter = match.stats.find(s => s.user_id === userId);
     if (starter && (starter.is_starter === 1 || starter.is_starter === true)) {
@@ -68,7 +74,7 @@ export default function MatchDetailPage() {
   };
 
   const triggerAnimation = (ev, evIndex) => {
-    const pPos = getPlayerPosition(ev.user_id, ev.minute);
+    const pPos = getPlayerPosition(ev.user_id, ev.minute, ev.position);
     
     switch (ev.event_type) {
       case 'pass':
@@ -272,7 +278,7 @@ export default function MatchDetailPage() {
          if (p && p.position.startsWith('red_')) team = 'red';
          else if (p && p.position.startsWith('blue_')) team = 'blue';
       } else {
-         if (ev.user_id === 'opponent' || (typeof ev.user_id === 'string' && ev.user_id.startsWith('dummy_'))) {
+         if (!ev.user_id || ev.user_id === 'opponent' || (typeof ev.user_id === 'string' && ev.user_id.startsWith('dummy_')) || (typeof ev.position === 'string' && (ev.position.startsWith('dummy_') || ev.position === 'opponent'))) {
             team = 'blue'; // opponent
          } else {
             team = 'red'; // us
@@ -327,7 +333,12 @@ export default function MatchDetailPage() {
   }, [sortedEvents, minute]);
 
   const getEventText = (ev) => {
-    const name = ev.name || ev.user_name || '選手';
+    let name = ev.name || ev.user_name || '選手';
+    if (!ev.user_id && ev.position && (ev.position.startsWith('dummy_') || ev.position === 'opponent')) {
+      name = '相手選手';
+    } else if (ev.user_id === 'opponent' || (typeof ev.user_id === 'string' && ev.user_id.startsWith('dummy_'))) {
+      name = '相手選手';
+    }
     switch (ev.event_type) {
       case 'goal': return `⚽ ${name} がゴール！`;
       case 'assist': return `🅰️ ${name} がアシスト！`;

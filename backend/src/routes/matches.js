@@ -94,7 +94,7 @@ router.get('/:id', async (req, res) => {
     const eventsResult = await db.query(`
       SELECT me.*, u.name as user_name
       FROM match_events me
-      JOIN users u ON me.user_id = u.user_id
+      LEFT JOIN users u ON me.user_id = u.user_id
       WHERE me.match_id = $1
       ORDER BY me.minute ASC
     `, [matchId]);
@@ -151,8 +151,12 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
       const params = [];
       events.forEach((ev, i) => {
         const offset = i * 5;
+        const isDummy = typeof ev.user_id === 'string' && (ev.user_id.startsWith('dummy_') || ev.user_id === 'opponent');
+        const uid = isDummy ? null : ev.user_id;
+        const pos = isDummy ? ev.user_id : (ev.position || null);
+
         values.push(`($${offset+1}, $${offset+2}, $${offset+3}, $${offset+4}, $${offset+5})`);
-        params.push(matchId, ev.event_type, ev.user_id === 'opponent' ? null : ev.user_id, ev.minute || null, ev.position || null);
+        params.push(matchId, ev.event_type, uid, ev.minute || null, pos);
       });
       await client.query(`
         INSERT INTO match_events (match_id, event_type, user_id, minute, position)
@@ -218,8 +222,12 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
       const params = [];
       events.forEach((ev, i) => {
         const offset = i * 5;
+        const isDummy = typeof ev.user_id === 'string' && (ev.user_id.startsWith('dummy_') || ev.user_id === 'opponent');
+        const uid = isDummy ? null : ev.user_id;
+        const pos = isDummy ? ev.user_id : (ev.position || null);
+
         values.push(`($${offset+1}, $${offset+2}, $${offset+3}, $${offset+4}, $${offset+5})`);
-        params.push(matchId, ev.event_type, ev.user_id === 'opponent' ? null : ev.user_id, ev.minute || null, ev.position || null);
+        params.push(matchId, ev.event_type, uid, ev.minute || null, pos);
       });
       await client.query(`
         INSERT INTO match_events (match_id, event_type, user_id, minute, position)
