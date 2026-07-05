@@ -403,8 +403,8 @@ export default function MatchDetailPage() {
               <h2 className={styles.sectionTitle}>チームスタッツ</h2>
               <div style={{ padding: '0.5rem 0' }}>
                 <div style={{ display: 'flex', marginBottom: '1.5rem', gap: '0.5rem' }}>
-                  <div style={{ flex: 1, padding: '0.5rem', background: 'var(--color-primary-400)', color: '#000', fontWeight: 'bold', textAlign: 'center', borderRadius: '4px' }}>
-                    {match?.match_mode === 'intra' ? 'RED' : 'OUR TEAM'}
+                  <div style={{ flex: 1, padding: '0.5rem', background: 'var(--color-primary-400)', color: '#fff', fontWeight: 'bold', textAlign: 'center', borderRadius: '4px' }}>
+                    {match?.match_mode === 'intra' ? 'RED' : 'FUMINTUS'}
                   </div>
                   <div style={{ flex: 1, padding: '0.5rem', background: '#fff', color: '#000', fontWeight: 'bold', textAlign: 'center', borderRadius: '4px' }}>
                     {match?.match_mode === 'intra' ? 'BLUE' : (match?.opponent_name || 'OPPONENT')}
@@ -506,7 +506,14 @@ export default function MatchDetailPage() {
                   </div>
 
                   {onPitch.map(p => {
-                    const pos = POSITIONS[p.position] || POSITIONS['default'];
+                    let posKey = p.position;
+                    if (match?.match_mode === 'external' && posKey) {
+                       posKey = posKey.replace('red_', '').replace('blue_', '');
+                       // Handle space in Ala L / Ala R
+                       if (posKey === 'AlaL') posKey = 'Ala L';
+                       if (posKey === 'AlaR') posKey = 'Ala R';
+                    }
+                    const pos = POSITIONS[posKey] || POSITIONS['default'];
                     return (
                       <div 
                         key={p.user_id} 
