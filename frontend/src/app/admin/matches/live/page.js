@@ -21,6 +21,7 @@ export default function LiveMatchPage() {
   // State
   const [phase, setPhase] = useState('setup'); // setup, playing, finished
   const [matchMode, setMatchMode] = useState('external'); // external, intra
+  const [isSaving, setIsSaving] = useState(false);
   const [matchInfo, setMatchInfo] = useState({ 
     date: new Date().toISOString().slice(0,10), 
     opponent_name: '', 
@@ -404,6 +405,8 @@ export default function LiveMatchPage() {
   };
 
   const handleSaveMatch = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
     const statsObj = {};
     const playedSet = new Set([...attendingIds]);
 
@@ -419,9 +422,11 @@ export default function LiveMatchPage() {
     });
 
     events.forEach(ev => {
-      if (ev.event_type === 'goal') statsObj[ev.user_id].goals++;
-      if (ev.event_type === 'assist') statsObj[ev.user_id].assists++;
-      if (ev.event_type === 'save' || ev.event_type === 'catch') statsObj[ev.user_id].saves++;
+      if (statsObj[ev.user_id]) {
+        if (ev.event_type === 'goal') statsObj[ev.user_id].goals++;
+        if (ev.event_type === 'assist') statsObj[ev.user_id].assists++;
+        if (ev.event_type === 'save' || ev.event_type === 'catch') statsObj[ev.user_id].saves++;
+      }
     });
 
     const payload = {
@@ -443,6 +448,7 @@ export default function LiveMatchPage() {
       router.push('/admin/matches');
     } catch (err) {
       alert('エラー: ' + err.message);
+      setIsSaving(false);
     }
   };
 
@@ -875,7 +881,9 @@ export default function LiveMatchPage() {
               <div className={styles.summaryStatBox}><h3>最終スコア</h3><p>{score.us} - {score.opponent}</p></div>
               <div className={styles.summaryStatBox}><h3>試合時間</h3><p>{formatTime(timerSeconds)}</p></div>
             </div>
-            <button className={styles.saveMatchBtn} onClick={handleSaveMatch}>この内容で保存する</button>
+            <button className={styles.saveMatchBtn} onClick={handleSaveMatch} disabled={isSaving}>
+              {isSaving ? '保存中...' : 'この内容で保存する'}
+            </button>
           </div>
         </div>
       )}
