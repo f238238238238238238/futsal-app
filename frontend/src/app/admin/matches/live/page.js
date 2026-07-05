@@ -171,6 +171,16 @@ export default function LiveMatchPage() {
         setBenchIds(prev => prev.filter(x => x !== id));
         setStarterPositions(prev => ({ ...prev, [id]: setupSelectedPos }));
         setSetupSelectedPos(null);
+      } else if (origin === 'pitch') {
+        const posToRestore = starterPositions[id];
+        setCourtIds(prev => prev.filter(x => x !== id));
+        setBenchIds(prev => [...prev, id]);
+        setStarterPositions(prev => {
+          const next = { ...prev };
+          delete next[id];
+          return next;
+        });
+        if (posToRestore) setSetupSelectedPos(posToRestore);
       }
     } else if (phase === 'playing') {
       const now = Date.now();

@@ -440,10 +440,10 @@
 
 /* Position Coordinates (Intra - BLUE / TOP) */
 .posblue_GK { top: 8%; left: 50%; }
-.posblue_Fixo { top: 41%; left: 50%; }
-.posblue_AlaR { top: 56%; left: 25%; }
-.posblue_AlaL { top: 56%; left: 75%; }
-.posblue_Pivo { top: 71%; left: 50%; }
+.posblue_Fixo { top: 25%; left: 50%; }
+.posblue_AlaR { top: 40%; left: 25%; }
+.posblue_AlaL { top: 40%; left: 75%; }
+.posblue_Pivo { top: 55%; left: 50%; }
 
 /* Selected State */
 .pitchSlot.selectedSlot .pitchSlotAvatar {
