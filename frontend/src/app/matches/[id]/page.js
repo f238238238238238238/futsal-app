@@ -7,11 +7,11 @@ import { getMatch, getImageUrl } from '@/lib/api';
 import styles from './page.module.css';
 
 const POSITIONS = {
-  'GK': { top: '85%', left: '50%' },
-  'Fixo': { top: '70%', left: '50%' },
-  'Ala L': { top: '45%', left: '20%' },
-  'Ala R': { top: '45%', left: '80%' },
-  'Pivo': { top: '25%', left: '50%' },
+  'GK': { top: '90%', left: '50%' },
+  'Fixo': { top: '75%', left: '47%' },
+  'Ala L': { top: '50%', left: '22%' },
+  'Ala R': { top: '50%', left: '78%' },
+  'Pivo': { top: '25%', left: '47%' },
   'red_GK': { top: '92%', left: '50%' },
   'red_Fixo': { top: '75%', left: '50%' },
   'red_AlaL': { top: '60%', left: '25%' },
@@ -22,6 +22,11 @@ const POSITIONS = {
   'blue_AlaL': { top: '40%', left: '75%' },
   'blue_AlaR': { top: '40%', left: '25%' },
   'blue_Pivo': { top: '55%', left: '50%' },
+  'dummy_blue_GK': { top: '10%', left: '50%' },
+  'dummy_blue_Fixo': { top: '25%', left: '53%' },
+  'dummy_blue_AlaL': { top: '50%', left: '82%' },
+  'dummy_blue_AlaR': { top: '50%', left: '18%' },
+  'dummy_blue_Pivo': { top: '75%', left: '53%' },
   'default': { top: '50%', left: '50%' }
 };
 
@@ -40,7 +45,14 @@ export default function MatchDetailPage() {
 
   useEffect(() => {
     getMatch(id)
-      .then(res => setMatch(res.match || res))
+      .then(res => {
+        const m = res.match || res;
+        setMatch(m);
+        setMinute(m.duration_seconds || 2400);
+        if (m.events && m.events.length > 0) {
+           setPlayIndex(m.events.length - 1);
+        }
+      })
       .catch(err => setErrorMsg(err.message))
       .finally(() => setLoading(false));
   }, [id]);
@@ -525,13 +537,7 @@ export default function MatchDetailPage() {
                   </div>
 
                   {onPitch.map(p => {
-                    let posKey = p.position;
-                    if (match?.match_mode === 'external' && posKey) {
-                       posKey = posKey.replace('red_', '').replace('blue_', '');
-                       // Handle space in Ala L / Ala R
-                       if (posKey === 'AlaL') posKey = 'Ala L';
-                       if (posKey === 'AlaR') posKey = 'Ala R';
-                    }
+                    const posKey = p.position;
                     const pos = POSITIONS[posKey] || POSITIONS['default'];
                     return (
                       <div 
