@@ -272,7 +272,11 @@ export default function MatchDetailPage() {
          if (p && p.position.startsWith('red_')) team = 'red';
          else if (p && p.position.startsWith('blue_')) team = 'blue';
       } else {
-         team = 'red'; // 'us'
+         if (ev.user_id === 'opponent' || (typeof ev.user_id === 'string' && ev.user_id.startsWith('dummy_'))) {
+            team = 'blue'; // opponent
+         } else {
+            team = 'red'; // us
+         }
       }
 
       if (team === 'red') {
@@ -284,8 +288,8 @@ export default function MatchDetailPage() {
       } else if (team === 'blue') {
         if (ev.event_type === 'pass') blueStats.passes++;
         if (ev.event_type === 'lost_ball') blueStats.lost++;
-        if (ev.event_type === 'goal') blueStats.goals++;
-        if (ev.event_type === 'shot') blueStats.shots++;
+        if (ev.event_type === 'goal' || ev.event_type === 'concede') blueStats.goals++;
+        if (ev.event_type === 'shot' || ev.event_type === 'opponent_shot') blueStats.shots++;
         if (ev.event_type === 'save') blueStats.saves++;
       }
     }

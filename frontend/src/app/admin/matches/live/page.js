@@ -221,7 +221,16 @@ export default function LiveMatchPage() {
       }
 
       const isEnemyDummy = typeof id === 'string' && id.startsWith('dummy_');
-      const isOpponent = isEnemyDummy || (matchMode === 'intra' && playerTeams[selectedCourtId] !== undefined && playerTeams[id] !== undefined && playerTeams[selectedCourtId] !== playerTeams[id]);
+      const isSelectedDummy = typeof selectedCourtId === 'string' && selectedCourtId.startsWith('dummy_');
+      
+      let isOpponent = false;
+      if (matchMode === 'intra') {
+         isOpponent = playerTeams[selectedCourtId] !== undefined && playerTeams[id] !== undefined && playerTeams[selectedCourtId] !== playerTeams[id];
+      } else {
+         if (selectedCourtId) {
+            isOpponent = (isSelectedDummy && !isEnemyDummy) || (!isSelectedDummy && isEnemyDummy);
+         }
+      }
 
       if (selectedCourtId === id) {
         setSelectedCourtId(null); 
@@ -229,8 +238,8 @@ export default function LiveMatchPage() {
       } else if (selectedCourtId) {
         if (isOpponent) {
           recordEvent('lost_ball', selectedCourtId);
-          if (matchMode === 'intra') {
-            const pos = starterPositions[id] || '';
+          if (matchMode === 'intra' || matchMode === 'external') {
+            const pos = id.startsWith('dummy_') ? id.replace('dummy_', '') : (starterPositions[id] || '');
             if (pos.includes('GK')) recordEvent('catch', id);
             else recordEvent('steal', id);
             setSelectedCourtId(id);
@@ -247,8 +256,7 @@ export default function LiveMatchPage() {
           setSelectionTime(Date.now());
         }
       } else {
-        if (isEnemyDummy) return;
-        const pos = starterPositions[id] || '';
+        const pos = id.startsWith('dummy_') ? id.replace('dummy_', '') : (starterPositions[id] || '');
         if (pos.includes('GK')) recordEvent('catch', id);
         else recordEvent('steal', id);
         setSelectedCourtId(id);
@@ -335,6 +343,15 @@ export default function LiveMatchPage() {
     if (type === 'goal_bottom' && matchMode === 'external') {
       // Opponent scored in external match (Concede)
       setScore(s => ({ ...s, opponent: s.opponent + 1 }));
+      recordEvent('concede', targetId || 'opponent');
+      if (selectedCourtId) {
+        setSelectedCourtId(null);
+        setSelectionTime(null);
+        setLastPasserId(null);
+      }
+      return;
+    } else if (type === 'shot_bottom' && matchMode === 'external') {
+      recordEvent('opponent_shot', targetId || 'opponent');
       if (selectedCourtId) {
         setSelectedCourtId(null);
         setSelectionTime(null);
@@ -353,7 +370,8 @@ export default function LiveMatchPage() {
         if (pos.startsWith('blue')) setScore(s => ({ ...s, opponent: s.opponent + 1 }));
         else setScore(s => ({ ...s, us: s.us + 1 }));
       } else {
-        setScore(s => ({ ...s, us: s.us + 1 }));
+        if (targetId.startsWith('dummy_')) setScore(s => ({ ...s, opponent: s.opponent + 1 }));
+        else setScore(s => ({ ...s, us: s.us + 1 }));
       }
 
       if (lastPasserId && lastPasserId !== targetId) {
