@@ -239,7 +239,7 @@ export default function LiveMatchPage() {
         if (isOpponent) {
           recordEvent('lost_ball', selectedCourtId);
           if (matchMode === 'intra' || matchMode === 'external') {
-            const pos = id.startsWith('dummy_') ? id.replace('dummy_', '') : (starterPositions[id] || '');
+            const pos = isEnemyDummy ? id.replace('dummy_', '') : (starterPositions[id] || '');
             if (pos.includes('GK')) recordEvent('catch', id);
             else recordEvent('steal', id);
             setSelectedCourtId(id);
@@ -256,7 +256,7 @@ export default function LiveMatchPage() {
           setSelectionTime(Date.now());
         }
       } else {
-        const pos = id.startsWith('dummy_') ? id.replace('dummy_', '') : (starterPositions[id] || '');
+        const pos = isEnemyDummy ? id.replace('dummy_', '') : (starterPositions[id] || '');
         if (pos.includes('GK')) recordEvent('catch', id);
         else recordEvent('steal', id);
         setSelectedCourtId(id);
