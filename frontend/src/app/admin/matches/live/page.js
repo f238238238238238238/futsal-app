@@ -370,7 +370,7 @@ export default function LiveMatchPage() {
         if (pos.startsWith('blue')) setScore(s => ({ ...s, opponent: s.opponent + 1 }));
         else setScore(s => ({ ...s, us: s.us + 1 }));
       } else {
-        if (targetId.startsWith('dummy_')) setScore(s => ({ ...s, opponent: s.opponent + 1 }));
+        if (typeof targetId === 'string' && targetId.startsWith('dummy_')) setScore(s => ({ ...s, opponent: s.opponent + 1 }));
         else setScore(s => ({ ...s, us: s.us + 1 }));
       }
 
