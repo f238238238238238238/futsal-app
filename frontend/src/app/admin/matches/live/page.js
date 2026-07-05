@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getPlayers, createMatch, getImageUrl, getEvents, getEventAttendances } from '@/lib/api';
 import styles from './live.module.css';
 
-const POSITIONS_EXTERNAL = ['Pivo', 'Ala L', 'Ala R', 'Fixo', 'GK'];
+const POSITIONS_EXTERNAL = ['red_Pivo', 'red_AlaL', 'red_AlaR', 'red_Fixo', 'red_GK'];
 const POSITIONS_INTRA = ['red_Pivo', 'red_AlaL', 'red_AlaR', 'red_Fixo', 'red_GK', 'blue_Pivo', 'blue_AlaL', 'blue_AlaR', 'blue_Fixo', 'blue_GK'];
 
 export default function LiveMatchPage() {
@@ -210,15 +210,34 @@ export default function LiveMatchPage() {
         return;
       }
 
+      const isEnemyDummy = typeof id === 'string' && id.startsWith('dummy_');
+      const isOpponent = isEnemyDummy || (matchMode === 'intra' && playerTeams[selectedCourtId] !== undefined && playerTeams[id] !== undefined && playerTeams[selectedCourtId] !== playerTeams[id]);
+
       if (selectedCourtId === id) {
         setSelectedCourtId(null); 
         setSelectionTime(null);
       } else if (selectedCourtId) {
-        recordEvent('pass', selectedCourtId);
-        setLastPasserId(selectedCourtId);
-        setSelectedCourtId(id);
-        setSelectionTime(Date.now());
+        if (isOpponent) {
+          recordEvent('lost_ball', selectedCourtId);
+          if (matchMode === 'intra') {
+            const pos = starterPositions[id] || '';
+            if (pos.includes('GK')) recordEvent('catch', id);
+            else recordEvent('steal', id);
+            setSelectedCourtId(id);
+            setSelectionTime(Date.now());
+          } else {
+            setSelectedCourtId(null);
+            setSelectionTime(null);
+          }
+          setLastPasserId(null);
+        } else {
+          recordEvent('pass', selectedCourtId);
+          setLastPasserId(selectedCourtId);
+          setSelectedCourtId(id);
+          setSelectionTime(Date.now());
+        }
       } else {
+        if (isEnemyDummy) return;
         const pos = starterPositions[id] || '';
         if (pos.includes('GK')) recordEvent('catch', id);
         else recordEvent('steal', id);
@@ -302,20 +321,21 @@ export default function LiveMatchPage() {
 
   const handleAction = (type) => {
     const targetId = selectedCourtId;
-    
-    if (type === 'concede') {
-      // Concede doesn't strictly need a selected player, but if one is selected we can record a 'defense_error' or similar if we wanted.
-      // For now, it just adds to opponent score.
+
+    if (type === 'goal_bottom' && matchMode === 'external') {
+      // Opponent scored in external match (Concede)
       setScore(s => ({ ...s, opponent: s.opponent + 1 }));
       if (selectedCourtId) {
         setSelectedCourtId(null);
+        setSelectionTime(null);
+        setLastPasserId(null);
       }
       return;
     }
 
     if (!targetId) return;
 
-    if (type === 'goal') {
+    if (type === 'goal_top' || type === 'goal_bottom') {
       recordEvent('goal', targetId);
       
       const pos = starterPositions[targetId] || '';
@@ -332,29 +352,8 @@ export default function LiveMatchPage() {
       setLastPasserId(null);
       setSelectedCourtId(null);
       setSelectionTime(null);
-    } else if (type === 'lost_ball') {
-      const holdDuration = (Date.now() - selectionTime) / 1000;
-      // If no pass preceded, AND it was lost within 3 seconds, it's a block/save.
-      if (lastPasserId === null && holdDuration <= 3) {
-        setEvents(prev => {
-          const newEvents = [...prev];
-          for (let i = newEvents.length - 1; i >= 0; i--) {
-            if (newEvents[i].user_id === targetId && ['steal', 'catch', 'block', 'pass_cut', 'lost_ball'].includes(newEvents[i].event_type)) {
-               const pos = starterPositions[targetId] || '';
-               newEvents[i] = { ...newEvents[i], event_type: pos.includes('GK') ? 'save' : 'block' };
-               break;
-            }
-          }
-          return newEvents;
-        });
-      } else {
-        recordEvent('lost_ball', targetId);
-      }
-      setSelectedCourtId(null);
-      setLastPasserId(null);
-      setSelectionTime(null);
-    } else {
-      recordEvent(type, targetId); // shot
+    } else if (type === 'shot_top' || type === 'shot_bottom') {
+      recordEvent('shot', targetId);
       setSelectedCourtId(null);
       setSelectionTime(null);
     }
@@ -460,10 +459,15 @@ export default function LiveMatchPage() {
   };
 
   const renderPitchSlot = (pos, isSetup) => {
-    const playerIdStr = Object.keys(starterPositions).find(id => starterPositions[id] === pos);
-    const playerId = playerIdStr ? Number(playerIdStr) : null;
-    const player = players.find(p => p.user_id === playerId);
+    let playerIdStr = Object.keys(starterPositions).find(id => starterPositions[id] === pos);
+    let playerId = playerIdStr ? Number(playerIdStr) : null;
+    let player = players.find(p => p.user_id === playerId);
     const posClass = pos.replace(' ', '');
+    
+    if (phase === 'playing' && matchMode === 'external' && pos.startsWith('blue_')) {
+      player = { user_id: 'dummy_' + pos, name: '相手', photo_url: null };
+      playerId = player.user_id;
+    }
     
     if (!isSetup && !player) {
       // In playing phase, render empty drop zone
@@ -502,10 +506,12 @@ export default function LiveMatchPage() {
     );
   };
 
-  const positions = matchMode === 'intra' ? 
+  const setupPositions = matchMode === 'intra' ? 
     [`${matchInfo.team1_name || 'RED'}_Pivo`, `${matchInfo.team1_name || 'RED'}_AlaL`, `${matchInfo.team1_name || 'RED'}_AlaR`, `${matchInfo.team1_name || 'RED'}_Fixo`, `${matchInfo.team1_name || 'RED'}_GK`, 
      `${matchInfo.team2_name || 'BLUE'}_Pivo`, `${matchInfo.team2_name || 'BLUE'}_AlaL`, `${matchInfo.team2_name || 'BLUE'}_AlaR`, `${matchInfo.team2_name || 'BLUE'}_Fixo`, `${matchInfo.team2_name || 'BLUE'}_GK`] 
     : POSITIONS_EXTERNAL;
+
+  const positions = phase === 'setup' ? setupPositions : POSITIONS_INTRA;
 
   return (
     <div className={styles.livePage}>
@@ -733,14 +739,15 @@ export default function LiveMatchPage() {
               <div className={styles.pitchPenaltyAreaTop} />
               <div className={styles.pitchPenaltyAreaBottom} />
               
-              {/* Action Zones Overlay */}
-              <div className={styles.actionZoneGoal} style={{ pointerEvents: selectedCourtId ? 'auto' : 'none', opacity: selectedCourtId ? 1 : 0.4 }} onClick={() => handleAction('goal')}>⚽ ゴール</div>
-              <div className={styles.actionZoneMissL} style={{ pointerEvents: selectedCourtId ? 'auto' : 'none', opacity: selectedCourtId ? 1 : 0.4 }} onClick={() => handleAction('shot')}>ノーゴール</div>
-              <div className={styles.actionZoneMissR} style={{ pointerEvents: selectedCourtId ? 'auto' : 'none', opacity: selectedCourtId ? 1 : 0.4 }} onClick={() => handleAction('shot')}>ノーゴール</div>
-              <div className={styles.actionZoneLost} style={{ pointerEvents: selectedCourtId ? 'auto' : 'none', opacity: selectedCourtId ? 1 : 0.4 }} onClick={() => handleAction('lost_ball')}>💥 ロスト</div>
+              {/* Action Zones Overlay (TOP) */}
+              <div className={styles.actionZoneGoal} style={{ pointerEvents: selectedCourtId ? 'auto' : 'none', opacity: selectedCourtId ? 1 : 0.4 }} onClick={() => handleAction('goal_top')}>⚽ ゴール</div>
+              <div className={styles.actionZoneMissL} style={{ pointerEvents: selectedCourtId ? 'auto' : 'none', opacity: selectedCourtId ? 1 : 0.4 }} onClick={() => handleAction('shot_top')}>ノーゴール</div>
+              <div className={styles.actionZoneMissR} style={{ pointerEvents: selectedCourtId ? 'auto' : 'none', opacity: selectedCourtId ? 1 : 0.4 }} onClick={() => handleAction('shot_top')}>ノーゴール</div>
               
-              {/* Concede is a global action, but maybe we only show it when selected to avoid misclicks, or keep it always active. The user said: 失点も自分のゴールエリアに配置してほしい */}
-              <div className={styles.actionZoneConcede} style={{ pointerEvents: 'auto', opacity: 1 }} onClick={() => handleAction('concede')}>📉 失点</div>
+              {/* Action Zones Overlay (BOTTOM) */}
+              <div className={styles.actionZoneGoalOpponent} style={{ pointerEvents: (matchMode === 'external' || selectedCourtId) ? 'auto' : 'none', opacity: (matchMode === 'external' || selectedCourtId) ? 1 : 0.4 }} onClick={() => handleAction('goal_bottom')}>⚽ ゴール</div>
+              <div className={styles.actionZoneMissLOpponent} style={{ pointerEvents: selectedCourtId ? 'auto' : 'none', opacity: selectedCourtId ? 1 : 0.4 }} onClick={() => handleAction('shot_bottom')}>ノーゴール</div>
+              <div className={styles.actionZoneMissROpponent} style={{ pointerEvents: selectedCourtId ? 'auto' : 'none', opacity: selectedCourtId ? 1 : 0.4 }} onClick={() => handleAction('shot_bottom')}>ノーゴール</div>
 
               {positions.map(pos => renderPitchSlot(pos, false))}
             </div>
