@@ -55,6 +55,33 @@ export default function LiveMatchPage() {
 
   const [setupSelectedPos, setSetupSelectedPos] = useState(null);
   const [attendingIds, setAttendingIds] = useState([]);
+  const [playerTeams, setPlayerTeams] = useState({});
+
+  const assignTeam = (userId, team) => {
+    setPlayerTeams(prev => ({ ...prev, [userId]: team }));
+    
+    if (team === null) {
+      // Remove from attendance
+      setAttendingIds(prev => prev.filter(x => x !== userId));
+      setBenchIds(prev => prev.filter(x => x !== userId));
+      setCourtIds(prev => prev.filter(x => x !== userId));
+      setStarterPositions(prev => {
+        const next = { ...prev };
+        delete next[userId];
+        return next;
+      });
+    } else {
+      // Add to attendance if not already there
+      setAttendingIds(prev => prev.includes(userId) ? prev : [...prev, userId]);
+      // If they are not on pitch, make sure they are in bench
+      setBenchIds(prev => {
+        if (!prev.includes(userId) && !courtIds.includes(userId)) {
+          return [...prev, userId];
+        }
+        return prev;
+      });
+    }
+  };
 
   // Swap / Sub State
   const [swapSourceId, setSwapSourceId] = useState(null);
@@ -400,6 +427,37 @@ export default function LiveMatchPage() {
 
   if (authLoading || loading) return <div className={styles.loading}><div className={styles.spinner} /></div>;
   if (!isAdmin) return <div>管理者権限が必要です</div>;
+
+  const renderListSlot = (pos) => {
+    const playerIdStr = Object.keys(starterPositions).find(id => starterPositions[id] === pos);
+    const playerId = playerIdStr ? Number(playerIdStr) : null;
+    const player = players.find(p => p.user_id === playerId);
+    
+    return (
+      <div 
+        key={pos} 
+        className={`${styles.listSlot} ${setupSelectedPos === pos ? styles.selectedSlot : ''}`}
+        onClick={() => {
+          if (player) {
+            handlePlayerTap(playerId, 'pitch');
+          } else {
+            handleEmptySlotTap(pos);
+          }
+        }}
+      >
+        <div className={styles.listSlotPos}>{pos.split('_')[1]}</div>
+        {player ? (
+          <>
+            <img src={player.photo_url ? getImageUrl(player.photo_url) : '/default-avatar.png'} className={styles.listSlotAvatar} />
+            <div className={styles.listSlotName}>{player.name}</div>
+            <div className={styles.listSlotRemove}>×</div>
+          </>
+        ) : (
+          <div className={styles.listSlotEmpty}>選択してください</div>
+        )}
+      </div>
+    );
+  };
 
   const renderPitchSlot = (pos, isSetup) => {
     const playerIdStr = Object.keys(starterPositions).find(id => starterPositions[id] === pos);
