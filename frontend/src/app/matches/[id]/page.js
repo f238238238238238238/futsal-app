@@ -288,10 +288,14 @@ export default function MatchDetailPage() {
       } else if (team === 'blue') {
         if (ev.event_type === 'pass') blueStats.passes++;
         if (ev.event_type === 'lost_ball') blueStats.lost++;
-        if (ev.event_type === 'goal' || ev.event_type === 'concede') blueStats.goals++;
-        if (ev.event_type === 'shot' || ev.event_type === 'opponent_shot') blueStats.shots++;
+        if (ev.event_type === 'goal') blueStats.goals++;
+        if (ev.event_type === 'shot') blueStats.shots++;
         if (ev.event_type === 'save') blueStats.saves++;
       }
+      
+      // Override for opponent-specific events in external matches (which might be tied to our player IDs)
+      if (ev.event_type === 'concede') blueStats.goals++;
+      if (ev.event_type === 'opponent_shot') blueStats.shots++;
     }
     
     return { red: redStats, blue: blueStats };
