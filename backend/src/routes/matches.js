@@ -112,8 +112,9 @@ router.get('/:id', async (req, res) => {
 
 // POST / - 試合登録（admin only）
 router.post('/', authenticate, requireAdmin, async (req, res) => {
+  const db = getDb();
+  let client;
   try {
-    const db = getDb();
     const { date, opponent_name, competition_name, our_score, opponent_score, summary_text, mom_user_id, duration_seconds, stats, events } = req.body;
     const matchDur = duration_seconds ? parseInt(duration_seconds, 10) : 2400;
 
@@ -121,10 +122,11 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
       return res.status(400).json({ error: '日付と対戦相手は必須です' });
     }
 
+    client = await db.connect();
     // トランザクションの開始
-    await db.query('BEGIN');
+    await client.query('BEGIN');
 
-    const matchRes = await db.query(`
+    const matchRes = await client.query(`
       INSERT INTO matches (date, opponent_name, competition_name, our_score, opponent_score, summary_text, mom_user_id, duration_seconds)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING match_id
@@ -137,36 +139,47 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
       playingTimes = calculateMinutesPlayed(stats, events, matchDur);
       for (const st of stats) {
         const mins = playingTimes[st.user_id] || 0;
-        await db.query(`
+        await client.query(`
           INSERT INTO match_stats (match_id, user_id, is_starter, goals, assists, minutes_played, saves, position)
           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         `, [matchId, st.user_id, st.is_starter ? 1 : 0, parseInt(st.goals,10) || 0, parseInt(st.assists,10) || 0, mins, parseInt(st.saves,10) || 0, st.position || null]);
       }
     }
 
-    if (events && Array.isArray(events)) {
-      for (const ev of events) {
-        await db.query(`
-          INSERT INTO match_events (match_id, event_type, user_id, minute, position)
-          VALUES ($1, $2, $3, $4, $5)
-        `, [matchId, ev.event_type, ev.user_id, ev.minute || null, ev.position || null]);
-      }
+    if (events && Array.isArray(events) && events.length > 0) {
+      const values = [];
+      const params = [];
+      events.forEach((ev, i) => {
+        const offset = i * 5;
+        values.push(`($${offset+1}, $${offset+2}, $${offset+3}, $${offset+4}, $${offset+5})`);
+        params.push(matchId, ev.event_type, ev.user_id === 'opponent' ? null : ev.user_id, ev.minute || null, ev.position || null);
+      });
+      await client.query(`
+        INSERT INTO match_events (match_id, event_type, user_id, minute, position)
+        VALUES ${values.join(', ')}
+      `, params);
     }
 
-    await db.query('COMMIT');
+    await client.query('COMMIT');
     res.status(201).json({ match_id: matchId, message: '試合を登録しました' });
   } catch (err) {
-    const db = getDb();
-    await db.query('ROLLBACK');
+    if (client) {
+      await client.query('ROLLBACK');
+    }
     console.error('Create match error:', err);
     res.status(500).json({ error: 'サーバーエラーが発生しました' });
+  } finally {
+    if (client) {
+      client.release();
+    }
   }
 });
 
 // PUT /:id - 試合更新（admin only）
 router.put('/:id', authenticate, requireAdmin, async (req, res) => {
+  const db = getDb();
+  let client;
   try {
-    const db = getDb();
     const matchId = req.params.id;
     const { date, opponent_name, competition_name, our_score, opponent_score, summary_text, mom_user_id, duration_seconds, stats, events } = req.body;
     const matchDur = duration_seconds ? parseInt(duration_seconds, 10) : 2400;
@@ -175,22 +188,23 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
       return res.status(400).json({ error: '日付と対戦相手は必須です' });
     }
 
-    await db.query('BEGIN');
+    client = await db.connect();
+    await client.query('BEGIN');
 
-    await db.query(`
+    await client.query(`
       UPDATE matches
       SET date = $1, opponent_name = $2, competition_name = $3, our_score = $4, opponent_score = $5, summary_text = $6, mom_user_id = $7, duration_seconds = $8
       WHERE match_id = $9
     `, [date, opponent_name, competition_name, our_score, opponent_score, summary_text, mom_user_id || null, matchDur, matchId]);
 
     // Update stats: delete old and insert new
-    await db.query(`DELETE FROM match_stats WHERE match_id = $1`, [matchId]);
+    await client.query(`DELETE FROM match_stats WHERE match_id = $1`, [matchId]);
     let playingTimes = {};
     if (stats && Array.isArray(stats)) {
       playingTimes = calculateMinutesPlayed(stats, events, matchDur);
       for (const st of stats) {
         const mins = playingTimes[st.user_id] || 0;
-        await db.query(`
+        await client.query(`
           INSERT INTO match_stats (match_id, user_id, is_starter, goals, assists, minutes_played, saves, position)
           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         `, [matchId, st.user_id, st.is_starter ? 1 : 0, parseInt(st.goals,10) || 0, parseInt(st.assists,10) || 0, mins, parseInt(st.saves,10) || 0, st.position || null]);
@@ -198,23 +212,33 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
     }
 
     // Update events: delete old and insert new
-    await db.query(`DELETE FROM match_events WHERE match_id = $1`, [matchId]);
-    if (events && Array.isArray(events)) {
-      for (const ev of events) {
-        await db.query(`
-          INSERT INTO match_events (match_id, event_type, user_id, minute, position)
-          VALUES ($1, $2, $3, $4, $5)
-        `, [matchId, ev.event_type, ev.user_id, ev.minute || null, ev.position || null]);
-      }
+    await client.query(`DELETE FROM match_events WHERE match_id = $1`, [matchId]);
+    if (events && Array.isArray(events) && events.length > 0) {
+      const values = [];
+      const params = [];
+      events.forEach((ev, i) => {
+        const offset = i * 5;
+        values.push(`($${offset+1}, $${offset+2}, $${offset+3}, $${offset+4}, $${offset+5})`);
+        params.push(matchId, ev.event_type, ev.user_id === 'opponent' ? null : ev.user_id, ev.minute || null, ev.position || null);
+      });
+      await client.query(`
+        INSERT INTO match_events (match_id, event_type, user_id, minute, position)
+        VALUES ${values.join(', ')}
+      `, params);
     }
 
-    await db.query('COMMIT');
+    await client.query('COMMIT');
     res.json({ message: '試合を更新しました' });
   } catch (err) {
-    const db = getDb();
-    await db.query('ROLLBACK');
+    if (client) {
+      await client.query('ROLLBACK');
+    }
     console.error('Update match error:', err);
     res.status(500).json({ error: 'サーバーエラーが発生しました' });
+  } finally {
+    if (client) {
+      client.release();
+    }
   }
 });
 
