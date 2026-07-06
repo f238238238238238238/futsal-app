@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import liff from '@line/liff';
 
 import styles from './liff.module.css';
 
@@ -18,6 +17,7 @@ function AttendanceContent() {
   useEffect(() => {
     const initLiff = async () => {
       try {
+        const liff = (await import('@line/liff')).default;
         const liffId = process.env.NEXT_PUBLIC_LIFF_ID || "1234567890-AbcdEfgh"; // Fallback for dev
         await liff.init({ liffId });
         
@@ -109,8 +109,11 @@ function AttendanceContent() {
       setSuccess(true);
       
       // Close LIFF app after a short delay
-      setTimeout(() => {
-        liff.closeWindow();
+      setTimeout(async () => {
+        try {
+          const liff = (await import('@line/liff')).default;
+          liff.closeWindow();
+        } catch(e) {}
       }, 2000);
 
     } catch (err) {
