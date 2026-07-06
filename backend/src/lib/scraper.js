@@ -4,11 +4,12 @@ export async function scrapeCups(targetMonth = null, targetDows = []) {
   try {
     const baseTargetUrl = 'https://yoyaku.labola.jp/r/shop/3014/event/tournament/?embed=normal&category=futsal';
     const scraperApiKey = process.env.SCRAPER_API_KEY || 'c49ad1f5f652264dc835066a9da33872';
-    console.log(`Fetching multiple pages via ScraperAPI (fast mode)...`);
+    console.log(`Fetching multiple pages via ScraperAPI (premium mode)...`);
     const pages = [1, 2];
     const fetchPromises = pages.map(page => {
       const pageUrl = `${baseTargetUrl}&page=${page}`;
-      const targetUrl = `http://api.scraperapi.com/?api_key=${scraperApiKey}&url=${encodeURIComponent(pageUrl)}`;
+      // Add render=true to bypass advanced WAF by executing JS
+      const targetUrl = `http://api.scraperapi.com/?api_key=${scraperApiKey}&render=true&url=${encodeURIComponent(pageUrl)}`;
       return fetch(targetUrl).then(r => r.text());
     });
     
@@ -64,12 +65,15 @@ export async function scrapeCups(targetMonth = null, targetDows = []) {
       });
     }
 
-    if (events.length > 0) {
-      return { success: true, data: events };
-    }
+    // Check if the page actually loaded correctly by looking for typical LaBOLA elements
+    const isBlocked = htmls.some(html => html.includes('awsWafCookie') || html.includes('captcha') || html.includes('Access Denied'));
     
-    console.log("Scraping returned no events or was blocked.");
-    return { success: false, debugInfo: `Empty response or blocked.` };
+    if (isBlocked) {
+      console.log("Scraping returned no events because it was blocked by WAF.");
+      return { success: false, debugInfo: `Blocked by WAF.` };
+    }
+
+    return { success: true, data: events };
   } catch (err) {
     console.error('Scrape Error:', err);
     return { success: false, debugInfo: `Exception: ${err.message}` };
