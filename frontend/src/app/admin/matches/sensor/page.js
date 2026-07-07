@@ -808,108 +808,84 @@ export default function SensorMatchPage() {
           </div>
 
           <div className={styles.playArea}>
-            <div className={styles.pitchContainer}>
-              <div className={styles.pitchCenterLine} />
-              <div className={styles.pitchCenterCircle} />
-              <div className={styles.pitchPenaltyAreaTop} />
-              <div className={styles.pitchPenaltyAreaBottom} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', padding: '10px' }}>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button onClick={() => handleManualAction('app_goal')} style={{ flex: 1, padding: '20px', background: '#e03131', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '1.2rem', fontWeight: 'bold' }}>⚽ ゴール</button>
+                <button onClick={() => handleManualAction('app_shot_on_target')} style={{ flex: 1, padding: '20px', background: '#f59f00', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '1.2rem', fontWeight: 'bold' }}>🎯 枠内</button>
+                <button onClick={() => handleManualAction('app_shot_miss')} style={{ flex: 1, padding: '20px', background: '#868e96', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '1.2rem', fontWeight: 'bold' }}>❌ 枠外</button>
+              </div>
               
-              {/* Sensor Global Action Buttons */}
-              <div style={{ position: 'absolute', top: '10px', left: '10px', right: '10px', display: 'flex', gap: '5px', zIndex: 10 }}>
-                <button 
-                  onClick={() => handleManualAction('app_goal')}
-                  style={{ flex: 1, padding: '10px', background: '#e03131', color: '#fff', border: 'none', borderRadius: '5px', fontWeight: 'bold' }}>
-                  ⚽ ゴール
-                </button>
-                <button 
-                  onClick={() => handleManualAction('app_shot_on_target')}
-                  style={{ flex: 1, padding: '10px', background: '#f59f00', color: '#fff', border: 'none', borderRadius: '5px', fontWeight: 'bold' }}>
-                  🎯 枠内シュート
-                </button>
-                <button 
-                  onClick={() => handleManualAction('app_shot_miss')}
-                  style={{ flex: 1, padding: '10px', background: '#868e96', color: '#fff', border: 'none', borderRadius: '5px', fontWeight: 'bold' }}>
-                  ❌ 枠外シュート
-                </button>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button onClick={() => {
+                   const gkId = Object.keys(starterPositions).find(id => starterPositions[id].includes('GK') && (matchMode === 'external' || starterPositions[id].startsWith('red')));
+                   if (gkId) recordEvent('save', gkId);
+                }} style={{ flex: 1, padding: '15px', background: '#20c997', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '1.1rem', fontWeight: 'bold' }}>🧤 セーブ</button>
+                <button onClick={() => {
+                   const gkId = Object.keys(starterPositions).find(id => starterPositions[id].includes('GK') && (matchMode === 'external' || starterPositions[id].startsWith('red')));
+                   if (gkId) recordEvent('catch', gkId);
+                }} style={{ flex: 1, padding: '15px', background: '#0ca678', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '1.1rem', fontWeight: 'bold' }}>👐 キャッチ</button>
               </div>
 
-              <div style={{ position: 'absolute', bottom: '10px', left: '10px', right: '10px', display: 'flex', gap: '5px', zIndex: 10 }}>
-                <button 
-                  onClick={() => {
-                    const newMode = contextMode === 'attack' ? 'defense' : 'attack';
-                    setContextMode(newMode);
-                    recordEvent(`context_${newMode}`, 'app');
-                  }}
-                  style={{ flex: 2, padding: '10px', background: contextMode === 'attack' ? '#339af0' : '#495057', color: '#fff', border: 'none', borderRadius: '5px', fontWeight: 'bold' }}>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button onClick={() => {
+                  const newMode = contextMode === 'attack' ? 'defense' : 'attack';
+                  setContextMode(newMode);
+                  recordEvent(`context_${newMode}`, 'app');
+                }} style={{ flex: 2, padding: '15px', background: contextMode === 'attack' ? '#339af0' : '#495057', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '1.1rem', fontWeight: 'bold' }}>
                   {contextMode === 'attack' ? '⚔️ 攻撃モード中 (タップで守備へ)' : '🛡️ 守備モード中 (タップで攻撃へ)'}
                 </button>
-                <button 
-                  onClick={() => handleManualAction('app_opponent_goal')}
-                  style={{ flex: 1, padding: '10px', background: '#000', color: '#fff', border: '1px solid #e03131', borderRadius: '5px', fontWeight: 'bold' }}>
-                  💀 失点
-                </button>
+                <button onClick={() => handleManualAction('app_opponent_goal')} style={{ flex: 1, padding: '15px', background: '#000', color: '#fff', border: '1px solid #e03131', borderRadius: '8px', fontSize: '1.1rem', fontWeight: 'bold' }}>💀 失点</button>
               </div>
-              
-              <div style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', right: '-60px', display: 'flex', flexDirection: 'column', gap: '5px', zIndex: 10 }}>
-                <button 
-                  onClick={() => {
-                     const gkId = Object.keys(starterPositions).find(id => starterPositions[id].includes('GK') && (matchMode === 'external' || starterPositions[id].startsWith('red')));
-                     if (gkId) recordEvent('save', gkId);
-                  }}
-                  style={{ padding: '10px 5px', background: '#20c997', color: '#fff', border: 'none', borderRadius: '5px', fontWeight: 'bold', fontSize: '0.8rem' }}>
-                  🧤<br/>セーブ
-                </button>
-                <button 
-                  onClick={() => {
-                     const gkId = Object.keys(starterPositions).find(id => starterPositions[id].includes('GK') && (matchMode === 'external' || starterPositions[id].startsWith('red')));
-                     if (gkId) recordEvent('catch', gkId);
-                  }}
-                  style={{ padding: '10px 5px', background: '#0ca678', color: '#fff', border: 'none', borderRadius: '5px', fontWeight: 'bold', fontSize: '0.8rem' }}>
-                  👐<br/>ｷｬｯﾁ
-                </button>
-              </div>
+            </div>
 
-              {positions.map(pos => renderPitchSlot(pos, false))}
+            {/* Substitution Lists */}
+            <div style={{ marginTop: '20px', padding: '10px' }}>
+              <h3 style={{ color: '#ccc', marginBottom: '10px', fontSize: '1rem' }}>出場中（タップして交代）</h3>
+              <div className={styles.startersGrid}>
+                {courtIds.map(id => {
+                   const p = players.find(x => x.user_id === id);
+                   if (!p) return null;
+                   const isSelected = selectedCourtId === id || swapSourceId === id;
+                   return (
+                     <div key={id} className={`${styles.playerSelectCard} ${isSelected ? styles.selected : ''}`} onClick={() => handlePlayerTap(id, 'pitch')}>
+                       <img src={p.photo_url ? getImageUrl(p.photo_url) : '/default-avatar.png'} className={styles.avatarSmall} />
+                       <div className={styles.playerName}>{p.name}</div>
+                     </div>
+                   );
+                })}
+              </div>
             </div>
 
             {matchMode === 'external' ? (
-              <div className={styles.benchSection} data-drop-target="bench">
+              <div className={styles.benchSection} data-drop-target="bench" style={{ marginTop: '10px' }}>
                 <h2 className={styles.sectionTitle} style={{fontSize:'1rem'}}>ベンチ</h2>
-                <div className={styles.playerList}>
+                <div className={styles.startersGrid}>
                   {benchIds.map(id => {
                     const p = players.find(x => x.user_id === id);
                     if (!p) return null;
                     const isSelected = swapSourceId === id;
                     return (
-                      <div 
-                        key={id} 
-                        className={`${styles.playerRow} ${isSelected ? styles.selected : ''}`}
-                        onClick={() => handlePlayerTap(id, 'bench')}
-                      >
-                        <img src={p.photo_url ? getImageUrl(p.photo_url) : '/default-avatar.png'} className={styles.playerRowAvatar} />
-                        <div className={styles.playerRowName}>{p.name}</div>
+                      <div key={id} className={`${styles.playerSelectCard} ${isSelected ? styles.selected : ''}`} onClick={() => handlePlayerTap(id, 'bench')}>
+                        <img src={p.photo_url ? getImageUrl(p.photo_url) : '/default-avatar.png'} className={styles.avatarSmall} />
+                        <div className={styles.playerName}>{p.name}</div>
                       </div>
                     );
                   })}
                 </div>
               </div>
             ) : (
-              <div className={styles.intraBenchLayout} data-drop-target="bench">
+              <div className={styles.intraBenchLayout} data-drop-target="bench" style={{ marginTop: '10px' }}>
                 <div className={styles.teamBenchCol}>
                   <h4 style={{color: '#ff6b6b'}}>{matchInfo.team1_name || 'RED'} ベンチ</h4>
-                  <div className={styles.playerList}>
+                  <div className={styles.startersGrid}>
                     {benchIds.filter(id => playerTeams[id] === 'red').map(id => {
                       const p = players.find(x => x.user_id === id);
                       if (!p) return null;
                       const isSelected = swapSourceId === id;
                       return (
-                        <div 
-                          key={id} 
-                          className={`${styles.playerRow} ${isSelected ? styles.selected : ''}`}
-                          onClick={() => handlePlayerTap(id, 'bench')}
-                        >
-                          <img src={p.photo_url ? getImageUrl(p.photo_url) : '/default-avatar.png'} className={styles.playerRowAvatar} />
-                          <div className={styles.playerRowName}>{p.name}</div>
+                        <div key={id} className={`${styles.playerSelectCard} ${isSelected ? styles.selected : ''}`} onClick={() => handlePlayerTap(id, 'bench')}>
+                          <img src={p.photo_url ? getImageUrl(p.photo_url) : '/default-avatar.png'} className={styles.avatarSmall} />
+                          <div className={styles.playerName}>{p.name}</div>
                         </div>
                       );
                     })}
@@ -917,19 +893,15 @@ export default function SensorMatchPage() {
                 </div>
                 <div className={styles.teamBenchCol}>
                   <h4 style={{color: '#4dabf7'}}>{matchInfo.team2_name || 'BLUE'} ベンチ</h4>
-                  <div className={styles.playerList}>
+                  <div className={styles.startersGrid}>
                     {benchIds.filter(id => playerTeams[id] === 'blue').map(id => {
                       const p = players.find(x => x.user_id === id);
                       if (!p) return null;
                       const isSelected = swapSourceId === id;
                       return (
-                        <div 
-                          key={id} 
-                          className={`${styles.playerRow} ${isSelected ? styles.selected : ''}`}
-                          onClick={() => handlePlayerTap(id, 'bench')}
-                        >
-                          <img src={p.photo_url ? getImageUrl(p.photo_url) : '/default-avatar.png'} className={styles.playerRowAvatar} />
-                          <div className={styles.playerRowName}>{p.name}</div>
+                        <div key={id} className={`${styles.playerSelectCard} ${isSelected ? styles.selected : ''}`} onClick={() => handlePlayerTap(id, 'bench')}>
+                          <img src={p.photo_url ? getImageUrl(p.photo_url) : '/default-avatar.png'} className={styles.avatarSmall} />
+                          <div className={styles.playerName}>{p.name}</div>
                         </div>
                       );
                     })}
