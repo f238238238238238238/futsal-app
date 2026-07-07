@@ -207,6 +207,9 @@ export default function AdminMatchesPage() {
           <Link href="/admin/matches/live" className={styles.addBtn} style={{ background: 'var(--color-gold)', color: 'var(--color-black)', textDecoration: 'none' }}>
             + リアルタイム試合登録
           </Link>
+          <Link href="/admin/matches/sensor" className={styles.addBtn} style={{ background: '#339af0', color: '#fff', textDecoration: 'none', border: '1px solid #228be6' }}>
+            + センサー試合登録
+          </Link>
         </div>
       </div>
 
