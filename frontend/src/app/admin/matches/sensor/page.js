@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { getPlayers, createMatch, getImageUrl, getEvents, getEventAttendances } from '@/lib/api';
-import styles from './live.module.css';
+import styles from './sensor.module.css';
 
 const POSITIONS_EXTERNAL = ['red_Pivo', 'red_AlaL', 'red_AlaR', 'red_Fixo', 'red_GK'];
 const POSITIONS_INTRA = ['red_Pivo', 'red_AlaL', 'red_AlaR', 'red_Fixo', 'red_GK', 'blue_Pivo', 'blue_AlaL', 'blue_AlaR', 'blue_Fixo', 'blue_GK'];
@@ -555,6 +555,8 @@ export default function SensorMatchPage() {
         data-player-id={playerId || ''}
         onClick={!player ? () => handleEmptySlotTap(pos) : () => handlePlayerTap(playerId, 'pitch')}
       >
+        {player ? (
+          <>
             <img src={player.photo_url ? getImageUrl(player.photo_url) : '/default-avatar.png'} className={styles.pitchSlotAvatar} alt={player.name} />
             <div className={styles.pitchSlotName}>{player.name}</div>
             <div className={styles.pitchSlotPos}>{pos.replace('red_','').replace('blue_','')}</div>
