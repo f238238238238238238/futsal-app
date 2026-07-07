@@ -364,6 +364,16 @@ export default function SensorMatchPage() {
     if (matchMode === 'external' && !matchInfo.opponent_name) return alert('対戦相手を入力してください');
     if (courtIds.length === 0) return alert('スタメンを選んでください');
     
+    // 全てのフィールドプレイヤーにデフォルトのセンサー割り当てを保証する
+    const newAssignments = { ...sensorAssignments };
+    courtIds.forEach(id => {
+      const pos = starterPositions[id] || '';
+      if (!pos.includes('GK') && !newAssignments[id]) {
+        newAssignments[id] = 'SENSOR_1';
+      }
+    });
+    setSensorAssignments(newAssignments);
+
     setInitialStarters([...courtIds]);
     setPhase('playing');
     setIsRunning(true);
