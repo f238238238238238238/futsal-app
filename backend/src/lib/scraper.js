@@ -24,13 +24,20 @@ export async function scrapeCups(targetMonth = null, targetDows = []) {
       
       if (dateText && titleText) {
         // e.g., "2026/06/30（火）21:00〜23:00｜フットサル大会"
-        const match = dateText.match(/(\d{4})\/(\d{2})\/(\d{2})/);
+        const dateMatch = dateText.match(/(\d{4})\/(\d{2})\/(\d{2})/);
+        const timeMatch = dateText.match(/(\d{2}:\d{2})/);
         let isoDate = null;
-        if (match) {
-          const y = parseInt(match[1], 10);
-          const m = parseInt(match[2], 10);
-          const d = parseInt(match[3], 10);
-          isoDate = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        if (dateMatch) {
+          const y = parseInt(dateMatch[1], 10);
+          const m = parseInt(dateMatch[2], 10);
+          const d = parseInt(dateMatch[3], 10);
+          
+          let timeStr = "00:00:00";
+          if (timeMatch) {
+            timeStr = `${timeMatch[1]}:00`;
+          }
+          
+          isoDate = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')} ${timeStr}`;
           
           if (targetMonth && targetMonth !== m) {
             return; // skip this iteration

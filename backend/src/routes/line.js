@@ -523,8 +523,15 @@ router.get('/cups', async (req, res) => {
 
     const statusMap = {};
     for (const row of myAttRes.rows) {
-      const d = row.date_time.split(' ')[0];
-      statusMap[d] = row.status; // 'present' or 'absent'
+      const dtObj = new Date(row.date_time);
+      const y = dtObj.getFullYear();
+      const m = String(dtObj.getMonth() + 1).padStart(2, '0');
+      const d = String(dtObj.getDate()).padStart(2, '0');
+      const H = String(dtObj.getHours()).padStart(2, '0');
+      const M = String(dtObj.getMinutes()).padStart(2, '0');
+      const S = String(dtObj.getSeconds()).padStart(2, '0');
+      const dKey = `${y}-${m}-${d} ${H}:${M}:${S}`;
+      statusMap[dKey] = row.status;
     }
 
     const cups = scrapeResult.data.map(c => {
