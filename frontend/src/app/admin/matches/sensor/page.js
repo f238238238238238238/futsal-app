@@ -832,7 +832,11 @@ export default function SensorMatchPage() {
                 }} style={{ flex: 1, padding: '15px', background: '#20c997', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '1.1rem', fontWeight: 'bold' }}>🧤 セーブ</button>
                 <button onClick={() => {
                    const gkId = Object.keys(starterPositions).find(id => starterPositions[id].includes('GK') && (matchMode === 'external' || starterPositions[id].startsWith('red')));
-                   if (gkId) recordEvent('catch', gkId);
+                   if (gkId) {
+                     recordEvent('catch', gkId);
+                     setContextMode('attack');
+                     recordEvent('context_attack', 'app');
+                   }
                 }} style={{ flex: 1, padding: '15px', background: '#0ca678', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '1.1rem', fontWeight: 'bold' }}>👐 キャッチ</button>
               </div>
 
