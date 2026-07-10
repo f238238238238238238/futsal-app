@@ -151,7 +151,7 @@ export default function MLCollection() {
       
       <div className={styles.mainContent}>
         <div className={styles.controlsSection}>
-          <h3>1. 動作ラベルを選択</h3>
+          <h3 className={styles.sectionTitle}>1. 動作ラベルを選択</h3>
           <div className={styles.labelGrid}>
             {labels.map(lbl => (
               <button 
@@ -165,7 +165,7 @@ export default function MLCollection() {
             ))}
           </div>
 
-          <h3>2. 録画コントロール</h3>
+          <h3 className={styles.sectionTitle}>2. 録画コントロール</h3>
           <button 
             className={recording ? styles.btnStop : styles.btnRecord} 
             onClick={toggleRecording}
@@ -178,7 +178,7 @@ export default function MLCollection() {
         </div>
 
         <div className={styles.dataSection}>
-          <h3>3. データエクスポート</h3>
+          <h3 className={styles.sectionTitle}>3. データエクスポート</h3>
           <div className={styles.stats}>
             <p>収集済みのデータ行数: <strong>{dataRowsRef.current.length}</strong> 件</p>
             <p>※1秒間に約50件増えます</p>
