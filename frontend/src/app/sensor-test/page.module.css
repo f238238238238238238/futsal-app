@@ -1,0 +1,141 @@
+.container {
+  padding: 20px;
+  max-width: 900px;
+  margin: 0 auto;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #1e293b;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.header h2 {
+  margin: 0;
+  font-size: 28px;
+  color: #0f172a;
+}
+
+.btn {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 16px;
+  box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
+  transition: all 0.2s;
+}
+
+.btn:hover {
+  background: #2563eb;
+  transform: translateY(-2px);
+}
+
+.btnActive {
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: default;
+  font-size: 16px;
+  box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);
+}
+
+.dashboard {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  margin-bottom: 40px;
+}
+
+.card {
+  background: white;
+  border-radius: 16px;
+  padding: 30px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+  transition: transform 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+}
+
+.icon {
+  font-size: 48px;
+  margin-bottom: 15px;
+}
+
+.label {
+  color: #64748b;
+  font-size: 14px;
+  text-transform: uppercase;
+  font-weight: bold;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+}
+
+.value {
+  font-size: 56px;
+  font-weight: 800;
+  color: #0f172a;
+  display: flex;
+  align-items: baseline;
+}
+
+.unit {
+  font-size: 24px;
+  color: #94a3b8;
+  margin-left: 8px;
+  font-weight: 600;
+}
+
+.logs {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+}
+
+.logs h3 {
+  margin-top: 0;
+  color: #334155;
+  font-size: 18px;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 10px;
+}
+
+.logList {
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.emptyLog {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.logItem {
+  font-family: monospace;
+  color: #10b981;
+  font-weight: 600;
+  font-size: 15px;
+  margin: 8px 0;
+  padding: 8px;
+  background: #0f172a;
+  border-radius: 6px;
+  border-left: 4px solid #10b981;
+}
