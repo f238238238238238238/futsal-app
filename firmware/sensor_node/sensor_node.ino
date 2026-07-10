@@ -8,6 +8,7 @@ LSM6DS3 myIMU(I2C_MODE, 0x6A);
 // BLEサービスとキャラクタリスティックの定義
 BLEService futsalService("19b10000-e8f2-537e-4f6c-d104768a1214");
 BLEStringCharacteristic sensorCharacteristic("19b10001-e8f2-537e-4f6c-d104768a1214", BLERead | BLENotify, 64);
+BLEStringCharacteristic configCharacteristic("19b10002-e8f2-537e-4f6c-d104768a1214", BLEWrite | BLERead | BLENotify, 64);
 
 // キック検知用の変数
 float kickThresholdG = 4.0; // キックと判定するしきい値
@@ -50,7 +51,12 @@ void setup() {
   BLE.setLocalName("FUMINTUS_Sensor");
   BLE.setAdvertisedService(futsalService);
   futsalService.addCharacteristic(sensorCharacteristic);
+  futsalService.addCharacteristic(configCharacteristic);
   BLE.addService(futsalService);
+  
+  // 初期設定値を送信可能な状態にしておく
+  String initConfig = "K:" + String(kickThresholdG) + ",S:" + String(stepThresholdG);
+  configCharacteristic.writeValue(initConfig);
   
   // スマホからの接続待ちを開始
   BLE.advertise();
@@ -60,6 +66,30 @@ void setup() {
 void loop() {
   // BLEの接続状態を裏で処理しておく（スマホを繋ぎたい時のため）
   BLEDevice central = BLE.central();
+  
+  // スマホから設定値の変更要求が来ているかチェック
+  if (central && central.connected()) {
+    if (configCharacteristic.written()) {
+      String newConfig = configCharacteristic.value();
+      Serial.print("【CONFIG RECEIVED】: ");
+      Serial.println(newConfig);
+      
+      // "K:4.0,S:2.5" のような文字列を分解して設定
+      int kIndex = newConfig.indexOf("K:");
+      int sIndex = newConfig.indexOf(",S:");
+      
+      if (kIndex != -1 && sIndex != -1) {
+        String kVal = newConfig.substring(kIndex + 2, sIndex);
+        String sVal = newConfig.substring(sIndex + 3);
+        
+        kickThresholdG = kVal.toFloat();
+        stepThresholdG = sVal.toFloat();
+        
+        Serial.print("New Kick Threshold: "); Serial.println(kickThresholdG);
+        Serial.print("New Step Threshold: "); Serial.println(stepThresholdG);
+      }
+    }
+  }
 
   // ----- ここから常時実行されるセンサー処理 ----- //
   
