@@ -15,11 +15,13 @@ export default function MLCollection() {
 
   const labels = [
     'Pass_Inside',
-    'Pass_Toe',
+    'Pass_Outside',
     'Shoot_Instep',
+    'Shoot_Toe',
     'Trap_Control',
     'Sprint_Dash',
-    'Walk_Idle'
+    'Walk_Idle',
+    'Jump'
   ];
 
   const connectBLE = async () => {
