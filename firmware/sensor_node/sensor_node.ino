@@ -15,6 +15,10 @@ float kickThresholdG = 4.0; // キックと判定するしきい値
 unsigned long lastKickTime = 0;
 int debounceTimeMs = 500; // キック後の不感時間
 
+// 動作モード (0: 通常の判定モード, 1: AI学習用生データストリーミングモード)
+int operationMode = 0;
+unsigned long lastStreamTime = 0;
+
 // 運動量（PlayerLoad）用の変数
 float playerLoad = 0;
 float prevAx = 0, prevAy = 0, prevAz = 0;
@@ -77,6 +81,7 @@ void loop() {
       // "K:4.0,S:2.5" のような文字列を分解して設定
       int kIndex = newConfig.indexOf("K:");
       int sIndex = newConfig.indexOf(",S:");
+      int mIndex = newConfig.indexOf("M:");
       
       if (kIndex != -1 && sIndex != -1) {
         String kVal = newConfig.substring(kIndex + 2, sIndex);
@@ -88,10 +93,40 @@ void loop() {
         Serial.print("New Kick Threshold: "); Serial.println(kickThresholdG);
         Serial.print("New Step Threshold: "); Serial.println(stepThresholdG);
       }
+      
+      // モード切り替えの受信 ("M:1" など)
+      if (mIndex != -1) {
+        operationMode = newConfig.substring(mIndex + 2).toInt();
+        Serial.print("Switched Operation Mode to: "); Serial.println(operationMode);
+      }
     }
   }
 
-  // ----- ここから常時実行されるセンサー処理 ----- //
+  // ----- 動作モード1: AI学習用の生データストリーミング ----- //
+  if (operationMode == 1) {
+    if (millis() - lastStreamTime >= 20) { // 50Hz (20msに1回)
+      lastStreamTime = millis();
+      
+      float ax = myIMU.readFloatAccelX();
+      float ay = myIMU.readFloatAccelY();
+      float az = myIMU.readFloatAccelZ();
+      float gx = myIMU.readFloatGyroX();
+      float gy = myIMU.readFloatGyroY();
+      float gz = myIMU.readFloatGyroZ();
+      
+      // JSONだと文字数が多すぎるため、CSV形式の短い文字列で送信する
+      // 例: "D:0.12,-0.98,1.02,12.5,-3.2,0.1"
+      if (central && central.connected()) {
+        String streamData = "D:" + String(ax,2) + "," + String(ay,2) + "," + String(az,2) + "," 
+                                 + String(gx,1) + "," + String(gy,1) + "," + String(gz,1);
+        sensorCharacteristic.writeValue(streamData);
+      }
+    }
+    delay(5);
+    return; // 通常の判定処理は行わずループの先頭に戻る
+  }
+
+  // ----- 動作モード0: 通常のセンサー判定処理 ----- //
   
   // 3軸の加速度を取得 (単位: G)
   float ax = myIMU.readFloatAccelX();
