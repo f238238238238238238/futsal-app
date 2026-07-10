@@ -1,0 +1,147 @@
+.container {
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #1e293b;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 40px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.headerTop {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 10px;
+}
+
+.backLink {
+  color: #3b82f6;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.backLink:hover {
+  text-decoration: underline;
+}
+
+.header h2 {
+  margin: 0 0 10px 0;
+  font-size: 28px;
+}
+
+.header p {
+  color: #64748b;
+  margin-bottom: 20px;
+}
+
+.btnConnect {
+  background: #8b5cf6;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 16px;
+  box-shadow: 0 4px 6px rgba(139, 92, 246, 0.3);
+}
+
+.btnDisconnect {
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.mainContent {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.resultBox {
+  background: #f8fafc;
+  border: 2px solid #3b82f6;
+  border-radius: 16px;
+  padding: 40px 20px;
+  text-align: center;
+  box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.1);
+}
+
+.resultBox h3 {
+  margin: 0 0 20px 0;
+  color: #3b82f6;
+}
+
+.hugeResult {
+  font-size: 48px;
+  font-weight: 900;
+  color: #0f172a;
+  margin-bottom: 20px;
+  min-height: 70px;
+  word-break: break-all;
+}
+
+.hint {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.historyBox {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.historyBox h3 {
+  margin: 0 0 15px 0;
+  color: #334155;
+  font-size: 18px;
+}
+
+.emptyLog {
+  color: #94a3b8;
+  font-style: italic;
+  text-align: center;
+  padding: 20px 0;
+}
+
+.historyList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.historyList li {
+  padding: 12px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.historyList li:last-child {
+  border-bottom: none;
+}
+
+.time {
+  color: #94a3b8;
+  font-family: monospace;
+  font-size: 14px;
+}
+
+.res {
+  font-weight: bold;
+  color: #1e293b;
+  font-size: 16px;
+}
