@@ -18,7 +18,9 @@ export default function MLCollection() {
     'Pass_Outside',
     'Shoot_Instep',
     'Shoot_Toe',
-    'Trap_Control',
+    'Trap_Inside',
+    'Trap_Outside',
+    'Trap_Sole',
     'Sprint_Dash',
     'Walk_Idle',
     'Jump'
