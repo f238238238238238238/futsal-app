@@ -1,0 +1,40 @@
+﻿            <h3 style={{ marginTop: '20px', color: 'var(--color-gold)' }}>出席者選択 ({attendingIds.length}人)</h3>
+            <div className={styles.startersGrid}>
+              {players.map(p => {
+                const isAttending = attendingIds.includes(p.user_id);
+                return (
+                  <div key={p.user_id} className={${styles.playerSelectCard} } onClick={() => toggleAttendee(p.user_id)}>
+                    <img src={p.photo_url ? getImageUrl(p.photo_url) : '/default-avatar.png'} className={styles.avatarSmall} />
+                    <div className={styles.playerName}>{p.name}</div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {attendingIds.length > 0 && (
+              <>
+                <h3 style={{ marginTop: '30px', color: 'var(--color-gold)' }}>スタメン配置</h3>
+                <p style={{ fontSize: '0.8rem', color: '#888', marginBottom: '10px' }}>ピッチ上の（＋）を押してからベンチメンバーをタップ</p>
+                <div className={styles.pitchContainer}>
+                  <div className={styles.pitchCenterLine} />
+                  <div className={styles.pitchCenterCircle} />
+                  <div className={styles.pitchPenaltyAreaTop} />
+                  <div className={styles.pitchPenaltyAreaBottom} />
+                  {positions.map(pos => renderPitchSlot(pos, true))}
+                </div>
+
+                <h3 style={{ marginTop: '20px', color: '#ccc' }}>ベンチメンバー</h3>
+                <div className={styles.startersGrid}>
+                  {benchIds.map(id => {
+                    const p = players.find(x => x.user_id === id);
+                    if (!p) return null;
+                    return (
+                      <div key={p.user_id} className={styles.playerSelectCard} onClick={() => handlePlayerTap(p.user_id, 'bench')}>
+                        <img src={p.photo_url ? getImageUrl(p.photo_url) : '/default-avatar.png'} className={styles.avatarSmall} />
+                        <div className={styles.playerName}>{p.name}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
