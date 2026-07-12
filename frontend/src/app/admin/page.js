@@ -11,7 +11,6 @@ const ADMIN_SECTIONS = [
   { href: '/admin/attendance', icon: '📋', title: '出欠管理', desc: 'イベントの出欠状況確認、未回答者の把握' },
   { href: '/admin/fumindor', icon: '🏆', title: 'FUMINDOR管理', desc: '年間MVPの登録・削除' },
   { href: '/admin/settings', icon: '⚙️', title: 'サイト設定', desc: 'TOPヒーロー画像等の設定' },
-  { href: '/admin/matches/record', icon: '📹', title: '試合録画＆タギング', desc: 'カメラで試合を録画しながらゴールやパスなどのイベントを記録' },
   { href: '/sensor-test', icon: '📊', title: 'センサーテスト', desc: 'しきい値ベースでのキック・ダッシュ・運動量テスト' },
   { href: '/admin/ml-collection', icon: '🧠', title: 'AI学習データ収集', desc: 'AI（Edge Impulse等）に学習させるための波形データを収集' },
   { href: '/admin/ml-test', icon: '🤖', title: 'AI推論テスト', desc: '学習済みのAIモデルを組み込んだマイコンから判定結果を受信' },

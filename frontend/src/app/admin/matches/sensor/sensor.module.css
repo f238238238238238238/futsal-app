@@ -798,6 +798,55 @@
   gap: 5px;
 }
 
+/* ---------------------------------
+   Camera Integration
+--------------------------------- */
+.cameraSection {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--color-black);
+  padding: 10px 0;
+  border-bottom: 2px solid var(--color-dark-600);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.videoPreview {
+  width: 100%;
+  max-width: 400px;
+  border-radius: 8px;
+  background: #000;
+  aspect-ratio: 16/9;
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+
+.recordingBadge {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: #e03131;
+  color: #fff;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 0.8rem;
+  animation: blink 1s infinite alternate;
+}
+
+@keyframes blink {
+  from { opacity: 1; }
+  to { opacity: 0.5; }
+}
+
+.cameraControls {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
 .teamBtn {
   padding: 4px 10px;
   border-radius: 4px;

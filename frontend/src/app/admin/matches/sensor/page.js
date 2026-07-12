@@ -51,10 +51,27 @@ export default function SensorMatchPage() {
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const timerRef = useRef(null);
-  
+
+  // Camera & Recording
+  const [stream, setStream] = useState(null);
+  const [mediaRecorder, setMediaRecorder] = useState(null);
+  const [recordedChunks, setRecordedChunks] = useState([]);
+  const [isRecording, setIsRecording] = useState(false);
+  const videoRef = useRef(null);
+  const [cameraActive, setCameraActive] = useState(false);
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [phase]);
+
+  // Clean up camera stream on unmount
+  useEffect(() => {
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [stream]);
 
   // Selection
   const [selectedCourtId, setSelectedCourtId] = useState(null);
@@ -164,6 +181,76 @@ export default function SensorMatchPage() {
 
   const recordEvent = (type, userId, extraData = {}) => {
     setEvents(prev => [...prev, { event_type: type, user_id: userId, minute: timerSeconds, ...extraData }]);
+  };
+
+  const startCamera = async () => {
+    try {
+      const str = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
+        audio: true
+      });
+      setStream(str);
+      if (videoRef.current) {
+        videoRef.current.srcObject = str;
+      }
+      setCameraActive(true);
+    } catch (err) {
+      alert('カメラの起動に失敗しました: ' + err.message);
+    }
+  };
+
+  const stopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+    }
+    setCameraActive(false);
+  };
+
+  const startRecording = () => {
+    if (!stream) return;
+    const options = { mimeType: 'video/webm; codecs=vp9' };
+    try {
+      const recorder = new MediaRecorder(stream, options);
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          setRecordedChunks(prev => [...prev, e.data]);
+        }
+      };
+      recorder.start(1000);
+      setMediaRecorder(recorder);
+      setIsRecording(true);
+    } catch (e) {
+      alert('録画の開始に失敗しました。iPhoneの場合はSafariの設定を確認してください。');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop();
+    }
+    setIsRecording(false);
+  };
+
+  const downloadVideo = () => {
+    // If recordedChunks is empty but we just stopped, the chunk might still be processing.
+    // In React state, recordedChunks might not be fully updated here if called immediately.
+    // It's handled by a timeout in endMatch, but let's be safe.
+    setTimeout(() => {
+      setRecordedChunks(currentChunks => {
+        if (currentChunks.length === 0) return currentChunks;
+        const blob = new Blob(currentChunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        document.body.appendChild(a);
+        a.style = 'display: none';
+        a.href = url;
+        a.download = `futsal_match_${matchInfo.date}_${Date.now()}.webm`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+        return currentChunks;
+      });
+    }, 500);
   };
 
   // (Touch Handlers Removed)
@@ -383,6 +470,15 @@ export default function SensorMatchPage() {
     if(confirm('試合を終了しますか？')) {
       setIsRunning(false);
       setPhase('finished');
+      if (isRecording) {
+        stopRecording();
+      }
+      if (cameraActive) {
+        stopCamera();
+      }
+      setTimeout(() => {
+        downloadVideo();
+      }, 1000);
     }
   };
 
@@ -796,9 +892,36 @@ export default function SensorMatchPage() {
 
       {/* PLAYING PHASE */}
       {phase === 'playing' && (
-        <div className={styles.container} style={{ paddingBottom: '120px' }} data-drop-target="bench">
+        <div className={styles.container} style={{ paddingBottom: '120px', paddingTop: 0 }} data-drop-target="bench">
           
-          <div className={styles.scoreboard}>
+          <div className={styles.cameraSection}>
+            <video 
+              ref={videoRef} 
+              autoPlay 
+              playsInline 
+              muted 
+              className={styles.videoPreview} 
+              style={{ display: cameraActive ? 'block' : 'none' }}
+            />
+            {isRecording && <div className={styles.recordingBadge}>🔴 録画中 {formatTime(timerSeconds)}</div>}
+            
+            <div className={styles.cameraControls}>
+              {!cameraActive ? (
+                <button onClick={startCamera} className={styles.startBtn} style={{marginTop: 0, padding: '10px 20px'}}>📷 カメラ起動</button>
+              ) : (
+                <>
+                  {!isRecording ? (
+                    <button onClick={startRecording} className={styles.startBtn} style={{marginTop: 0, padding: '10px 20px', background: '#e03131', color: 'white'}}>🔴 録画開始</button>
+                  ) : (
+                    <button onClick={stopRecording} className={styles.startBtn} style={{marginTop: 0, padding: '10px 20px', background: '#343a40', color: 'white'}}>⏹ 録画停止</button>
+                  )}
+                  <button onClick={stopCamera} className={styles.ctrlBtn} style={{marginTop: 0}}>✖ 閉じる</button>
+                </>
+              )}
+            </div>
+          </div>
+
+          <div className={styles.scoreboard} style={{marginTop: '20px'}}>
             <div className={styles.scoreBox}>
               <div className={styles.scoreLabel}>{matchMode === 'intra' ? (matchInfo.team1_name || 'RED') : 'OURS'}</div>
               <div className={styles.scoreValue}>{score.us}</div>
@@ -995,6 +1118,12 @@ export default function SensorMatchPage() {
               style={{ marginTop: '30px' }}
             >
               {isSaving ? 'マージ保存中...' : 'データを合体して試合を保存'}
+            </button>
+            <button
+              onClick={downloadVideo}
+              style={{ marginTop: '10px', width: '100%', padding: '15px', background: '#339af0', color: 'white', border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: 'bold' }}
+            >
+              📹 録画した動画を再ダウンロード
             </button>
           </div>
         </div>
