@@ -464,6 +464,13 @@ export default function SensorMatchPage() {
     setInitialStarters([...courtIds]);
     setPhase('playing');
     setIsRunning(true);
+    
+    // 試合開始と同時に録画スタート
+    if (stream && !isRecording) {
+      startRecording();
+    } else if (!stream) {
+      alert("⚠️ カメラが起動していません。試合は開始されましたが、録画はされていません。");
+    }
   };
 
   const endMatch = () => {
@@ -702,6 +709,36 @@ export default function SensorMatchPage() {
         <div style={{ width: '40px' }} />
       </header>
 
+      {/* 常に上部に固定するカメラセクション */}
+      {(phase === 'setup' || phase === 'playing') && (
+        <div className={styles.cameraSection}>
+          <video 
+            ref={videoRef} 
+            autoPlay 
+            playsInline 
+            muted 
+            className={styles.videoPreview} 
+            style={{ display: cameraActive ? 'block' : 'none' }}
+          />
+          {isRecording && <div className={styles.recordingBadge}>🔴 録画中 {formatTime(timerSeconds)}</div>}
+          
+          <div className={styles.cameraControls}>
+            {!cameraActive ? (
+              <button onClick={startCamera} className={styles.startBtn} style={{marginTop: 0, padding: '10px 20px'}}>📷 カメラ起動</button>
+            ) : (
+              <>
+                {!isRecording ? (
+                  <button onClick={startRecording} className={styles.startBtn} style={{marginTop: 0, padding: '10px 20px', background: '#e03131', color: 'white'}} disabled={phase === 'setup'}>🔴 録画開始(試合中のみ)</button>
+                ) : (
+                  <button onClick={stopRecording} className={styles.startBtn} style={{marginTop: 0, padding: '10px 20px', background: '#343a40', color: 'white'}}>⏹ 録画停止</button>
+                )}
+                <button onClick={stopCamera} className={styles.ctrlBtn} style={{marginTop: 0}}>✖ 閉じる</button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* SETUP PHASE */}
       {phase === 'setup' && (
         <div className={styles.container}>
@@ -894,34 +931,7 @@ export default function SensorMatchPage() {
       {phase === 'playing' && (
         <div className={styles.container} style={{ paddingBottom: '120px', paddingTop: 0 }} data-drop-target="bench">
           
-          <div className={styles.cameraSection}>
-            <video 
-              ref={videoRef} 
-              autoPlay 
-              playsInline 
-              muted 
-              className={styles.videoPreview} 
-              style={{ display: cameraActive ? 'block' : 'none' }}
-            />
-            {isRecording && <div className={styles.recordingBadge}>🔴 録画中 {formatTime(timerSeconds)}</div>}
-            
-            <div className={styles.cameraControls}>
-              {!cameraActive ? (
-                <button onClick={startCamera} className={styles.startBtn} style={{marginTop: 0, padding: '10px 20px'}}>📷 カメラ起動</button>
-              ) : (
-                <>
-                  {!isRecording ? (
-                    <button onClick={startRecording} className={styles.startBtn} style={{marginTop: 0, padding: '10px 20px', background: '#e03131', color: 'white'}}>🔴 録画開始</button>
-                  ) : (
-                    <button onClick={stopRecording} className={styles.startBtn} style={{marginTop: 0, padding: '10px 20px', background: '#343a40', color: 'white'}}>⏹ 録画停止</button>
-                  )}
-                  <button onClick={stopCamera} className={styles.ctrlBtn} style={{marginTop: 0}}>✖ 閉じる</button>
-                </>
-              )}
-            </div>
-          </div>
-
-          <div className={styles.scoreboard} style={{marginTop: '20px'}}>
+          <div className={styles.scoreboard} style={{marginTop: '10px'}}>
             <div className={styles.scoreBox}>
               <div className={styles.scoreLabel}>{matchMode === 'intra' ? (matchInfo.team1_name || 'RED') : 'OURS'}</div>
               <div className={styles.scoreValue}>{score.us}</div>
