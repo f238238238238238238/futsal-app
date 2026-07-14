@@ -1000,12 +1000,6 @@ export default function SensorMatchPage() {
               
               <div style={{ display: 'flex', gap: '10px' }}>
                 <button 
-                  onClick={() => handleManualAction('app_opponent_pass')} 
-                  disabled={contextMode !== 'defense'}
-                  style={{ flex: 1, padding: '15px', background: contextMode === 'defense' ? '#4dabf7' : '#495057', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '1.1rem', fontWeight: 'bold', opacity: contextMode === 'defense' ? 1 : 0.5 }}>
-                  🔁 相手パス
-                </button>
-                <button 
                   onClick={() => {
                      const gkId = Object.keys(starterPositions).find(id => starterPositions[id].includes('GK') && (matchMode === 'external' || starterPositions[id].startsWith('red')));
                      if (gkId) recordEvent('save', gkId);
