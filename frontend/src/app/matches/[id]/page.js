@@ -407,6 +407,7 @@ export default function MatchDetailPage() {
       case 'sub_out': return `🔽 ${name} がベンチに下がりました`;
       case 'position_change': return `🔄 ${name} が ${ev.position || '別ポジション'} に変更`;
       case 'pass': return `🔁 ${name} がパスを繋ぎました`;
+      case 'dribble': return `🏃‍♂️ ${name} がドリブルで仕掛けました！`;
       case 'lost_ball': return `💥 ${name} がボールをロスト`;
       case 'opponent_pass': return `🔁 相手チームがパスを繋ぎました`;
       case 'opponent_pass_fail': return `💥 相手チームがボールをロストしました`;
