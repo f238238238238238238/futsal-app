@@ -115,7 +115,7 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
   const db = getDb();
   let client;
   try {
-    const { date, opponent_name, competition_name, our_score, opponent_score, summary_text, mom_user_id, duration_seconds, stats, events } = req.body;
+    const { date, opponent_name, competition_name, our_score, opponent_score, summary_text, mom_user_id, duration_seconds, video_url, stats, events } = req.body;
     const matchDur = duration_seconds ? parseInt(duration_seconds, 10) : 2400;
 
     if (!date || !opponent_name) {
@@ -127,10 +127,10 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
     await client.query('BEGIN');
 
     const matchRes = await client.query(`
-      INSERT INTO matches (date, opponent_name, competition_name, our_score, opponent_score, summary_text, mom_user_id, duration_seconds)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      INSERT INTO matches (date, opponent_name, competition_name, our_score, opponent_score, summary_text, mom_user_id, duration_seconds, video_url)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING match_id
-    `, [date, opponent_name, competition_name, our_score, opponent_score, summary_text, mom_user_id || null, matchDur]);
+    `, [date, opponent_name, competition_name, our_score, opponent_score, summary_text, mom_user_id || null, matchDur, video_url || null]);
     
     const matchId = matchRes.rows[0].match_id;
 
@@ -185,7 +185,7 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
   let client;
   try {
     const matchId = req.params.id;
-    const { date, opponent_name, competition_name, our_score, opponent_score, summary_text, mom_user_id, duration_seconds, stats, events } = req.body;
+    const { date, opponent_name, competition_name, our_score, opponent_score, summary_text, mom_user_id, duration_seconds, video_url, stats, events } = req.body;
     const matchDur = duration_seconds ? parseInt(duration_seconds, 10) : 2400;
 
     if (!date || !opponent_name) {
@@ -197,9 +197,9 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
 
     await client.query(`
       UPDATE matches
-      SET date = $1, opponent_name = $2, competition_name = $3, our_score = $4, opponent_score = $5, summary_text = $6, mom_user_id = $7, duration_seconds = $8
-      WHERE match_id = $9
-    `, [date, opponent_name, competition_name, our_score, opponent_score, summary_text, mom_user_id || null, matchDur, matchId]);
+      SET date = $1, opponent_name = $2, competition_name = $3, our_score = $4, opponent_score = $5, summary_text = $6, mom_user_id = $7, duration_seconds = $8, video_url = $9
+      WHERE match_id = $10
+    `, [date, opponent_name, competition_name, our_score, opponent_score, summary_text, mom_user_id || null, matchDur, video_url || null, matchId]);
 
     // Update stats: delete old and insert new
     await client.query(`DELETE FROM match_stats WHERE match_id = $1`, [matchId]);

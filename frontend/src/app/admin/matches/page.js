@@ -16,7 +16,7 @@ export default function AdminMatchesPage() {
   
   const initialForm = {
     date: '', opponent_name: '', competition_name: '', our_score: 0, opponent_score: 0,
-    summary_text: '', mom_user_id: '', duration_m: 40, duration_s: 0, statsMap: {}, events: []
+    summary_text: '', mom_user_id: '', duration_m: 40, duration_s: 0, video_url: '', statsMap: {}, events: []
   };
   const [form, setForm] = useState(initialForm);
   const [editingId, setEditingId] = useState(null);
@@ -78,6 +78,7 @@ export default function AdminMatchesPage() {
         mom_user_id: match.mom_user_id || '',
         duration_m: Math.floor((match.duration_seconds || 2400) / 60),
         duration_s: (match.duration_seconds || 2400) % 60,
+        video_url: match.video_url || '',
         statsMap: initialStats,
         events: (match.events || []).map(ev => ({
           ...ev,
@@ -286,6 +287,11 @@ export default function AdminMatchesPage() {
                   <option value="">選択なし</option>
                   {players.map(p => <option key={p.user_id} value={p.user_id}>{p.name}</option>)}
                 </select>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>YouTube URL (オプション)</label>
+                <input type="url" className={styles.formInput} value={form.video_url} onChange={e => setForm({...form, video_url: e.target.value})} placeholder="https://youtu.be/..." />
               </div>
 
               <div className={styles.formRow}>

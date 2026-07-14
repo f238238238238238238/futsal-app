@@ -265,6 +265,10 @@ export default function MatchDetailPage() {
     if (!match || !match.stats) return { red: redStats, blue: blueStats };
 
     let currentOnPitch = [];
+    let totalDefenseSeconds = 0;
+    let defenseStartTime = null;
+    let currentMode = 'setup';
+    let opponentPassFails = 0;
     match.stats.forEach(st => {
       if (st.is_starter === 1 || st.is_starter === true) {
         currentOnPitch.push({ user_id: st.user_id, position: st.position || '' });
@@ -274,6 +278,21 @@ export default function MatchDetailPage() {
     for (const ev of sortedEvents) {
       if (ev.minute > minute) break;
       
+      if (ev.event_type === 'context_defense') {
+        currentMode = 'defense';
+        defenseStartTime = ev.minute;
+      }
+      if ((ev.event_type === 'context_attack' || ev.event_type === 'opponent_pass_fail') && currentMode === 'defense') {
+        if (defenseStartTime !== null) {
+          totalDefenseSeconds += (ev.minute - defenseStartTime);
+          defenseStartTime = null;
+        }
+        currentMode = 'attack';
+      }
+      if (ev.event_type === 'opponent_pass_fail') {
+         opponentPassFails++;
+      }
+
       if (ev.event_type === 'sub_in') {
          currentOnPitch.push({ user_id: ev.user_id, position: ev.position || '' });
       } else if (ev.event_type === 'sub_out') {
@@ -319,8 +338,29 @@ export default function MatchDetailPage() {
       if (ev.event_type === 'opponent_shot') blueStats.shots++;
     }
     
+    if (currentMode === 'defense' && defenseStartTime !== null) {
+      totalDefenseSeconds += (minute - defenseStartTime);
+    }
+
+    if (match.match_mode !== 'intra') {
+      const opponentEstimatedPasses = Math.max(0, Math.floor(totalDefenseSeconds / 4));
+      const opponentTotalPasses = Math.max(opponentEstimatedPasses, opponentPassFails);
+      const opponentSuccessfulPasses = opponentTotalPasses - opponentPassFails;
+      
+      // Override manual passes with our estimation
+      blueStats.passes = opponentSuccessfulPasses;
+      blueStats.lost = opponentPassFails;
+    }
+
     return { red: redStats, blue: blueStats };
   }, [match, minute, sortedEvents]);
+
+  function getYouTubeId(url) {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const matchMatch = url.match(regExp);
+    return (matchMatch && matchMatch[2].length === 11) ? matchMatch[2] : null;
+  }
 
   const StatBar = ({ label, leftVal, rightVal, leftStr, rightStr }) => {
     const total = leftVal + rightVal;
@@ -414,6 +454,17 @@ export default function MatchDetailPage() {
 
       <div className="container">
         <Link href="/matches" className={styles.backLink}>← 試合一覧に戻る</Link>
+
+        {match.video_url && getYouTubeId(match.video_url) && (
+          <div style={{ marginBottom: '2rem', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 8px 30px rgba(0,0,0,0.3)', backgroundColor: '#000', paddingBottom: '56.25%', position: 'relative' }}>
+            <iframe 
+              src={`https://www.youtube.com/embed/${getYouTubeId(match.video_url)}`} 
+              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+        )}
 
         <div className={styles.sliderContainer}>
           <div className={styles.sliderLabel}>⏱️ {Math.floor(minute / 60)}分{(minute % 60).toString().padStart(2, '0')}秒</div>
