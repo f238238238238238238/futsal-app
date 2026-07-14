@@ -140,9 +140,9 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
       for (const st of stats) {
         const mins = playingTimes[st.user_id] || 0;
         await client.query(`
-          INSERT INTO match_stats (match_id, user_id, is_starter, goals, assists, minutes_played, saves, position)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        `, [matchId, st.user_id, st.is_starter ? 1 : 0, parseInt(st.goals,10) || 0, parseInt(st.assists,10) || 0, mins, parseInt(st.saves,10) || 0, st.position || null]);
+          INSERT INTO match_stats (match_id, user_id, is_starter, goals, assists, minutes_played, saves, position, sensor_id)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        `, [matchId, st.user_id, st.is_starter ? 1 : 0, parseInt(st.goals,10) || 0, parseInt(st.assists,10) || 0, mins, parseInt(st.saves,10) || 0, st.position || null, st.sensor_id || null]);
       }
     }
 
@@ -209,9 +209,9 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
       for (const st of stats) {
         const mins = playingTimes[st.user_id] || 0;
         await client.query(`
-          INSERT INTO match_stats (match_id, user_id, is_starter, goals, assists, minutes_played, saves, position)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        `, [matchId, st.user_id, st.is_starter ? 1 : 0, parseInt(st.goals,10) || 0, parseInt(st.assists,10) || 0, mins, parseInt(st.saves,10) || 0, st.position || null]);
+          INSERT INTO match_stats (match_id, user_id, is_starter, goals, assists, minutes_played, saves, position, sensor_id)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        `, [matchId, st.user_id, st.is_starter ? 1 : 0, parseInt(st.goals,10) || 0, parseInt(st.assists,10) || 0, mins, parseInt(st.saves,10) || 0, st.position || null, st.sensor_id || null]);
       }
     }
 

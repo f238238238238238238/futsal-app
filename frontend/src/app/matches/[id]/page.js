@@ -221,7 +221,8 @@ export default function MatchDetailPage() {
         name: st.name || st.user_name, 
         photo_url: st.photo_url, 
         jersey_number: st.jersey_number || '', 
-        position: st.position || '' 
+        position: st.position || '',
+        sensor_id: st.sensor_id || null
       };
       if (st.is_starter === 1 || st.is_starter === true) {
         currentOnPitch.push(p);
@@ -545,7 +546,7 @@ export default function MatchDetailPage() {
                       )}
                     </div>
                     <div className={styles.memberInfo}>
-                      <div className={styles.memberName}>{p.name}</div>
+                      <div className={styles.memberName}>{p.name} {p.sensor_id && <span style={{fontSize:'0.7rem', background:'#444', padding:'2px 4px', borderRadius:'4px', marginLeft:'5px'}}>{p.sensor_id}</span>}</div>
                       <div className={styles.memberPosition}>{p.position || '未設定'}</div>
                     </div>
                   </div>

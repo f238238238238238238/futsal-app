@@ -584,6 +584,7 @@ export default function SensorMatchPage() {
         user_id: uid,
         is_starter: initialStarters.includes(uid) ? 1 : 0,
         position: starterPositions[uid] || null,
+        sensor_id: sensorAssignments[uid] || null,
         goals: 0,
         assists: 0,
         saves: 0
