@@ -79,6 +79,7 @@ export default function SensorMatchPage() {
   const [lastPasserId, setLastPasserId] = useState(null);
 
   const [setupSelectedPos, setSetupSelectedPos] = useState(null);
+  const [setupSwapSourceId, setSetupSwapSourceId] = useState(null); // SETUPでの交代用
   const [attendingIds, setAttendingIds] = useState([]);
   const [playerTeams, setPlayerTeams] = useState({});
 
@@ -258,6 +259,21 @@ export default function SensorMatchPage() {
   const handlePlayerTap = (id, origin) => {
     if (phase === 'setup') {
       if (origin === 'bench') {
+        if (setupSwapSourceId) {
+          // ピッチの選手を選んでからベンチをタップした場合、そのピッチの選手をベンチに下げる
+          const posToRestore = starterPositions[setupSwapSourceId];
+          setCourtIds(prev => prev.filter(x => x !== setupSwapSourceId));
+          setBenchIds(prev => [...prev, setupSwapSourceId]);
+          setStarterPositions(prev => {
+            const next = { ...prev };
+            delete next[setupSwapSourceId];
+            return next;
+          });
+          setSetupSelectedPos(posToRestore);
+          setSetupSwapSourceId(null);
+          return;
+        }
+
         if (!setupSelectedPos) {
           alert('先にピッチのポジション（＋マーク）をタップしてください');
           return;
@@ -267,15 +283,20 @@ export default function SensorMatchPage() {
         setStarterPositions(prev => ({ ...prev, [id]: setupSelectedPos }));
         setSetupSelectedPos(null);
       } else if (origin === 'pitch') {
-        const posToRestore = starterPositions[id];
-        setCourtIds(prev => prev.filter(x => x !== id));
-        setBenchIds(prev => [...prev, id]);
-        setStarterPositions(prev => {
-          const next = { ...prev };
-          delete next[id];
-          return next;
-        });
-        if (posToRestore) setSetupSelectedPos(posToRestore);
+        if (setupSwapSourceId) {
+          if (setupSwapSourceId === id) {
+            setSetupSwapSourceId(null); // キャンセル
+          } else {
+            // ピッチ上の2人のポジションを入れ替え
+            const pos1 = starterPositions[setupSwapSourceId];
+            const pos2 = starterPositions[id];
+            setStarterPositions(prev => ({ ...prev, [setupSwapSourceId]: pos2, [id]: pos1 }));
+            setSetupSwapSourceId(null);
+          }
+        } else {
+          // 選択
+          setSetupSwapSourceId(id);
+        }
       }
     } else if (phase === 'playing') {
       const now = Date.now();
@@ -953,24 +974,53 @@ export default function SensorMatchPage() {
           <div className={styles.playArea}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', padding: '10px' }}>
               <div style={{ display: 'flex', gap: '10px' }}>
-                <button onClick={() => handleManualAction('app_goal')} style={{ flex: 1, padding: '20px', background: '#e03131', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '1.2rem', fontWeight: 'bold' }}>⚽ ゴール</button>
-                <button onClick={() => handleManualAction('app_shot_on_target')} style={{ flex: 1, padding: '20px', background: '#f59f00', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '1.2rem', fontWeight: 'bold' }}>🎯 枠内</button>
-                <button onClick={() => handleManualAction('app_shot_miss')} style={{ flex: 1, padding: '20px', background: '#868e96', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '1.2rem', fontWeight: 'bold' }}>❌ 枠外</button>
+                <button 
+                  onClick={() => handleManualAction('app_goal')} 
+                  disabled={contextMode !== 'attack'}
+                  style={{ flex: 1, padding: '20px', background: contextMode === 'attack' ? '#e03131' : '#495057', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '1.2rem', fontWeight: 'bold', opacity: contextMode === 'attack' ? 1 : 0.5 }}>
+                  ⚽ ゴール
+                </button>
+                <button 
+                  onClick={() => handleManualAction('app_shot_on_target')} 
+                  disabled={contextMode !== 'attack'}
+                  style={{ flex: 1, padding: '20px', background: contextMode === 'attack' ? '#f59f00' : '#495057', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '1.2rem', fontWeight: 'bold', opacity: contextMode === 'attack' ? 1 : 0.5 }}>
+                  🎯 枠内
+                </button>
+                <button 
+                  onClick={() => handleManualAction('app_shot_miss')} 
+                  disabled={contextMode !== 'attack'}
+                  style={{ flex: 1, padding: '20px', background: contextMode === 'attack' ? '#868e96' : '#495057', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '1.2rem', fontWeight: 'bold', opacity: contextMode === 'attack' ? 1 : 0.5 }}>
+                  ❌ 枠外
+                </button>
               </div>
               
               <div style={{ display: 'flex', gap: '10px' }}>
-                <button onClick={() => {
-                   const gkId = Object.keys(starterPositions).find(id => starterPositions[id].includes('GK') && (matchMode === 'external' || starterPositions[id].startsWith('red')));
-                   if (gkId) recordEvent('save', gkId);
-                }} style={{ flex: 1, padding: '15px', background: '#20c997', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '1.1rem', fontWeight: 'bold' }}>🧤 セーブ</button>
-                <button onClick={() => {
-                   const gkId = Object.keys(starterPositions).find(id => starterPositions[id].includes('GK') && (matchMode === 'external' || starterPositions[id].startsWith('red')));
-                   if (gkId) {
-                     recordEvent('catch', gkId);
-                     setContextMode('attack');
-                     recordEvent('context_attack', 'app');
-                   }
-                }} style={{ flex: 1, padding: '15px', background: '#0ca678', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '1.1rem', fontWeight: 'bold' }}>👐 キャッチ</button>
+                <button 
+                  onClick={() => {
+                     const gkId = Object.keys(starterPositions).find(id => starterPositions[id].includes('GK') && (matchMode === 'external' || starterPositions[id].startsWith('red')));
+                     if (gkId) recordEvent('save', gkId);
+                  }} 
+                  disabled={contextMode === 'attack'}
+                  style={{ flex: 1, padding: '15px', background: contextMode === 'defense' ? '#20c997' : '#495057', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '1.1rem', fontWeight: 'bold', opacity: contextMode === 'defense' ? 1 : 0.5 }}>
+                  🧤 セーブ
+                </button>
+                <button 
+                  onClick={() => {
+                     const gkId = Object.keys(starterPositions).find(id => starterPositions[id].includes('GK') && (matchMode === 'external' || starterPositions[id].startsWith('red')));
+                     if (gkId) {
+                       recordEvent('catch', gkId);
+                       setContextMode('attack');
+                       recordEvent('context_attack', 'app');
+                     } else {
+                       // キーパーが設定されていなくても攻撃モードには切り替える
+                       setContextMode('attack');
+                       recordEvent('context_attack', 'app');
+                     }
+                  }} 
+                  disabled={contextMode === 'attack'}
+                  style={{ flex: 1, padding: '15px', background: contextMode === 'defense' ? '#0ca678' : '#495057', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '1.1rem', fontWeight: 'bold', opacity: contextMode === 'defense' ? 1 : 0.5 }}>
+                  👐 キャッチ
+                </button>
               </div>
 
               <div style={{ display: 'flex', gap: '10px' }}>
@@ -978,10 +1028,15 @@ export default function SensorMatchPage() {
                   const newMode = contextMode === 'attack' ? 'defense' : 'attack';
                   setContextMode(newMode);
                   recordEvent(`context_${newMode}`, 'app');
-                }} style={{ flex: 2, padding: '15px', background: contextMode === 'attack' ? '#339af0' : '#495057', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '1.1rem', fontWeight: 'bold' }}>
+                }} style={{ flex: 2, padding: '15px', background: contextMode === 'attack' ? '#339af0' : '#e03131', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '1.1rem', fontWeight: 'bold' }}>
                   {contextMode === 'attack' ? '⚔️ 攻撃モード中 (タップで守備へ)' : '🛡️ 守備モード中 (タップで攻撃へ)'}
                 </button>
-                <button onClick={() => handleManualAction('app_opponent_goal')} style={{ flex: 1, padding: '15px', background: '#000', color: '#fff', border: '1px solid #e03131', borderRadius: '8px', fontSize: '1.1rem', fontWeight: 'bold' }}>💀 失点</button>
+                <button 
+                  onClick={() => handleManualAction('app_opponent_goal')} 
+                  disabled={contextMode !== 'defense'}
+                  style={{ flex: 1, padding: '15px', background: '#000', color: contextMode === 'defense' ? '#fff' : '#666', border: `1px solid ${contextMode === 'defense' ? '#e03131' : '#444'}`, borderRadius: '8px', fontSize: '1.1rem', fontWeight: 'bold', opacity: contextMode === 'defense' ? 1 : 0.5 }}>
+                  💀 失点
+                </button>
               </div>
             </div>
 
