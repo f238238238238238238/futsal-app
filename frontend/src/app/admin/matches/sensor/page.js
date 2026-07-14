@@ -546,9 +546,13 @@ export default function SensorMatchPage() {
     // 3. Merging Logic (Simple mock logic for now)
     const finalEvents = [];
     
-    // Add GK manual saves/catches
-    sortedApp.filter(e => e.event_type === 'save' || e.event_type === 'catch' || e.event_type === 'sub_in' || e.event_type === 'sub_out').forEach(e => {
-      finalEvents.push({ event_type: e.event_type, user_id: e.user_id !== 'app' ? Number(e.user_id) : null, minute: e.minute });
+    // Add GK manual saves/catches and opponent events
+    sortedApp.filter(e => ['save', 'catch', 'sub_in', 'sub_out', 'app_opponent_goal', 'app_opponent_pass', 'app_opponent_pass_fail', 'position_change'].includes(e.event_type)).forEach(e => {
+      let finalType = e.event_type;
+      if (finalType === 'app_opponent_goal') finalType = 'concede';
+      if (finalType === 'app_opponent_pass') finalType = 'opponent_pass';
+      if (finalType === 'app_opponent_pass_fail') finalType = 'opponent_pass_fail';
+      finalEvents.push({ event_type: finalType, user_id: e.user_id !== 'app' ? Number(e.user_id) : null, minute: e.minute });
     });
 
     // For every app event (goal, shot), try to find a matching sensor event nearby
@@ -679,7 +683,7 @@ export default function SensorMatchPage() {
       );
     }
 
-    const isSelected = isSetup ? setupSelectedPos === pos : selectedCourtId === playerId;
+    const isSelected = isSetup ? setupSwapSourceId === playerId : selectedCourtId === playerId;
     
     return (
       <div 
@@ -996,6 +1000,12 @@ export default function SensorMatchPage() {
               
               <div style={{ display: 'flex', gap: '10px' }}>
                 <button 
+                  onClick={() => handleManualAction('app_opponent_pass')} 
+                  disabled={contextMode !== 'defense'}
+                  style={{ flex: 1, padding: '15px', background: contextMode === 'defense' ? '#4dabf7' : '#495057', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '1.1rem', fontWeight: 'bold', opacity: contextMode === 'defense' ? 1 : 0.5 }}>
+                  🔁 相手パス
+                </button>
+                <button 
                   onClick={() => {
                      const gkId = Object.keys(starterPositions).find(id => starterPositions[id].includes('GK') && (matchMode === 'external' || starterPositions[id].startsWith('red')));
                      if (gkId) recordEvent('save', gkId);
@@ -1007,15 +1017,14 @@ export default function SensorMatchPage() {
                 <button 
                   onClick={() => {
                      const gkId = Object.keys(starterPositions).find(id => starterPositions[id].includes('GK') && (matchMode === 'external' || starterPositions[id].startsWith('red')));
-                     if (gkId) {
-                       recordEvent('catch', gkId);
-                       setContextMode('attack');
-                       recordEvent('context_attack', 'app');
-                     } else {
-                       // キーパーが設定されていなくても攻撃モードには切り替える
-                       setContextMode('attack');
-                       recordEvent('context_attack', 'app');
+                     if (gkId) recordEvent('catch', gkId);
+                     
+                     // 守備から攻撃に切り替わる（ボールを奪った）＝相手のパス失敗として記録
+                     if (contextMode === 'defense') {
+                       handleManualAction('app_opponent_pass_fail');
                      }
+                     setContextMode('attack');
+                     recordEvent('context_attack', 'app');
                   }} 
                   disabled={contextMode === 'attack'}
                   style={{ flex: 1, padding: '15px', background: contextMode === 'defense' ? '#0ca678' : '#495057', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '1.1rem', fontWeight: 'bold', opacity: contextMode === 'defense' ? 1 : 0.5 }}>
@@ -1026,6 +1035,10 @@ export default function SensorMatchPage() {
               <div style={{ display: 'flex', gap: '10px' }}>
                 <button onClick={() => {
                   const newMode = contextMode === 'attack' ? 'defense' : 'attack';
+                  // 守備から攻撃に切り替わる（ボールを奪った・アウトした）＝相手のパス失敗として記録
+                  if (contextMode === 'defense' && newMode === 'attack') {
+                    handleManualAction('app_opponent_pass_fail');
+                  }
                   setContextMode(newMode);
                   recordEvent(`context_${newMode}`, 'app');
                 }} style={{ flex: 2, padding: '15px', background: contextMode === 'attack' ? '#339af0' : '#e03131', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '1.1rem', fontWeight: 'bold' }}>

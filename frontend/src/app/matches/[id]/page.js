@@ -300,19 +300,22 @@ export default function MatchDetailPage() {
       if (team === 'red') {
         if (ev.event_type === 'pass') redStats.passes++;
         if (ev.event_type === 'lost_ball') redStats.lost++;
-        if (ev.event_type === 'goal') redStats.goals++;
+        if (ev.event_type === 'goal') { redStats.goals++; redStats.shots++; }
         if (ev.event_type === 'shot') redStats.shots++;
-        if (ev.event_type === 'save') redStats.saves++;
+        if (ev.event_type === 'save' || ev.event_type === 'catch') {
+          redStats.saves++;
+          blueStats.shots++; // 私たちのセーブ・キャッチ＝相手のシュート
+        }
       } else if (team === 'blue') {
-        if (ev.event_type === 'pass') blueStats.passes++;
-        if (ev.event_type === 'lost_ball') blueStats.lost++;
-        if (ev.event_type === 'goal') blueStats.goals++;
+        if (ev.event_type === 'pass' || ev.event_type === 'opponent_pass') blueStats.passes++;
+        if (ev.event_type === 'lost_ball' || ev.event_type === 'opponent_pass_fail') blueStats.lost++;
+        if (ev.event_type === 'goal') { blueStats.goals++; blueStats.shots++; }
         if (ev.event_type === 'shot') blueStats.shots++;
-        if (ev.event_type === 'save') blueStats.saves++;
+        if (ev.event_type === 'save' || ev.event_type === 'catch') blueStats.saves++;
       }
       
-      // Override for opponent-specific events in external matches (which might be tied to our player IDs)
-      if (ev.event_type === 'concede') blueStats.goals++;
+      // Override for opponent-specific events in external matches
+      if (ev.event_type === 'concede') { blueStats.goals++; blueStats.shots++; }
       if (ev.event_type === 'opponent_shot') blueStats.shots++;
     }
     
@@ -365,6 +368,8 @@ export default function MatchDetailPage() {
       case 'position_change': return `🔄 ${name} が ${ev.position || '別ポジション'} に変更`;
       case 'pass': return `🔁 ${name} がパスを繋ぎました`;
       case 'lost_ball': return `💥 ${name} がボールをロスト`;
+      case 'opponent_pass': return `🔁 相手チームがパスを繋ぎました`;
+      case 'opponent_pass_fail': return `💥 相手チームがボールをロストしました`;
       default: return `${name} - ${ev.event_type}`;
     }
   };
@@ -450,14 +455,14 @@ export default function MatchDetailPage() {
                   rightStr={teamStats.red.passes + teamStats.blue.passes > 0 ? `${Math.round((teamStats.blue.passes / (teamStats.red.passes + teamStats.blue.passes)) * 100)}%` : '50%'}
                 />
                 <StatBar 
-                  label="シュート数" 
-                  leftVal={teamStats.red.goals + teamStats.red.shots} 
-                  rightVal={teamStats.blue.goals + teamStats.blue.shots} 
+                  label="シュート数 (枠内含む)" 
+                  leftVal={teamStats.red.shots} 
+                  rightVal={teamStats.blue.shots} 
                 />
                 <StatBar 
-                  label="枠内シュート" 
-                  leftVal={teamStats.red.goals + teamStats.red.saves} 
-                  rightVal={teamStats.blue.goals + teamStats.blue.saves} 
+                  label="セーブ数" 
+                  leftVal={teamStats.red.saves} 
+                  rightVal={teamStats.blue.saves} 
                 />
                 <StatBar 
                   label="パス本数" 
