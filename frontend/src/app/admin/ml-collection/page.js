@@ -137,7 +137,7 @@ export default function MLCollection() {
     
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `sensor_ml_data_${Date.now()}.csv`);
+    link.setAttribute("download", `ML_${foot}_${currentLabel}_${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
