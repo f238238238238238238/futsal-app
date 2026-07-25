@@ -510,19 +510,96 @@ export default function SensorMatchPage() {
     }
   };
 
-  const handleMockSync = (userId) => {
-    setSyncStatuses(prev => ({ ...prev, [userId]: { status: 'syncing', data: [] } }));
-    setTimeout(() => {
-      // Mock data: random passes and shots for this user
-      const mockData = [];
-      for (let i = 0; i < 15; i++) {
-        mockData.push({
-          type: Math.random() > 0.8 ? 'IMPACT_SHOT' : 'IMPACT_PASS',
-          minute: Math.floor(Math.random() * timerSeconds)
-        });
+  const handleBLESync = async (userId) => {
+    try {
+      setSyncStatuses(prev => ({ ...prev, [userId]: { status: 'syncing', progress: '接続中...', data: [] } }));
+      
+      if (!navigator.bluetooth) {
+        throw new Error('Web Bluetoothがサポートされていません');
       }
-      setSyncStatuses(prev => ({ ...prev, [userId]: { status: 'synced', data: mockData } }));
-    }, 1500);
+
+      const device = await navigator.bluetooth.requestDevice({
+        filters: [{ namePrefix: 'Futsal_' }],
+        optionalServices: ['19b10000-e8f2-537e-4f6c-d104768a1214']
+      });
+
+      const server = await device.gatt.connect();
+      const service = await server.getPrimaryService('19b10000-e8f2-537e-4f6c-d104768a1214');
+      const dataChar = await service.getCharacteristic('19b10001-e8f2-537e-4f6c-d104768a1214');
+      const cmdChar = await service.getCharacteristic('19b10002-e8f2-537e-4f6c-d104768a1214');
+
+      await dataChar.startNotifications();
+
+      const eventsReceived = [];
+      const rawLines = [];
+      let currentFile = '';
+
+      const promise = new Promise((resolve, reject) => {
+        dataChar.addEventListener('characteristicvaluechanged', async (e) => {
+          const value = new TextDecoder().decode(e.target.value);
+          
+          if (value.startsWith('SYNC_START_')) {
+            currentFile = value.replace('SYNC_START_', '');
+            setSyncStatuses(prev => ({ ...prev, [userId]: { ...prev[userId], progress: `${currentFile} 受信中...` } }));
+          } else if (value.startsWith('SYNC_END_')) {
+            if (currentFile === 'events.csv') {
+              // Events finished, start raw sync
+              const encoder = new TextEncoder();
+              await cmdChar.writeValue(encoder.encode('SYNC_RAW'));
+            } else if (currentFile === 'raw_match.csv') {
+              // Raw finished, start delete
+              setSyncStatuses(prev => ({ ...prev, [userId]: { ...prev[userId], progress: `データ消去中...` } }));
+              const encoder = new TextEncoder();
+              await cmdChar.writeValue(encoder.encode('DELETE_ALL'));
+            }
+          } else if (value === 'DELETE_OK') {
+            resolve();
+          } else if (value.startsWith('SYNC_ERROR')) {
+            reject(new Error(value));
+          } else {
+            // Data line received
+            if (currentFile === 'events.csv') {
+              const parts = value.split(',');
+              if (parts.length >= 2) {
+                const ts = parseInt(parts[0]); 
+                eventsReceived.push({
+                  type: parts[1].includes('Pass') ? 'IMPACT_PASS' : 'IMPACT_SHOT', 
+                  minute: Math.floor(ts / 1000) 
+                });
+              }
+            } else if (currentFile === 'raw_match.csv') {
+              rawLines.push(value);
+            }
+          }
+        });
+      });
+
+      // Start the chain
+      const encoder = new TextEncoder();
+      await cmdChar.writeValue(encoder.encode('SYNC_EVENTS'));
+
+      await promise;
+      
+      // Cleanup
+      await dataChar.stopNotifications();
+      device.gatt.disconnect();
+      
+      // Download raw data
+      if (rawLines.length > 0) {
+        const blob = new Blob([rawLines.join('\n')], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `raw_match_${userId}_${Date.now()}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+      
+      setSyncStatuses(prev => ({ ...prev, [userId]: { status: 'synced', data: eventsReceived } }));
+    } catch (err) {
+      console.error(err);
+      setSyncStatuses(prev => ({ ...prev, [userId]: { status: 'error', error: err.message, data: [] } }));
+    }
   };
 
   const mergeAndSaveMatch = async () => {
@@ -1169,15 +1246,21 @@ export default function SensorMatchPage() {
                     </div>
                     
                     {syncData.status === 'pending' && (
-                      <button onClick={() => handleMockSync(uid)} style={{ padding: '8px 15px', background: '#339af0', color: '#fff', border: 'none', borderRadius: '5px' }}>
-                        テスト同期
+                      <button onClick={() => handleBLESync(uid)} style={{ padding: '8px 15px', background: '#339af0', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
+                        本番同期 (BLE)
                       </button>
                     )}
                     {syncData.status === 'syncing' && (
-                      <span style={{ color: '#f59f00', fontWeight: 'bold' }}>同期中...</span>
+                      <span style={{ color: '#f59f00', fontWeight: 'bold' }}>{syncData.progress || '同期中...'}</span>
                     )}
                     {syncData.status === 'synced' && (
                       <span style={{ color: '#20c997', fontWeight: 'bold' }}>完了 ({syncData.data.length}件)</span>
+                    )}
+                    {syncData.status === 'error' && (
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                        <span style={{ color: '#fa5252', fontSize: '0.8rem' }}>失敗</span>
+                        <button onClick={() => handleBLESync(uid)} style={{ padding: '5px 10px', background: '#444', color: '#fff', border: 'none', borderRadius: '5px' }}>再試行</button>
+                      </div>
                     )}
                   </div>
                 );

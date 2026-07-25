@@ -1,22 +1,25 @@
 // -------------------------------------------------------------
 // Futsal Sensor Unified Firmware
 // Target: Seeed Studio XIAO nRF52840 Sense
+// Hardware: Internal IMU (LSM6DS3) + Internal QSPI Flash (2MB)
 // -------------------------------------------------------------
 #include <ArduinoBLE.h>
 #include <LSM6DS3.h>
 #include <Wire.h>
-#include <SPI.h>
-#include <SD.h>
+#include <Adafruit_SPIFlash.h>
+#include <SdFat.h>
 
-// TODO: 後でEdge Impulseからエクスポートしたライブラリをここにインクルードする
-// #include <FUTSAL_AI_inferencing.h>
+// デバイス名設定（左足用か右足用かで変更する）
+#define DEVICE_NAME "Futsal_L" // "Futsal_R"
 
 // IMU Initialization (I2C)
 LSM6DS3 myIMU(I2C_MODE, 0x6A);
 
-// SD Card settings
-const int chipSelect = 2; // SDカードのCSピン（ハードウェア構成に応じて変更してください）
-bool sdAvailable = false;
+// On-board QSPI Flash settings
+Adafruit_FlashTransport_QSPI flashTransport;
+Adafruit_SPIFlash flash(&flashTransport);
+FatFileSystem fatfs;
+bool flashAvailable = false;
 
 // BLE Service & Characteristics
 BLEService futsalService("19b10000-e8f2-537e-4f6c-d104768a1214");
@@ -39,12 +42,12 @@ SystemMode currentMode = MODE_IDLE;
 unsigned long lastSampleTime = 0;
 const int sampleIntervalMs = 20; // 50Hz for Edge Impulse
 
-File rawDataFile;
-File eventFile;
+// File objects
+File32 rawDataFile;
+File32 eventFile;
 
 void setup() {
   Serial.begin(115200);
-  // while (!Serial); // 本番ではコメントアウト（PC接続なしで動かすため）
 
   // 1. Initialize IMU
   if (myIMU.begin() != 0) {
@@ -53,13 +56,25 @@ void setup() {
     Serial.println("IMU initialized successfully");
   }
 
-  // 2. Initialize SD Card
-  if (!SD.begin(chipSelect)) {
-    Serial.println("Card failed, or not present");
-    sdAvailable = false;
+  // 2. Initialize Internal QSPI Flash
+  if (!flash.begin()) {
+    Serial.println("Flash initialization failed!");
+    flashAvailable = false;
   } else {
-    Serial.println("SD card initialized.");
-    sdAvailable = true;
+    if (!fatfs.begin(&flash)) {
+      Serial.println("Failed to mount filesystem. Formatting...");
+      fatfs.format(&flash);
+      if (!fatfs.begin(&flash)) {
+        Serial.println("Format failed!");
+        flashAvailable = false;
+      } else {
+        Serial.println("Format success and mounted.");
+        flashAvailable = true;
+      }
+    } else {
+      Serial.println("Flash initialized and mounted.");
+      flashAvailable = true;
+    }
   }
 
   // 3. Initialize BLE
@@ -68,13 +83,12 @@ void setup() {
     while (1);
   }
 
-  BLE.setLocalName("FUMINTUS_Sensor");
+  BLE.setLocalName(DEVICE_NAME);
   BLE.setAdvertisedService(futsalService);
   futsalService.addCharacteristic(dataCharacteristic);
   futsalService.addCharacteristic(commandCharacteristic);
   BLE.addService(futsalService);
   
-  // Set initial value
   commandCharacteristic.writeValue("MODE_IDLE");
 
   BLE.advertise();
@@ -89,15 +103,12 @@ void loop() {
     Serial.println(central.address());
 
     while (central.connected()) {
-      // Check for incoming commands (Mode switching)
       if (commandCharacteristic.written()) {
         String cmd = commandCharacteristic.value();
         handleCommand(cmd);
       }
 
       unsigned long currentMillis = millis();
-      
-      // Execute logic based on mode
       switch (currentMode) {
         case MODE_DATA_COLLECTION:
           runDataCollection(currentMillis);
@@ -109,7 +120,7 @@ void loop() {
           runProduction(currentMillis);
           break;
         case MODE_SYNC:
-          // Sync runs once upon receiving the command, then returns to IDLE
+          // Sync is blocking, runs inside handleCommand
           break;
         case MODE_IDLE:
         default:
@@ -119,10 +130,10 @@ void loop() {
     }
     Serial.print("Disconnected from central: ");
     Serial.println(central.address());
-    currentMode = MODE_IDLE; // Disconnect時にIDLEに戻す
+    currentMode = MODE_IDLE; 
     closeFiles();
   } else {
-    // BLEに接続されていない場合でも、本番モード中ならロギングを継続する
+    // BLE切断時でも本番モード中はロギングを継続
     if (currentMode == MODE_PRODUCTION) {
       runProduction(millis());
     } else {
@@ -131,14 +142,11 @@ void loop() {
   }
 }
 
-// -------------------------------------------------------------
-// コマンド処理
-// -------------------------------------------------------------
 void handleCommand(String cmd) {
   cmd.trim();
   Serial.println("Received Command: " + cmd);
   
-  closeFiles(); // モード切替時にファイルを閉じる
+  closeFiles();
 
   if (cmd == "START_COLLECTION") {
     currentMode = MODE_DATA_COLLECTION;
@@ -149,16 +157,25 @@ void handleCommand(String cmd) {
   } else if (cmd == "START_PRODUCTION") {
     currentMode = MODE_PRODUCTION;
     Serial.println("Mode switched to: PRODUCTION");
-    if (sdAvailable) {
-      // 新しいファイルを開く (既存のデータに追記)
-      rawDataFile = SD.open("raw_match.csv", FILE_WRITE);
-      eventFile = SD.open("events.csv", FILE_WRITE);
+    if (flashAvailable) {
+      rawDataFile = fatfs.open("raw_match.csv", FILE_WRITE);
+      eventFile = fatfs.open("events.csv", FILE_WRITE);
     }
-  } else if (cmd == "START_SYNC") {
+  } else if (cmd == "SYNC_EVENTS") {
     currentMode = MODE_SYNC;
-    Serial.println("Mode switched to: SYNC");
-    runSync(); // ファイル内容をBLEで送信
-    currentMode = MODE_IDLE; // 同期完了後はIDLEへ
+    runSyncFile("events.csv");
+    currentMode = MODE_IDLE;
+  } else if (cmd == "SYNC_RAW") {
+    currentMode = MODE_SYNC;
+    runSyncFile("raw_match.csv");
+    currentMode = MODE_IDLE;
+  } else if (cmd == "DELETE_ALL") {
+    if (flashAvailable) {
+      fatfs.remove("events.csv");
+      fatfs.remove("raw_match.csv");
+      Serial.println("All data deleted.");
+      dataCharacteristic.writeValue("DELETE_OK");
+    }
   } else {
     currentMode = MODE_IDLE;
     Serial.println("Mode switched to: IDLE");
@@ -171,35 +188,28 @@ void closeFiles() {
 }
 
 // -------------------------------------------------------------
-// モード 1: データ収集 (AI学習用)
+// モード 1: データ収集 (Webへのリアルタイムストリーミング)
 // -------------------------------------------------------------
 void runDataCollection(unsigned long currentMillis) {
   if (currentMillis - lastSampleTime >= sampleIntervalMs) {
     lastSampleTime = currentMillis;
 
-    float ax, ay, az, gx, gy, gz;
-    ax = myIMU.readFloatAccelX();
-    ay = myIMU.readFloatAccelY();
-    az = myIMU.readFloatAccelZ();
-    gx = myIMU.readFloatGyroX();
-    gy = myIMU.readFloatGyroY();
-    gz = myIMU.readFloatGyroZ();
+    float ax = myIMU.readFloatAccelX();
+    float ay = myIMU.readFloatAccelY();
+    float az = myIMU.readFloatAccelZ();
+    float gx = myIMU.readFloatGyroX();
+    float gy = myIMU.readFloatGyroY();
+    float gz = myIMU.readFloatGyroZ();
 
     String payload = String(currentMillis) + "," + String(ax) + "," + String(ay) + "," + String(az) + "," + String(gx) + "," + String(gy) + "," + String(gz);
-    
-    // BLEで送信
     dataCharacteristic.writeValue(payload);
   }
 }
 
 // -------------------------------------------------------------
-// モード 2: AI推論テスト
+// モード 2: AI推論テスト (リアルタイム判定結果送信)
 // -------------------------------------------------------------
 void runAITest(unsigned long currentMillis) {
-  // TODO: ここにEdge Impulseの推論エンジン実行コードを記述
-  // 50Hzでセンサー値をバッファに貯め、例えば1秒ごとに推論(run_classifier)を実行する。
-
-  // ダミーのテスト実装（1秒に1回ランダムな結果を返す）
   static unsigned long lastTestTime = 0;
   if (currentMillis - lastTestTime >= 1000) {
     lastTestTime = currentMillis;
@@ -209,76 +219,84 @@ void runAITest(unsigned long currentMillis) {
 }
 
 // -------------------------------------------------------------
-// モード 3: 本番環境 (デュアルレコーディング)
+// モード 3: 本番環境 (デュアルレコーディング to QSPI Flash)
 // -------------------------------------------------------------
 void runProduction(unsigned long currentMillis) {
   if (currentMillis - lastSampleTime >= sampleIntervalMs) {
     lastSampleTime = currentMillis;
 
-    float ax, ay, az, gx, gy, gz;
-    ax = myIMU.readFloatAccelX();
-    ay = myIMU.readFloatAccelY();
-    az = myIMU.readFloatAccelZ();
-    gx = myIMU.readFloatGyroX();
-    gy = myIMU.readFloatGyroY();
-    gz = myIMU.readFloatGyroZ();
+    float ax = myIMU.readFloatAccelX();
+    float ay = myIMU.readFloatAccelY();
+    float az = myIMU.readFloatAccelZ();
+    float gx = myIMU.readFloatGyroX();
+    float gy = myIMU.readFloatGyroY();
+    float gz = myIMU.readFloatGyroZ();
 
-    // 1. 生波形データをSDカードに記録（学習用）
-    if (sdAvailable && rawDataFile) {
+    // 1. 生波形データをフラッシュに記録（学習用）
+    if (flashAvailable && rawDataFile) {
       String rawRow = String(currentMillis) + "," + String(ax) + "," + String(ay) + "," + String(az) + "," + String(gx) + "," + String(gy) + "," + String(gz);
       rawDataFile.println(rawRow);
     }
 
-    // 2. AI推論エンジンにデータを渡す
-    // TODO: ここでバッファに詰めて、いっぱいになったら推論を実行
-
-    // 3. (ダミー実装) キックを検知したと仮定して、イベントファイルに記録する
+    // 2. (ダミー実装) キック検知テスト
     static unsigned long lastEventTime = 0;
-    if (currentMillis - lastEventTime >= 3000) { // 3秒に1回イベント発生(テスト用)
+    if (currentMillis - lastEventTime >= 3000) {
       lastEventTime = currentMillis;
-      
-      // 実際には推論結果 (run_classifierの戻り値) を判定する
       String detectedLabel = "Pass_Inside"; 
-      float power = abs(ax) + abs(ay) + abs(az); // 簡易的なキック力の算出
+      float power = abs(ax) + abs(ay) + abs(az); 
 
-      if (sdAvailable && eventFile) {
+      if (flashAvailable && eventFile) {
         String eventRow = String(currentMillis) + "," + detectedLabel + "," + String(power);
         eventFile.println(eventRow);
-        eventFile.flush(); // 突然の電源断に備えて即座に書き込む
+        eventFile.flush(); 
       }
     }
   }
 }
 
 // -------------------------------------------------------------
-// モード 4: データ同期 (試合会場でのイベント抽出)
+// モード 4: データ同期 (バルク転送)
 // -------------------------------------------------------------
-void runSync() {
-  if (!sdAvailable) {
-    dataCharacteristic.writeValue("SYNC_ERROR: NO_SD");
+void runSyncFile(String filename) {
+  if (!flashAvailable) {
+    dataCharacteristic.writeValue("SYNC_ERROR: NO_FLASH");
     return;
   }
   
-  eventFile = SD.open("events.csv", FILE_READ);
-  if (!eventFile) {
+  File32 fileToSync = fatfs.open(filename.c_str(), FILE_READ);
+  if (!fileToSync) {
     dataCharacteristic.writeValue("SYNC_ERROR: NO_FILE");
     return;
   }
 
-  dataCharacteristic.writeValue("SYNC_START");
-  delay(100);
+  dataCharacteristic.writeValue("SYNC_START_" + filename);
+  delay(200);
 
-  // ファイルを1行ずつ読み込んでBLEで送信
-  while (eventFile.available()) {
-    String line = eventFile.readStringUntil('\n');
-    line.trim();
-    if (line.length() > 0) {
-      dataCharacteristic.writeValue(line);
-      delay(20); // BLEのパケットロスを防ぐためのわずかな遅延
+  // ファイルを少しずつ読み込んでBLEで送信
+  char buffer[64];
+  int bytesRead = 0;
+  String line = "";
+
+  while (fileToSync.available()) {
+    char c = fileToSync.read();
+    if (c == '\n') {
+      line.trim();
+      if (line.length() > 0) {
+        dataCharacteristic.writeValue(line);
+        delay(15); // BLEのパケットロスを防ぐ
+      }
+      line = "";
+    } else {
+      line += c;
     }
   }
+  // 送り残し対応
+  line.trim();
+  if (line.length() > 0) {
+    dataCharacteristic.writeValue(line);
+  }
 
-  eventFile.close();
-  delay(100);
-  dataCharacteristic.writeValue("SYNC_END");
+  fileToSync.close();
+  delay(200);
+  dataCharacteristic.writeValue("SYNC_END_" + filename);
 }

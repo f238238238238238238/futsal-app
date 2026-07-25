@@ -9,21 +9,23 @@ export default function MLCollection() {
   
   const [recording, setRecording] = useState(false);
   const [currentLabel, setCurrentLabel] = useState('Pass_Inside');
+  const [foot, setFoot] = useState('Right'); // 'Right' or 'Left'
   const [dataRows, setDataRows] = useState([]);
   
   const dataRowsRef = useRef([]);
 
   const labels = [
-    'Pass_Inside',
-    'Pass_Outside',
-    'Shoot_Instep',
-    'Shoot_Toe',
-    'Trap_Inside',
-    'Trap_Outside',
-    'Trap_Sole',
-    'Sprint_Dash',
-    'Walk_Idle',
-    'Jump'
+    { id: 'Pass_Inside', text: 'Pass_Inside (インサイドパス)' },
+    { id: 'Pass_Outside', text: 'Pass_Outside (アウトサイドパス)' },
+    { id: 'Shoot_Instep', text: 'Shoot_Instep (インステップシュート)' },
+    { id: 'Shoot_Toe', text: 'Shoot_Toe (トーキック)' },
+    { id: 'Trap_Sole', text: 'Trap_Sole (足裏トラップ)' },
+    { id: 'Trap_Inside', text: 'Trap_Inside (インサイドトラップ)' },
+    { id: 'Dribble', text: 'Dribble (ドリブル)' },
+    { id: 'Dash', text: 'Dash (ダッシュ/スプリント)' },
+    { id: 'Jog', text: 'Jog (ジョグ/軽く走る)' },
+    { id: 'Walk_Idle', text: 'Walk_Idle (歩く/止まる)' },
+    { id: 'Block', text: 'Block (ブロック/足を出して止める)' }
   ];
 
   const connectBLE = async () => {
@@ -34,7 +36,7 @@ export default function MLCollection() {
       }
 
       const device = await navigator.bluetooth.requestDevice({
-        filters: [{ name: 'FUMINTUS_Sensor' }],
+        filters: [{ namePrefix: 'Futsal_' }],
         optionalServices: ['19b10000-e8f2-537e-4f6c-d104768a1214']
       });
 
@@ -50,9 +52,9 @@ export default function MLCollection() {
 
       setConfigChar(confCharacteristic);
       
-      // ストリーミングモード(M:1)に変更
+      // ストリーミングモードに変更
       const encoder = new TextEncoder();
-      await confCharacteristic.writeValue(encoder.encode("M:1"));
+      await confCharacteristic.writeValue(encoder.encode("START_COLLECTION"));
 
       await characteristic.startNotifications();
       characteristic.addEventListener('characteristicvaluechanged', handleNotifications);
@@ -66,9 +68,9 @@ export default function MLCollection() {
   const disconnectBLE = async () => {
     if (configChar) {
       try {
-        // 通常モード(M:0)に戻す
+        // 通常モードに戻す
         const encoder = new TextEncoder();
-        await configChar.writeValue(encoder.encode("M:0"));
+        await configChar.writeValue(encoder.encode("MODE_IDLE"));
       } catch(e) {}
     }
     if (device && device.gatt.connected) {
@@ -84,11 +86,16 @@ export default function MLCollection() {
     const decoder = new TextDecoder('utf-8');
     const msg = decoder.decode(value);
     
-    // "D:ax,ay,az,gx,gy,gz" の形式
-    if (msg.startsWith('D:')) {
-      const values = msg.substring(2); // "D:" を削除
+    // 無関係なメッセージは無視
+    if (msg.startsWith('SYNC_') || msg.startsWith('DELETE_')) return;
+    
+    // 現在のファームウェアは "MCU_Millis,ax,ay,az,gx,gy,gz" の形式
+    const parts = msg.split(',');
+    if (parts.length === 7) {
+      const values = parts.slice(1).join(','); // ax,ay,az,gx,gy,gz
       const timestamp = Date.now();
-      const row = `${timestamp},${values},${currentLabel}`;
+      const finalLabel = `${currentLabel}_${foot}`; // 左右の足を区別する
+      const row = `${timestamp},${values},${finalLabel}`;
       
       // useRefを使って高速に配列に追加
       dataRowsRef.current.push(row);
@@ -153,21 +160,41 @@ export default function MLCollection() {
       
       <div className={styles.mainContent}>
         <div className={styles.controlsSection}>
-          <h3 className={styles.sectionTitle}>1. 動作ラベルを選択</h3>
+          <h3 className={styles.sectionTitle}>1. どちらの足のデータ？</h3>
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+            <button 
+              className={foot === 'Right' ? styles.labelBtnActive : styles.labelBtn}
+              onClick={() => setFoot('Right')}
+              disabled={recording}
+              style={{ flex: 1, padding: '15px' }}
+            >
+              右足 (Right)
+            </button>
+            <button 
+              className={foot === 'Left' ? styles.labelBtnActive : styles.labelBtn}
+              onClick={() => setFoot('Left')}
+              disabled={recording}
+              style={{ flex: 1, padding: '15px' }}
+            >
+              左足 (Left)
+            </button>
+          </div>
+
+          <h3 className={styles.sectionTitle}>2. 動作ラベルを選択</h3>
           <div className={styles.labelGrid}>
             {labels.map(lbl => (
               <button 
-                key={lbl} 
-                className={currentLabel === lbl ? styles.labelBtnActive : styles.labelBtn}
-                onClick={() => setCurrentLabel(lbl)}
+                key={lbl.id} 
+                className={currentLabel === lbl.id ? styles.labelBtnActive : styles.labelBtn}
+                onClick={() => setCurrentLabel(lbl.id)}
                 disabled={recording}
               >
-                {lbl}
+                {lbl.text}
               </button>
             ))}
           </div>
 
-          <h3 className={styles.sectionTitle}>2. 録画コントロール</h3>
+          <h3 className={styles.sectionTitle}>3. 録画コントロール</h3>
           <button 
             className={recording ? styles.btnStop : styles.btnRecord} 
             onClick={toggleRecording}
@@ -176,7 +203,7 @@ export default function MLCollection() {
             {recording ? '⏹ 録画ストップ' : '⏺ 録画スタート'}
           </button>
           
-          {recording && <div className={styles.recordingIndicator}>🔴 録画中... {currentLabel} をひたすら繰り返してください！</div>}
+          {recording && <div className={styles.recordingIndicator}>🔴 録画中... {foot}足で {labels.find(l => l.id === currentLabel)?.text} をひたすら繰り返してください！</div>}
         </div>
 
         <div className={styles.dataSection}>
