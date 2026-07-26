@@ -11,8 +11,10 @@ export default function MLCollection() {
   const [currentLabel, setCurrentLabel] = useState('Pass_Inside');
   const [foot, setFoot] = useState('Right'); // 'Right' or 'Left'
   const [dataRows, setDataRows] = useState([]);
+  const [liveData, setLiveData] = useState('');
   
   const dataRowsRef = useRef([]);
+  const liveDataCounterRef = useRef(0);
 
   const labels = [
     { id: 'Pass_Inside', text: 'Pass_Inside (インサイドパス)' },
@@ -25,7 +27,8 @@ export default function MLCollection() {
     { id: 'Dash', text: 'Dash (ダッシュ/スプリント)' },
     { id: 'Jog', text: 'Jog (ジョグ/軽く走る)' },
     { id: 'Walk_Idle', text: 'Walk_Idle (歩く/止まる)' },
-    { id: 'Block', text: 'Block (ブロック/足を出して止める)' }
+    { id: 'Block', text: 'Block (ブロック/足を出して止める)' },
+    { id: 'Pass_Cut', text: 'Pass_Cut (パスカット/インターセプト)' }
   ];
 
   const connectBLE = async () => {
@@ -80,14 +83,20 @@ export default function MLCollection() {
   };
 
   const handleNotifications = (event) => {
-    if (!recording) return; // 録画中のみデータを保存
-    
     const value = event.target.value;
     const decoder = new TextDecoder('utf-8');
     const msg = decoder.decode(value);
     
     // 無関係なメッセージは無視
     if (msg.startsWith('SYNC_') || msg.startsWith('DELETE_')) return;
+    
+    // ライブプレビュー用の更新（Reactの負荷を下げるために10回に1回だけ更新）
+    liveDataCounterRef.current++;
+    if (liveDataCounterRef.current % 10 === 0) {
+      setLiveData(msg);
+    }
+
+    if (!recording) return; // 録画中のみデータを保存
     
     // 現在のファームウェアは "MCU_Millis,ax,ay,az,gx,gy,gz" の形式
     const parts = msg.split(',');
@@ -152,9 +161,15 @@ export default function MLCollection() {
             Bluetoothで接続 (ストリーミング開始)
           </button>
         ) : (
-          <button className={styles.btnDisconnect} onClick={disconnectBLE}>
-            🟢 接続中 (切断して通常モードへ)
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <button className={styles.btnDisconnect} onClick={disconnectBLE}>
+              🟢 接続中 (切断して通常モードへ)
+            </button>
+            <div style={{ background: '#1a1a1a', color: '#32cd32', padding: '10px', borderRadius: '5px', fontSize: '0.85rem', fontFamily: 'monospace', textAlign: 'left' }}>
+              📡 <strong>通信テスト（センサーを振ってみてください）:</strong><br/>
+              {liveData || "データ待機中..."}
+            </div>
+          </div>
         )}
       </header>
       
