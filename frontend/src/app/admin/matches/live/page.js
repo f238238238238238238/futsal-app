@@ -968,6 +968,7 @@ export default function LiveMatchPage() {
               </div>
             )}
           </div>
+          </div>
 
           <div className={styles.eventLogContainer} style={{marginTop: '20px'}}>
              <h3 className={styles.eventLogTitle}>直近のアクションログ</h3>
