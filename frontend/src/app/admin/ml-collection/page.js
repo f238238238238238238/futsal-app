@@ -14,6 +14,7 @@ export default function MLCollection() {
   const [liveData, setLiveData] = useState('');
   
   const dataRowsRef = useRef([]);
+  const recordingRef = useRef(false);
   const liveDataCounterRef = useRef(0);
 
   const labels = [
@@ -96,7 +97,7 @@ export default function MLCollection() {
       setLiveData(msg);
     }
 
-    if (!recording) return; // 録画中のみデータを保存
+    if (!recordingRef.current) return; // 録画中のみデータを保存
     
     // 現在のファームウェアは "MCU_Millis,ax,ay,az,gx,gy,gz" の形式
     const parts = msg.split(',');
@@ -117,11 +118,13 @@ export default function MLCollection() {
   };
 
   const toggleRecording = () => {
-    if (!recording) {
+    if (!recordingRef.current) {
       setRecording(true);
-      alert(`${currentLabel} の録画を開始します。終わったらストップを押してください。`);
+      recordingRef.current = true;
+      alert(`${foot}足で ${labels.find(l => l.id === currentLabel)?.text} の録画を開始します。終わったらストップを押してください。`);
     } else {
       setRecording(false);
+      recordingRef.current = false;
       setDataRows([...dataRowsRef.current]);
     }
   };
