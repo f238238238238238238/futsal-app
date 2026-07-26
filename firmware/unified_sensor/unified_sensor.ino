@@ -9,8 +9,7 @@
 #include <Adafruit_SPIFlash.h>
 #include <SdFat.h>
 
-// デバイス名設定（左足用か右足用かで変更する）
-#define DEVICE_NAME "Futsal_L" // "Futsal_R"
+#define DEVICE_NAME "Futsal_Sensor" // 1つだけの場合は共通の名前でOKです
 
 // IMU Initialization (I2C)
 LSM6DS3 myIMU(I2C_MODE, 0x6A);
