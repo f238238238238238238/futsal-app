@@ -62,7 +62,8 @@ void setup() {
   } else {
     if (!fatfs.begin(&flash)) {
       Serial.println("Failed to mount filesystem. Formatting...");
-      fatfs.format(&flash);
+      FatFormatter fatFormatter;
+      fatFormatter.format(&flash);
       if (!fatfs.begin(&flash)) {
         Serial.println("Format failed!");
         flashAvailable = false;
