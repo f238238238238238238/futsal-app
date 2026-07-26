@@ -71,8 +71,22 @@ export default function MatchDetailPage() {
     }
     let pos = '';
     const starter = match.stats.find(s => s.user_id === userId);
-    if (starter && (starter.is_starter === 1 || starter.is_starter === true)) {
+      if (starter && (starter.is_starter === 1 || starter.is_starter === true)) {
       pos = starter.position;
+      
+      // Fallback for missing position bug in older matches
+      if (!pos && match.match_mode !== 'intra') {
+        const occupied = new Set(match.stats.map(s => s.position).filter(Boolean));
+        const extPos = ['GK', 'Fixo', 'Ala L', 'Ala R', 'Pivo'];
+        const missing = extPos.filter(p => !occupied.has(p));
+        // We can't guarantee the EXACT slot without stateful iteration like above, 
+        // but we can try to find this user's index among starters with missing positions
+        const startersMissingPos = match.stats.filter(s => (s.is_starter === 1 || s.is_starter === true) && !s.position);
+        const idx = startersMissingPos.findIndex(s => s.user_id === userId);
+        if (idx !== -1 && missing[idx]) {
+          pos = missing[idx];
+        }
+      }
     }
     for (const e of sortedEvents) {
       if (e.minute > currentMin) break;
@@ -213,15 +227,25 @@ export default function MatchDetailPage() {
     if (!match || !match.stats) return { onPitch: [], bench: [] };
     
     let currentOnPitch = [];
-    let currentBench = [];
+    const occupiedPositions = new Set(match.stats.map(st => st.position).filter(Boolean));
+    const allExternalPos = ['GK', 'Fixo', 'Ala L', 'Ala R', 'Pivo'];
+    let missingExternal = allExternalPos.filter(pos => !occupiedPositions.has(pos));
 
     match.stats.forEach(st => {
+      let startingPos = st.position || '';
+      
+      if ((st.is_starter === 1 || st.is_starter === true) && !startingPos && match.match_mode !== 'intra') {
+        if (missingExternal.length > 0) {
+          startingPos = missingExternal.shift();
+        }
+      }
+
       const p = { 
         user_id: st.user_id, 
         name: st.name || st.user_name, 
         photo_url: st.photo_url, 
         jersey_number: st.jersey_number || '', 
-        position: st.position || '',
+        position: startingPos,
         sensor_id: st.sensor_id || null
       };
       if (st.is_starter === 1 || st.is_starter === true) {
@@ -272,7 +296,18 @@ export default function MatchDetailPage() {
     let opponentPassFails = 0;
     match.stats.forEach(st => {
       if (st.is_starter === 1 || st.is_starter === true) {
-        currentOnPitch.push({ user_id: st.user_id, position: st.position || '' });
+        let startingPos = st.position || '';
+        if (!startingPos && match.match_mode !== 'intra') {
+          const occupied = new Set(match.stats.map(s => s.position).filter(Boolean));
+          const extPos = ['GK', 'Fixo', 'Ala L', 'Ala R', 'Pivo'];
+          const missing = extPos.filter(p => !occupied.has(p));
+          const startersMissingPos = match.stats.filter(s => (s.is_starter === 1 || s.is_starter === true) && !s.position);
+          const idx = startersMissingPos.findIndex(s => s.user_id === st.user_id);
+          if (idx !== -1 && missing[idx]) {
+            startingPos = missing[idx];
+          }
+        }
+        currentOnPitch.push({ user_id: st.user_id, position: startingPos });
       }
     });
 

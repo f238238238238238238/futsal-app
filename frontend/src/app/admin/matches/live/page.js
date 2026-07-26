@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { getPlayers, createMatch, getImageUrl, getEvents, getEventAttendances } from '@/lib/api';
+import YouTube from 'react-youtube';
 import styles from './live.module.css';
 
 const POSITIONS_EXTERNAL = ['red_Pivo', 'red_AlaL', 'red_AlaR', 'red_Fixo', 'red_GK'];
@@ -35,6 +36,7 @@ export default function LiveMatchPage() {
   const [courtIds, setCourtIds] = useState([]);
   const [benchIds, setBenchIds] = useState([]);
   const [starterPositions, setStarterPositions] = useState({});
+  const [initialPositions, setInitialPositions] = useState({});
   const [initialStarters, setInitialStarters] = useState([]);
   
   const [score, setScore] = useState({ us: 0, opponent: 0 });
@@ -53,6 +55,55 @@ export default function LiveMatchPage() {
   const [selectedCourtId, setSelectedCourtId] = useState(null);
   const [selectionTime, setSelectionTime] = useState(null);
   const [lastPasserId, setLastPasserId] = useState(null);
+
+  // Video Editor State
+  const [videoEditorMode, setVideoEditorMode] = useState(false);
+  const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [rawTimestamps, setRawTimestamps] = useState('');
+  const [parsedTimestamps, setParsedTimestamps] = useState([]);
+  const playerRef = useRef(null);
+
+  const parseTimestamps = (text) => {
+    const lines = text.split('\n');
+    const parsed = [];
+    // Basic regex to find MM:SS or HH:MM:SS
+    const regex = /(?:(\d+):)?(\d{1,2}):(\d{2})/;
+    for (const line of lines) {
+      const match = line.match(regex);
+      if (match) {
+        let totalSeconds = 0;
+        if (match[1]) {
+          totalSeconds = parseInt(match[1]) * 3600 + parseInt(match[2]) * 60 + parseInt(match[3]);
+        } else {
+          totalSeconds = parseInt(match[2]) * 60 + parseInt(match[3]);
+        }
+        parsed.push({ timeStr: match[0], seconds: totalSeconds, label: line.replace(match[0], '').trim() });
+      }
+    }
+    setParsedTimestamps(parsed.sort((a,b) => a.seconds - b.seconds));
+  };
+
+  const handleTimestampClick = (seconds) => {
+    setIsRunning(false);
+    // Seek to 3 seconds before the event
+    const seekTime = Math.max(0, seconds - 3);
+    setTimerSeconds(seekTime);
+    if (playerRef.current) {
+      playerRef.current.seekTo(seekTime);
+      playerRef.current.playVideo();
+    }
+  };
+
+  const onPlayerReady = (event) => {
+    playerRef.current = event.target;
+  };
+  
+  function getYouTubeId(url) {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const matchMatch = url.match(regExp);
+    return (matchMatch && matchMatch[2].length === 11) ? matchMatch[2] : null;
+  }
 
   const [setupSelectedPos, setSetupSelectedPos] = useState(null);
   const [attendingIds, setAttendingIds] = useState([]);
@@ -393,6 +444,7 @@ export default function LiveMatchPage() {
     if (courtIds.length === 0) return alert('スタメンを選んでください');
     
     setInitialStarters([...courtIds]);
+    setInitialPositions({ ...starterPositions });
     setPhase('playing');
     setIsRunning(true);
   };
@@ -414,7 +466,7 @@ export default function LiveMatchPage() {
       statsObj[uid] = {
         user_id: uid,
         is_starter: initialStarters.includes(uid) ? 1 : 0,
-        position: starterPositions[uid] || null,
+        position: initialPositions[uid] || null,
         goals: 0,
         assists: 0,
         saves: 0
@@ -547,12 +599,29 @@ export default function LiveMatchPage() {
 
   const positions = phase === 'setup' ? setupPositions : POSITIONS_INTRA;
 
+  const handleUndo = () => {
+    if (events.length === 0) return;
+    setEvents(prev => prev.slice(0, -1));
+  };
+
   return (
     <div className={styles.livePage}>
       <header className={styles.liveHeader}>
         <Link href="/admin/matches" className={styles.backBtn}>✕</Link>
         <div className={styles.headerTitle}>{matchMode === 'intra' ? `🔴 ${matchInfo.team1_name || 'RED'} vs ${matchInfo.team2_name || 'BLUE'} 🔵` : 'LIVE MATCH'}</div>
-        <div style={{ width: '40px' }} />
+        <div>
+          {phase === 'playing' && (
+            <>
+              <button className={styles.undoBtn} onClick={handleUndo}>↩ 1つ取消</button>
+              <button 
+                className={styles.videoEditorBtn}
+                onClick={() => setVideoEditorMode(!videoEditorMode)}
+              >
+                {videoEditorMode ? '動画モードOFF' : '動画解析モード'}
+              </button>
+            </>
+          )}
+        </div>
       </header>
 
       {/* SETUP PHASE */}
@@ -766,9 +835,56 @@ export default function LiveMatchPage() {
             </div>
           </div>
 
-          <div className={styles.playArea}>
-            <div className={styles.pitchContainer}>
-              <div className={styles.pitchCenterLine} />
+          <div className={videoEditorMode ? styles.videoEditorLayout : ''}>
+            {videoEditorMode && (
+              <div className={styles.videoEditorPanel}>
+                <div className={styles.videoInputArea}>
+                  <input 
+                    type="text" 
+                    className={styles.videoInput} 
+                    placeholder="YouTube URL" 
+                    value={youtubeUrl} 
+                    onChange={e => setYoutubeUrl(e.target.value)} 
+                  />
+                </div>
+                
+                {getYouTubeId(youtubeUrl) && (
+                  <div className={styles.youtubeWrapper}>
+                    <YouTube 
+                      videoId={getYouTubeId(youtubeUrl)} 
+                      opts={{ width: '100%', height: '100%', playerVars: { autoplay: 0 } }} 
+                      onReady={onPlayerReady} 
+                    />
+                  </div>
+                )}
+                
+                <textarea 
+                  className={styles.timestampTextarea} 
+                  placeholder="ここにGemini等で作ったタイムスタンプを貼り付け&#13;&#10;例:&#13;&#10;01:23 味方パス&#13;&#10;02:45 ブロック" 
+                  value={rawTimestamps}
+                  onChange={e => {
+                    setRawTimestamps(e.target.value);
+                    parseTimestamps(e.target.value);
+                  }}
+                />
+                
+                <div className={styles.timestampList}>
+                  {parsedTimestamps.map((t, idx) => (
+                    <div key={idx} className={styles.timestampItem} onClick={() => handleTimestampClick(t.seconds)}>
+                      <span className={styles.timestampTime}>[{t.timeStr}]</span>
+                      <span className={styles.timestampEvent}>{t.label}</span>
+                    </div>
+                  ))}
+                  {parsedTimestamps.length === 0 && (
+                    <p style={{color: '#888', textAlign: 'center', fontSize: '0.9rem', marginTop: '1rem'}}>タイムスタンプが見つかりません</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className={styles.playArea}>
+              <div className={styles.pitchContainer}>
+                <div className={styles.pitchCenterLine} />
               <div className={styles.pitchCenterCircle} />
               <div className={styles.pitchPenaltyAreaTop} />
               <div className={styles.pitchPenaltyAreaBottom} />
