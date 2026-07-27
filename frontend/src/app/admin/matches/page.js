@@ -238,8 +238,9 @@ export default function AdminMatchesPage() {
                     <td>{m.competition_name || '練習試合'}</td>
                     <td>{m.opponent_name}</td>
                     <td style={{ fontWeight: 700 }}>{m.our_score} - {m.opponent_score}</td>
-                    <td>
-                      <div className={styles.actionBtns}>
+                    <td className={styles.tableCell}>
+                      <div className={styles.actionButtons}>
+                        <Link href={`/admin/matches/${m.match_id}/video-editor`} className={styles.editBtn} style={{ background: '#7950f2' }}>🎬 タイムライン</Link>
                         <button className={styles.editBtn} onClick={() => openEdit(m.match_id)}>編集</button>
                         <button className={styles.deleteBtn} onClick={() => handleDelete(m.match_id)}>削除</button>
                       </div>
