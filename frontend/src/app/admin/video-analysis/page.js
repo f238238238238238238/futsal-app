@@ -124,21 +124,17 @@ export default function StandaloneVideoEditorPage() {
   const addEvent = (type) => {
     if (!videoRef.current) return;
     
-    if (!pendingAction && selectedEventIndex === null) {
-      setWasPlayingBeforeEdit(!videoRef.current.paused);
-    }
-    videoRef.current.pause();
-
     // Opponent / Automatic actions
     if (['opponent_goal', 'opponent_pass'].includes(type)) {
       insertEvent(type, 'opponent');
       setPossessionUserId(null); 
       setPendingAction(null);
-      resumeVideoIfNeeded();
       return;
     }
 
     if (type === 'substitution') {
+      if (selectedEventIndex === null) setWasPlayingBeforeEdit(!videoRef.current.paused);
+      videoRef.current.pause();
       const newEvent = { event_type: type, user_id: '', minute: Math.floor(videoRef.current.currentTime), position: '' };
       setEvents(prev => [...prev, newEvent]);
       // Open editor for substitution to let them choose players
@@ -151,27 +147,37 @@ export default function StandaloneVideoEditorPage() {
       if (gks.length === 1) {
         insertEvent(type, gks[0]);
         setPossessionUserId(type === 'catch' ? gks[0] : null);
-        resumeVideoIfNeeded();
       } else {
+        if (!pendingAction && selectedEventIndex === null) setWasPlayingBeforeEdit(!videoRef.current.paused);
+        videoRef.current.pause();
         setPendingAction({ type, step: 1 });
       }
       return;
     }
 
     if (['goal', 'shot', 'block', 'pass_cut', 'lost_ball', 'shot_off'].includes(type)) {
+      if (type === 'shot_off' && !possessionUserId) {
+        insertEvent('shot_off', 'opponent');
+        setPossessionUserId(null);
+        setPendingAction(null);
+        return;
+      }
       if (possessionUserId && type !== 'block' && type !== 'pass_cut') {
         insertEvent(type, possessionUserId);
         if (['lost_ball', 'shot', 'goal', 'shot_off'].includes(type)) {
            setPossessionUserId(null);
         }
-        resumeVideoIfNeeded();
       } else {
+        if (!pendingAction && selectedEventIndex === null) setWasPlayingBeforeEdit(!videoRef.current.paused);
+        videoRef.current.pause();
         setPendingAction({ type, step: 1 });
       }
       return;
     }
 
     if (type === 'pass') {
+      if (!pendingAction && selectedEventIndex === null) setWasPlayingBeforeEdit(!videoRef.current.paused);
+      videoRef.current.pause();
       if (possessionUserId) {
         setPendingAction({ type: 'pass', step: 2, actor: possessionUserId });
       } else {
@@ -181,6 +187,8 @@ export default function StandaloneVideoEditorPage() {
     }
     
     if (type === 'kickoff') {
+      if (!pendingAction && selectedEventIndex === null) setWasPlayingBeforeEdit(!videoRef.current.paused);
+      videoRef.current.pause();
       setPendingAction({ type: 'kickoff', step: 1 });
       return;
     }
@@ -503,30 +511,60 @@ export default function StandaloneVideoEditorPage() {
       <div className={styles.mainContent}>
         
         <div className={styles.leftColumn}>
-          {/* Video Area */}
-          <div className={styles.videoSection}>
-            {!videoSrc && (
-              <div className={styles.uploadOverlay}>
-              <label className={styles.uploadLabel}>
-                📁 ローカル動画を選択 (MP4)
-                <input type="file" accept="video/*" className={styles.fileInput} onChange={handleVideoUpload} />
-              </label>
-              <p style={{marginTop: '1rem', color: '#aaa', fontSize: '0.9rem'}}>※サーバーにはアップロードされません。ブラウザ上で即座に再生されます。</p>
+          <div style={{ display: 'flex', gap: '1rem', height: '50vh', marginBottom: '1rem' }}>
+            {/* Video Area */}
+            <div className={styles.videoSection} style={{ flex: '1', height: '100%', borderRadius: 'var(--radius-lg)' }}>
+              {!videoSrc && (
+                <div className={styles.uploadOverlay}>
+                <label className={styles.uploadLabel}>
+                  📁 ローカル動画を選択 (MP4)
+                  <input type="file" accept="video/*" className={styles.fileInput} onChange={handleVideoUpload} />
+                </label>
+                <p style={{marginTop: '1rem', color: '#aaa', fontSize: '0.9rem'}}>※サーバーにはアップロードされません。ブラウザ上で即座に再生されます。</p>
+              </div>
+            )}
+            {videoSrc && (
+              <div className={styles.videoWrapper} style={{ height: '100%', maxHeight: '100%' }}>
+                <video 
+                  ref={videoRef}
+                  src={videoSrc} 
+                  className={styles.videoElement}
+                  controls
+                  onTimeUpdate={handleTimeUpdate}
+                  onLoadedMetadata={handleLoadedMetadata}
+                />
+              </div>
+            )}
             </div>
-          )}
-          {videoSrc && (
-            <div className={styles.videoWrapper}>
-              <video 
-                ref={videoRef}
-                src={videoSrc} 
-                className={styles.videoElement}
-                controls
-                onTimeUpdate={handleTimeUpdate}
-                onLoadedMetadata={handleLoadedMetadata}
-              />
+
+            {/* Event Log Section */}
+            <div className={styles.logSection}>
+              <div className={styles.sidebarTitle}>📜 イベントログ</div>
+              {events.slice().reverse().map((ev, i) => {
+                const pName = players.find(p => p.user_id === ev.user_id)?.name || ev.user_id;
+                const tName = players.find(p => p.user_id === ev.target_user_id)?.name || ev.target_user_id;
+                
+                let text = getActionLabel(ev);
+                if (ev.user_id === 'opponent') text = `(相手) ${text}`;
+                else if (ev.event_type === 'substitution') text = '交代';
+                else if (ev.event_type === 'pass' || ev.event_type === 'kickoff') text = `${pName} から ${tName} へ${text}`;
+                else text = `${pName} が${text}`;
+
+                const min = Math.floor(ev.minute / 60);
+                const sec = (ev.minute % 60).toString().padStart(2, '0');
+
+                return (
+                  <div key={`log-${i}`} className={styles.logItem}>
+                    <span className={styles.logItemTime}>{min}:{sec}</span>
+                    <span>{text}</span>
+                  </div>
+                );
+              })}
+              {events.length === 0 && (
+                <div style={{ color: '#aaa', fontSize: '0.8rem', textAlign: 'center', marginTop: '1rem' }}>まだ記録はありません</div>
+              )}
             </div>
-          )}
-        </div>
+          </div>
 
         {/* Timeline Area */}
         <div className={styles.timelineSection}>

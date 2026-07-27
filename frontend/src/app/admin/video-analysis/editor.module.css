@@ -92,7 +92,7 @@
 .videoWrapper {
   width: 100%;
   height: 100%;
-  max-height: 55vh;
+  max-height: 50vh;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -307,4 +307,97 @@
   font-family: var(--font-heading);
   font-weight: bold;
   cursor: pointer;
+}
+
+.activePlayersArea {
+  margin-top: var(--space-md);
+  padding: var(--space-md);
+  background: var(--color-dark-800);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-dark-600);
+}
+.pendingActionBanner {
+  text-align: center;
+  color: var(--color-gold);
+  font-weight: bold;
+  margin-bottom: var(--space-sm);
+}
+.activePlayer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  transition: all 0.2s;
+}
+.activePlayer.isPossessor {
+  background: rgba(255, 212, 59, 0.2);
+  outline: 2px solid var(--color-gold);
+}
+.activePlayer.isPendingTarget {
+  animation: pulse 1s infinite alternate;
+}
+@keyframes pulse {
+  from { background: rgba(77, 171, 247, 0.1); outline: 2px solid transparent; }
+  to { background: rgba(77, 171, 247, 0.4); outline: 2px solid #4dabf7; }
+}
+.activePlayerAvatar {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  background: var(--color-dark-600);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 2px solid transparent;
+  transition: border-color 0.2s;
+}
+.activePlayerImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.activePlayerName {
+  font-size: 0.8rem;
+  color: var(--color-gray-300);
+}
+
+.timelineSection {
+  flex: none;
+  background: var(--color-dark-800);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.logSection {
+  width: 250px;
+  background: var(--color-dark-800);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-dark-600);
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  overflow-y: auto;
+  max-height: 50vh;
+}
+
+.logItem {
+  font-size: 0.85rem;
+  padding: 8px;
+  background: var(--color-dark-700);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--color-gold);
+}
+
+.logItemTime {
+  font-weight: bold;
+  color: var(--color-gold);
+  margin-right: 6px;
 }
