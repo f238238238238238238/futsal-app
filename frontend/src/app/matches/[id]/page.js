@@ -378,7 +378,7 @@ export default function MatchDetailPage() {
 
       if (team === 'red') {
         if (ev.event_type === 'pass') redStats.passes++;
-        if (ev.event_type === 'lost_ball') redStats.lost++;
+        if (ev.event_type === 'lost_ball' || ev.event_type === 'pass_miss') redStats.lost++;
         if (ev.event_type === 'goal') { redStats.goals++; redStats.shots++; }
         if (ev.event_type === 'shot') redStats.shots++;
         if (ev.event_type === 'save' || ev.event_type === 'catch') {
@@ -387,7 +387,7 @@ export default function MatchDetailPage() {
         }
       } else if (team === 'blue') {
         if (ev.event_type === 'pass' || ev.event_type === 'opponent_pass') blueStats.passes++;
-        if (ev.event_type === 'lost_ball' || ev.event_type === 'opponent_pass_fail') blueStats.lost++;
+        if (ev.event_type === 'lost_ball' || ev.event_type === 'opponent_pass_fail' || ev.event_type === 'pass_miss') blueStats.lost++;
         if (ev.event_type === 'goal' || ev.event_type === 'opponent_goal') { blueStats.goals++; blueStats.shots++; }
         if (ev.event_type === 'shot') blueStats.shots++;
         if (ev.event_type === 'save' || ev.event_type === 'catch') blueStats.saves++;
@@ -493,6 +493,7 @@ export default function MatchDetailPage() {
         return `🔁 ${name} がパスを繋ぎました`;
       case 'dribble': return `🏃‍♂️ ${name} がドリブルで仕掛けました！`;
       case 'lost_ball': return `💥 ${name} がボールをロスト`;
+      case 'pass_miss': return `💥 ${name} がパスミス！`;
       case 'opponent_pass': return `🔁 相手チームがパスを繋ぎました`;
       case 'opponent_pass_fail': return `💥 相手チームがボールをロストしました`;
       default: return `${name} - ${ev.event_type}`;

@@ -175,6 +175,7 @@
 .actionBtn.goal { border-color: #ffd43b; color: #ffd43b; }
 .actionBtn.catch { border-color: #20c997; color: #20c997; }
 .actionBtn.block { border-color: #fcc419; color: #fcc419; }
+.actionBtn.pass_miss { border-color: #b197fc; color: #b197fc; }
 
 /* Timeline Track */
 .trackContainer {

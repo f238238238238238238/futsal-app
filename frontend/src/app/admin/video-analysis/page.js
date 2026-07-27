@@ -170,6 +170,17 @@ export default function StandaloneVideoEditorPage() {
       return;
     }
 
+    if (type === 'pass_miss') {
+      if (possessionUserId) {
+        insertEvent('pass_miss', possessionUserId);
+        setPossessionUserId(null);
+      } else {
+        pauseForAction();
+        setPendingAction({ type: 'recovery', from: 'pass_miss', actor: 'opponent', step: 1 });
+      }
+      return;
+    }
+
     if (type === 'lost_ball') {
       const uid = possessionUserId || 'opponent';
       insertEvent('lost_ball', uid);
@@ -285,6 +296,7 @@ export default function StandaloneVideoEditorPage() {
       case 'pass_cut': return 'パスカット';
       case 'lost_ball': return 'ロスト';
       case 'shot_off': return '枠外シュート';
+      case 'pass_miss': return 'パスミス';
       default: return '';
     }
   };
@@ -627,6 +639,7 @@ export default function StandaloneVideoEditorPage() {
             <button className={`${styles.actionBtn} ${styles.kickoff}`} onClick={() => addEvent('kickoff')} disabled={!isKickoffAvailable()}>📣 キックオフ</button>
             <button className={`${styles.actionBtn} ${styles.goal}`} onClick={() => addEvent('goal')}>⚽ 得点 (Goal)</button>
             <button className={`${styles.actionBtn} ${styles.pass}`} onClick={() => addEvent('pass')}>🔁 パス</button>
+            <button className={`${styles.actionBtn} ${styles.pass_miss}`} onClick={() => addEvent('pass_miss')}>💥 パスミス</button>
             <button className={`${styles.actionBtn} ${styles.shot_off}`} onClick={() => addEvent('shot_off')}>☄️ 枠外シュート</button>
             <button className={`${styles.actionBtn} ${styles.block}`} onClick={() => addEvent('block')}>🛡️ ブロック</button>
             <button className={`${styles.actionBtn} ${styles.pass_cut}`} onClick={() => addEvent('pass_cut')}>🔶 パスカット</button>
