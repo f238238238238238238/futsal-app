@@ -507,7 +507,6 @@ export default function StandaloneVideoEditorPage() {
             <button className={`${styles.actionBtn} ${styles.opponent_goal}`} onClick={() => addEvent('opponent_goal')}>💢 失点</button>
             <button className={`${styles.actionBtn} ${styles.pass}`} onClick={() => addEvent('pass')}>🔁 パス</button>
             <button className={`${styles.actionBtn} ${styles.opponent_pass}`} onClick={() => addEvent('opponent_pass')}>🔄 相手パス</button>
-            <button className={`${styles.actionBtn} ${styles.shot}`} onClick={() => addEvent('shot')}>👟 シュート (枠内)</button>
             <button className={`${styles.actionBtn} ${styles.shot_off}`} onClick={() => addEvent('shot_off')}>☄️ 枠外シュート</button>
             <button className={`${styles.actionBtn} ${styles.block}`} onClick={() => addEvent('block')}>🛡️ ブロック</button>
             <button className={`${styles.actionBtn} ${styles.pass_cut}`} onClick={() => addEvent('pass_cut')}>🔶 パスカット</button>
