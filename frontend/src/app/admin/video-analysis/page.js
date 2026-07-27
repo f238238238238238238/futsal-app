@@ -45,6 +45,8 @@ export default function StandaloneVideoEditorPage() {
   const [starters, setStarters] = useState(new Set());
   const [positions, setPositions] = useState({});
 
+  const [wasPlayingBeforeEdit, setWasPlayingBeforeEdit] = useState(false);
+
   useEffect(() => {
     getPlayers()
       .then(p => {
@@ -97,6 +99,10 @@ export default function StandaloneVideoEditorPage() {
 
   const addEvent = (type) => {
     if (!videoRef.current) return;
+    if (selectedEventIndex === null) {
+      setWasPlayingBeforeEdit(!videoRef.current.paused);
+    }
+    videoRef.current.pause();
     const newEvent = {
       event_type: type,
       user_id: '',
@@ -105,6 +111,14 @@ export default function StandaloneVideoEditorPage() {
     };
     setEvents([...events, newEvent]);
     setSelectedEventIndex(events.length); // select the newly added event
+  };
+
+  const closeEditor = () => {
+    setSelectedEventIndex(null);
+    if (wasPlayingBeforeEdit && videoRef.current) {
+      videoRef.current.play();
+    }
+    setWasPlayingBeforeEdit(false);
   };
 
   const handleTrackClick = (e) => {
@@ -124,11 +138,15 @@ export default function StandaloneVideoEditorPage() {
     
     videoRef.current.currentTime = newTime;
     setCurrentTime(newTime);
-    setSelectedEventIndex(null);
+    closeEditor();
   };
 
   const handleMarkerMouseDown = (e, index) => {
     e.stopPropagation();
+    if (videoRef.current && selectedEventIndex === null) {
+      setWasPlayingBeforeEdit(!videoRef.current.paused);
+      videoRef.current.pause();
+    }
     setSelectedEventIndex(index);
     setDraggingIdx(index);
   };
@@ -495,8 +513,11 @@ export default function StandaloneVideoEditorPage() {
                   )}
 
                   <div className={styles.dialogActions}>
-                    <button className={styles.deleteBtn} onClick={removeSelectedEvent}>削除</button>
-                    <button className={styles.saveBtn} onClick={() => setSelectedEventIndex(null)}>閉じる</button>
+                    <button className={styles.deleteBtn} onClick={() => {
+                      removeSelectedEvent();
+                      closeEditor();
+                    }}>削除</button>
+                    <button className={styles.saveBtn} onClick={closeEditor}>閉じる</button>
                   </div>
                 </div>
               );
