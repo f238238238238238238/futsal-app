@@ -205,11 +205,14 @@ export default function AdminMatchesPage() {
         <span>{matches.length} 件の試合</span>
         <div style={{ display: 'flex', gap: '8px' }}>
           <button className={styles.addBtn} onClick={openCreate}>+ 新規登録</button>
+          <Link href="/admin/video-analysis" className={styles.addBtn} style={{ background: '#7950f2', color: '#fff', textDecoration: 'none', border: '1px solid #6741d9' }}>
+            🎬 動画解析から作成
+          </Link>
           <Link href="/admin/matches/live" className={styles.addBtn} style={{ background: 'var(--color-gold)', color: 'var(--color-black)', textDecoration: 'none' }}>
-            + リアルタイム試合登録
+            + リアルタイム
           </Link>
           <Link href="/admin/matches/sensor" className={styles.addBtn} style={{ background: '#339af0', color: '#fff', textDecoration: 'none', border: '1px solid #228be6' }}>
-            + センサー試合登録
+            + センサー
           </Link>
         </div>
       </div>

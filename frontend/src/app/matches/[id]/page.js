@@ -609,6 +609,51 @@ export default function MatchDetailPage() {
                 ))}
               </div>
             </div>
+
+            <div className={styles.sectionBox}>
+              <h2 className={styles.sectionTitle}>個人成績 (イベント集計)</h2>
+              <div style={{ overflowX: 'auto', marginTop: '1rem' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', color: '#eee', textAlign: 'left' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid #444', color: '#aaa' }}>
+                      <th style={{ padding: '8px' }}>選手</th>
+                      <th style={{ padding: '8px' }}>G</th>
+                      <th style={{ padding: '8px' }}>A</th>
+                      <th style={{ padding: '8px' }}>パス</th>
+                      <th style={{ padding: '8px' }}>シュート</th>
+                      <th style={{ padding: '8px' }}>ブロック</th>
+                      <th style={{ padding: '8px' }}>奪取</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {match?.stats?.map(s => {
+                      const pEvents = match.events ? match.events.filter(e => e.user_id === s.user_id || e.user_id === String(s.user_id)) : [];
+                      
+                      const goals = s.goals > 0 ? s.goals : pEvents.filter(e => e.event_type === 'goal').length;
+                      const assists = s.assists > 0 ? s.assists : pEvents.filter(e => e.event_type === 'assist').length;
+                      
+                      const passes = pEvents.filter(e => e.event_type === 'pass').length;
+                      const shots = pEvents.filter(e => e.event_type === 'shot' || e.event_type === 'goal').length;
+                      const blocks = pEvents.filter(e => e.event_type === 'block').length;
+                      const steals = pEvents.filter(e => e.event_type === 'steal').length;
+                      
+                      return (
+                        <tr key={s.user_id} style={{ borderBottom: '1px solid #333' }}>
+                          <td style={{ padding: '8px' }}>{s.name}</td>
+                          <td style={{ padding: '8px', fontWeight: goals > 0 ? 'bold' : 'normal', color: goals > 0 ? 'var(--color-primary-400)' : '#aaa' }}>{goals}</td>
+                          <td style={{ padding: '8px', color: assists > 0 ? '#fff' : '#aaa' }}>{assists}</td>
+                          <td style={{ padding: '8px', color: passes > 0 ? '#fff' : '#aaa' }}>{passes}</td>
+                          <td style={{ padding: '8px', color: shots > 0 ? '#fff' : '#aaa' }}>{shots}</td>
+                          <td style={{ padding: '8px', color: blocks > 0 ? '#fff' : '#aaa' }}>{blocks}</td>
+                          <td style={{ padding: '8px', color: steals > 0 ? '#fff' : '#aaa' }}>{steals}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
           </div>
 
           {/* 中央: フォーメーション図 */}
