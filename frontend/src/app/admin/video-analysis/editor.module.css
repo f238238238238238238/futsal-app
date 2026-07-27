@@ -32,11 +32,47 @@
 
 .mainContent {
   display: flex;
-  flex-direction: column;
   flex: 1;
   padding: var(--space-md);
   gap: var(--space-md);
   height: calc(100vh - var(--header-height) - 70px);
+}
+
+.leftColumn {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: var(--space-md);
+  overflow: hidden;
+}
+
+.rightSidebar {
+  width: 250px;
+  background: var(--color-dark-800);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-dark-600);
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  overflow-y: auto;
+}
+
+.sidebarTitle {
+  font-size: 1rem;
+  font-weight: bold;
+  color: var(--color-gold);
+  border-bottom: 1px solid var(--color-dark-600);
+  padding-bottom: var(--space-xs);
+  margin-bottom: var(--space-sm);
+}
+
+.memberCheckboxRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  padding: 4px 0;
 }
 
 .videoSection {

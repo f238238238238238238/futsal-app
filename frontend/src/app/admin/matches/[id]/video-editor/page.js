@@ -29,6 +29,9 @@ export default function VideoEditorPage() {
   // Drag state
   const [draggingIdx, setDraggingIdx] = useState(null);
 
+  const [attendees, setAttendees] = useState(new Set());
+  const [starters, setStarters] = useState(new Set());
+
   useEffect(() => {
     if (id) {
       Promise.all([getMatch(id), getPlayers()])
@@ -36,10 +39,36 @@ export default function VideoEditorPage() {
           setMatch(m);
           setEvents(m.events || []);
           setPlayers(p.users || p || []);
+          
+          if (m.stats) {
+            const initialAttendees = new Set(m.stats.map(s => s.user_id));
+            const initialStarters = new Set(m.stats.filter(s => s.is_starter).map(s => s.user_id));
+            setAttendees(initialAttendees);
+            setStarters(initialStarters);
+          }
         })
         .catch(err => console.error(err));
     }
   }, [id]);
+
+  // Keyboard shortcut for Play/Pause
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.code === 'Space') {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+        e.preventDefault();
+        if (videoRef.current) {
+          if (videoRef.current.paused) {
+            videoRef.current.play();
+          } else {
+            videoRef.current.pause();
+          }
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const handleVideoUpload = (e) => {
     const file = e.target.files[0];
@@ -145,12 +174,36 @@ export default function VideoEditorPage() {
     setSelectedEventIndex(null);
   };
 
-  const handleSave = async () => {
+  const handleSaveClick = async () => {
     if (!match) return;
     try {
+      const userStats = {};
+      events.forEach(ev => {
+        const uid = ev.user_id;
+        if (!uid || typeof uid === 'string' || uid === 'opponent') return;
+        if (!userStats[uid]) userStats[uid] = { goals: 0, assists: 0, saves: 0 };
+        if (ev.event_type === 'goal') userStats[uid].goals += 1;
+        if (ev.event_type === 'assist') userStats[uid].assists += 1;
+        if (ev.event_type === 'save') userStats[uid].saves += 1;
+      });
+
+      const allStatsUsers = new Set([...Array.from(attendees), ...Object.keys(userStats).map(id => parseInt(id, 10))]);
+      
+      const stats = Array.from(allStatsUsers).map(userId => {
+        const st = userStats[userId] || { goals: 0, assists: 0, saves: 0 };
+        return {
+          user_id: parseInt(userId, 10),
+          is_starter: starters.has(parseInt(userId, 10)) ? 1 : 0,
+          goals: st.goals,
+          assists: st.assists,
+          saves: st.saves
+        };
+      });
+
       const payload = {
         ...match,
-        events: events
+        events: events,
+        stats: stats
       };
       await updateMatch(id, payload);
       alert('タイムラインを保存しました！');
@@ -169,20 +222,47 @@ export default function VideoEditorPage() {
     return '';
   };
 
+  const toggleAttendee = (userId) => {
+    const next = new Set(attendees);
+    if (next.has(userId)) {
+      next.delete(userId);
+      const nextStarters = new Set(starters);
+      nextStarters.delete(userId);
+      setStarters(nextStarters);
+    } else {
+      next.add(userId);
+    }
+    setAttendees(next);
+  };
+
+  const toggleStarter = (userId) => {
+    const next = new Set(starters);
+    if (next.has(userId)) {
+      next.delete(userId);
+    } else {
+      next.add(userId);
+      const nextAttendees = new Set(attendees);
+      nextAttendees.add(userId);
+      setAttendees(nextAttendees);
+    }
+    setStarters(next);
+  };
+
   return (
     <div className={styles.editorPage}>
       <header className={styles.editorHeader}>
-        <Link href="/admin/matches" className={styles.backBtn}>← BACK</Link>
-        <div className={styles.headerTitle}>🎬 {match.opponent_name} - タイムラインエディタ</div>
-        <button className={styles.globalSaveBtn} onClick={handleSave}>保存する</button>
+        <Link href={`/matches/${id}`} className={styles.backBtn}>← MATCH DETAIL</Link>
+        <div className={styles.headerTitle}>🎬 動画解析エディタ（既存編集）</div>
+        <button className={styles.globalSaveBtn} onClick={handleSaveClick}>上書き保存</button>
       </header>
 
       <div className={styles.mainContent}>
         
-        {/* Video Area */}
-        <div className={styles.videoSection}>
-          {!videoSrc && (
-            <div className={styles.uploadOverlay}>
+        <div className={styles.leftColumn}>
+          {/* Video Area */}
+          <div className={styles.videoSection}>
+            {!videoSrc && (
+              <div className={styles.uploadOverlay}>
               <label className={styles.uploadLabel}>
                 📁 ローカル動画を選択 (MP4)
                 <input type="file" accept="video/*" className={styles.fileInput} onChange={handleVideoUpload} />
@@ -307,6 +387,44 @@ export default function VideoEditorPage() {
               );
             })()}
           </div>
+        </div>
+        </div>
+
+        {/* Sidebar */}
+        <div className={styles.rightSidebar}>
+          <div className={styles.sidebarTitle}>👥 参加メンバー設定</div>
+          <div style={{ fontSize: '0.8rem', color: '#aaa', marginBottom: '8px' }}>
+            参加とスタメンを設定できます。<br/>
+            (イベントを追加した選手は自動で集計されます)
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 30px 30px', gap: '4px', borderBottom: '1px solid #444', paddingBottom: '4px', marginBottom: '4px', fontSize: '0.8rem', color: '#ccc', textAlign: 'center' }}>
+            <div style={{ textAlign: 'left' }}>選手名</div>
+            <div>参加</div>
+            <div>先発</div>
+          </div>
+          {players.map(p => (
+            <div key={p.user_id} style={{ display: 'grid', gridTemplateColumns: '1fr 30px 30px', gap: '4px', alignItems: 'center', padding: '2px 0' }}>
+              <div style={{ fontSize: '0.9rem', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {p.name}
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <input 
+                  type="checkbox" 
+                  checked={attendees.has(p.user_id)} 
+                  onChange={() => toggleAttendee(p.user_id)} 
+                  style={{ transform: 'scale(1.2)', cursor: 'pointer' }}
+                />
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <input 
+                  type="checkbox" 
+                  checked={starters.has(p.user_id)} 
+                  onChange={() => toggleStarter(p.user_id)} 
+                  style={{ transform: 'scale(1.2)', cursor: 'pointer' }}
+                />
+              </div>
+            </div>
+          ))}
         </div>
 
       </div>

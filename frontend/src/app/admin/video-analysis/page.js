@@ -37,10 +37,37 @@ export default function StandaloneVideoEditorPage() {
   // Drag state
   const [draggingIdx, setDraggingIdx] = useState(null);
 
+  const [attendees, setAttendees] = useState(new Set());
+  const [starters, setStarters] = useState(new Set());
+
   useEffect(() => {
     getPlayers()
-      .then(p => setPlayers(p.users || p || []))
+      .then(p => {
+        const users = p.users || p || [];
+        setPlayers(users);
+        // By default, everyone is unselected, or maybe auto-select? Let's leave empty.
+      })
       .catch(err => console.error(err));
+  }, []);
+
+  // Keyboard shortcut for Play/Pause
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.code === 'Space') {
+        // Prevent default spacebar scrolling unless we are typing in an input/textarea
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+        e.preventDefault();
+        if (videoRef.current) {
+          if (videoRef.current.paused) {
+            videoRef.current.play();
+          } else {
+            videoRef.current.pause();
+          }
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   const handleVideoUpload = (e) => {
@@ -198,13 +225,20 @@ export default function StandaloneVideoEditorPage() {
         if (ev.event_type === 'save') userStats[uid].saves += 1;
       });
 
-      const stats = Object.entries(userStats).map(([userId, st]) => ({
-        user_id: parseInt(userId, 10),
-        is_starter: false, // Default to false when created via timeline
-        goals: st.goals,
-        assists: st.assists,
-        saves: st.saves
-      }));
+      // Combine attendees and userStats
+      // Anyone in attendees is added to stats. Anyone in userStats is also added.
+      const allStatsUsers = new Set([...Array.from(attendees), ...Object.keys(userStats).map(id => parseInt(id, 10))]);
+      
+      const stats = Array.from(allStatsUsers).map(userId => {
+        const st = userStats[userId] || { goals: 0, assists: 0, saves: 0 };
+        return {
+          user_id: parseInt(userId, 10),
+          is_starter: starters.has(parseInt(userId, 10)),
+          goals: st.goals,
+          assists: st.assists,
+          saves: st.saves
+        };
+      });
 
       const payload = {
         date: matchDate,
@@ -238,6 +272,34 @@ export default function StandaloneVideoEditorPage() {
     return '';
   };
 
+  const toggleAttendee = (userId) => {
+    const next = new Set(attendees);
+    if (next.has(userId)) {
+      next.delete(userId);
+      // If removed from attendees, also remove from starters
+      const nextStarters = new Set(starters);
+      nextStarters.delete(userId);
+      setStarters(nextStarters);
+    } else {
+      next.add(userId);
+    }
+    setAttendees(next);
+  };
+
+  const toggleStarter = (userId) => {
+    const next = new Set(starters);
+    if (next.has(userId)) {
+      next.delete(userId);
+    } else {
+      next.add(userId);
+      // If added to starters, also add to attendees
+      const nextAttendees = new Set(attendees);
+      nextAttendees.add(userId);
+      setAttendees(nextAttendees);
+    }
+    setStarters(next);
+  };
+
   return (
     <div className={styles.editorPage}>
       <header className={styles.editorHeader}>
@@ -248,10 +310,11 @@ export default function StandaloneVideoEditorPage() {
 
       <div className={styles.mainContent}>
         
-        {/* Video Area */}
-        <div className={styles.videoSection}>
-          {!videoSrc && (
-            <div className={styles.uploadOverlay}>
+        <div className={styles.leftColumn}>
+          {/* Video Area */}
+          <div className={styles.videoSection}>
+            {!videoSrc && (
+              <div className={styles.uploadOverlay}>
               <label className={styles.uploadLabel}>
                 📁 ローカル動画を選択 (MP4)
                 <input type="file" accept="video/*" className={styles.fileInput} onChange={handleVideoUpload} />
@@ -381,6 +444,44 @@ export default function StandaloneVideoEditorPage() {
               );
             })()}
           </div>
+        </div>
+        </div>
+
+        {/* Sidebar */}
+        <div className={styles.rightSidebar}>
+          <div className={styles.sidebarTitle}>👥 参加メンバー設定</div>
+          <div style={{ fontSize: '0.8rem', color: '#aaa', marginBottom: '8px' }}>
+            参加とスタメンを設定できます。<br/>
+            (イベントを追加した選手は自動で集計されます)
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 30px 30px', gap: '4px', borderBottom: '1px solid #444', paddingBottom: '4px', marginBottom: '4px', fontSize: '0.8rem', color: '#ccc', textAlign: 'center' }}>
+            <div style={{ textAlign: 'left' }}>選手名</div>
+            <div>参加</div>
+            <div>先発</div>
+          </div>
+          {players.map(p => (
+            <div key={p.user_id} style={{ display: 'grid', gridTemplateColumns: '1fr 30px 30px', gap: '4px', alignItems: 'center', padding: '2px 0' }}>
+              <div style={{ fontSize: '0.9rem', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {p.name}
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <input 
+                  type="checkbox" 
+                  checked={attendees.has(p.user_id)} 
+                  onChange={() => toggleAttendee(p.user_id)} 
+                  style={{ transform: 'scale(1.2)', cursor: 'pointer' }}
+                />
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <input 
+                  type="checkbox" 
+                  checked={starters.has(p.user_id)} 
+                  onChange={() => toggleStarter(p.user_id)} 
+                  style={{ transform: 'scale(1.2)', cursor: 'pointer' }}
+                />
+              </div>
+            </div>
+          ))}
         </div>
 
       </div>
