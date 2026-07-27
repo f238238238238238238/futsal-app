@@ -90,11 +90,12 @@ router.get('/:id', async (req, res) => {
       WHERE ms.match_id = $1
     `, [matchId]);
 
-    // ゴール・アシストのイベント
+    // ゴール・アシスト・パスのイベント
     const eventsResult = await db.query(`
-      SELECT me.*, u.name as user_name
+      SELECT me.*, u.name as user_name, tu.name as target_user_name
       FROM match_events me
       LEFT JOIN users u ON me.user_id = u.user_id
+      LEFT JOIN users tu ON me.target_user_id = tu.user_id
       WHERE me.match_id = $1
       ORDER BY me.minute ASC
     `, [matchId]);
@@ -150,16 +151,21 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
       const values = [];
       const params = [];
       events.forEach((ev, i) => {
-        const offset = i * 5;
+        const offset = i * 6;
         const isDummy = typeof ev.user_id === 'string' && (ev.user_id.startsWith('dummy_') || ev.user_id === 'opponent');
         const uid = isDummy ? null : ev.user_id;
         const pos = isDummy ? ev.user_id : (ev.position || null);
+        
+        let targetUid = null;
+        if (ev.target_user_id && ev.target_user_id !== 'opponent') {
+          targetUid = ev.target_user_id;
+        }
 
-        values.push(`($${offset+1}, $${offset+2}, $${offset+3}, $${offset+4}, $${offset+5})`);
-        params.push(matchId, ev.event_type, uid, ev.minute || null, pos);
+        values.push(`($${offset+1}, $${offset+2}, $${offset+3}, $${offset+4}, $${offset+5}, $${offset+6})`);
+        params.push(matchId, ev.event_type, uid, ev.minute || null, pos, targetUid);
       });
       await client.query(`
-        INSERT INTO match_events (match_id, event_type, user_id, minute, position)
+        INSERT INTO match_events (match_id, event_type, user_id, minute, position, target_user_id)
         VALUES ${values.join(', ')}
       `, params);
     }
@@ -221,16 +227,21 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
       const values = [];
       const params = [];
       events.forEach((ev, i) => {
-        const offset = i * 5;
+        const offset = i * 6;
         const isDummy = typeof ev.user_id === 'string' && (ev.user_id.startsWith('dummy_') || ev.user_id === 'opponent');
         const uid = isDummy ? null : ev.user_id;
         const pos = isDummy ? ev.user_id : (ev.position || null);
 
-        values.push(`($${offset+1}, $${offset+2}, $${offset+3}, $${offset+4}, $${offset+5})`);
-        params.push(matchId, ev.event_type, uid, ev.minute || null, pos);
+        let targetUid = null;
+        if (ev.target_user_id && ev.target_user_id !== 'opponent') {
+          targetUid = ev.target_user_id;
+        }
+
+        values.push(`($${offset+1}, $${offset+2}, $${offset+3}, $${offset+4}, $${offset+5}, $${offset+6})`);
+        params.push(matchId, ev.event_type, uid, ev.minute || null, pos, targetUid);
       });
       await client.query(`
-        INSERT INTO match_events (match_id, event_type, user_id, minute, position)
+        INSERT INTO match_events (match_id, event_type, user_id, minute, position, target_user_id)
         VALUES ${values.join(', ')}
       `, params);
     }

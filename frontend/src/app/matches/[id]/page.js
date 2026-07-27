@@ -104,9 +104,26 @@ export default function MatchDetailPage() {
     
     switch (ev.event_type) {
       case 'pass':
+      case 'assist':
+        setBallState({ top: pPos.top, left: pPos.left, opacity: 1 });
+        if (ev.target_user_id && ev.target_user_id !== 'opponent' && !ev.target_user_id.toString().startsWith('dummy_')) {
+          setTimeout(() => {
+            const targetPos = getPlayerPosition(ev.target_user_id, ev.minute, null);
+            setBallState({ top: targetPos.top, left: targetPos.left, opacity: 1 });
+          }, 300);
+        } else if (ev.target_user_id === 'opponent' || (ev.target_user_id && ev.target_user_id.toString().startsWith('dummy_'))) {
+          setTimeout(() => {
+            setBallState({ top: '50%', left: '50%', opacity: 1 });
+            setEffect({ key: Date.now(), type: 'badge', top: '50%', left: '50%', emoji: '💥' });
+          }, 300);
+        }
+        
+        if(ev.event_type === 'assist') {
+          setEffect({ key: Date.now(), type: 'badge', top: pPos.top, left: pPos.left, emoji: '🅰️' });
+        }
+        break;
       case 'steal':
       case 'catch':
-      case 'assist':
       case 'pass_cut':
         setBallState({ top: pPos.top, left: pPos.left, opacity: 1 });
         if(ev.event_type === 'steal' || ev.event_type === 'catch' || ev.event_type === 'pass_cut') {
@@ -450,7 +467,13 @@ export default function MatchDetailPage() {
       case 'sub_in': return `🔼 ${name} がピッチに入りました`;
       case 'sub_out': return `🔽 ${name} がベンチに下がりました`;
       case 'position_change': return `🔄 ${name} が ${ev.position || '別ポジション'} に変更`;
-      case 'pass': return `🔁 ${name} がパスを繋ぎました`;
+      case 'pass': 
+        if (ev.target_user_name) {
+          return `🔁 ${name} が ${ev.target_user_name} にパスを繋ぎました`;
+        } else if (ev.target_user_id === 'opponent' || (ev.target_user_id && String(ev.target_user_id).startsWith('dummy_'))) {
+          return `💥 ${name} のパスが相手に渡りました`;
+        }
+        return `🔁 ${name} がパスを繋ぎました`;
       case 'dribble': return `🏃‍♂️ ${name} がドリブルで仕掛けました！`;
       case 'lost_ball': return `💥 ${name} がボールをロスト`;
       case 'opponent_pass': return `🔁 相手チームがパスを繋ぎました`;

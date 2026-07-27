@@ -155,6 +155,7 @@ export default function StandaloneVideoEditorPage() {
       const importedEvents = parsed.map(ev => ({
         event_type: ev.event_type || 'pass',
         user_id: ev.user_id || '',
+        target_user_id: ev.target_user_id || '',
         minute: ev.minute || 0,
         position: ev.position || ''
       }));
@@ -325,7 +326,7 @@ export default function StandaloneVideoEditorPage() {
                   style={{
                     left: `${leftPercent}%`,
                     transform: leftPercent < 15 ? 'translateX(0)' : (leftPercent > 85 ? 'translateX(-100%)' : 'translateX(-50%)'),
-                    top: '-160px'
+                    top: ev.event_type === 'pass' ? '-210px' : '-160px'
                   }}
                 >
                   <div className={styles.dialogTitle}>イベント編集 ({Math.floor(ev.minute/60)}:{(ev.minute%60).toString().padStart(2,'0')})</div>
@@ -348,15 +349,29 @@ export default function StandaloneVideoEditorPage() {
 
                   <select 
                     className={styles.playerSelect}
-                    value={ev.user_id}
+                    value={ev.user_id || ''}
                     onChange={e => updateSelectedEvent('user_id', e.target.value)}
                   >
-                    <option value="">-- 選手を選択 --</option>
+                    <option value="">-- {ev.event_type === 'pass' ? '出し手' : '選手'}を選択 --</option>
                     <option value="opponent">相手チーム</option>
                     {players.map(p => (
                       <option key={p.user_id} value={p.user_id}>{p.name}</option>
                     ))}
                   </select>
+
+                  {ev.event_type === 'pass' && (
+                    <select 
+                      className={styles.playerSelect}
+                      value={ev.target_user_id || ''}
+                      onChange={e => updateSelectedEvent('target_user_id', e.target.value)}
+                    >
+                      <option value="">-- 受け手を選択 --</option>
+                      <option value="opponent">相手チーム</option>
+                      {players.map(p => (
+                        <option key={p.user_id} value={p.user_id}>{p.name}</option>
+                      ))}
+                    </select>
+                  )}
 
                   <div className={styles.dialogActions}>
                     <button className={styles.deleteBtn} onClick={removeSelectedEvent}>削除</button>
