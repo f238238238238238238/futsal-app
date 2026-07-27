@@ -30,6 +30,9 @@ export default function StandaloneVideoEditorPage() {
   
   const [matchDate, setMatchDate] = useState(localISOTime);
   const [opponentName, setOpponentName] = useState('');
+  const [competitionName, setCompetitionName] = useState('動画解析');
+  const [ourScore, setOurScore] = useState('');
+  const [opponentScore, setOpponentScore] = useState('');
   
   const videoRef = useRef(null);
   const trackRef = useRef(null);
@@ -267,7 +270,9 @@ export default function StandaloneVideoEditorPage() {
       const payload = {
         date: matchDate,
         opponent_name: opponentName,
-        competition_name: '動画解析',
+        competition_name: competitionName,
+        our_score: ourScore !== '' ? parseInt(ourScore, 10) : null,
+        opponent_score: opponentScore !== '' ? parseInt(opponentScore, 10) : null,
         duration_seconds: Math.floor(duration),
         events: events,
         stats: stats
@@ -583,15 +588,31 @@ export default function StandaloneVideoEditorPage() {
 
       {showSaveModal && (
         <div className={styles.uploadOverlay}>
-          <div className={styles.eventEditDialog} style={{ position: 'relative', top: 0, transform: 'none', padding: '2rem', minWidth: '350px' }}>
+          <div className={styles.eventEditDialog} style={{ position: 'relative', top: 0, transform: 'none', padding: '2rem', minWidth: '400px' }}>
             <h2 className={styles.dialogTitle} style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>試合データとして保存</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
-              <label>試合日</label>
-              <input type="date" className={styles.playerSelect} value={matchDate} onChange={e => setMatchDate(e.target.value)} />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <label>試合日</label>
+                <input type="date" className={styles.playerSelect} value={matchDate} onChange={e => setMatchDate(e.target.value)} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <label>試合名 / 大会名</label>
+                <input type="text" className={styles.playerSelect} placeholder="例: 練習試合" value={competitionName} onChange={e => setCompetitionName(e.target.value)} />
+              </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
               <label>対戦相手</label>
               <input type="text" className={styles.playerSelect} placeholder="相手チーム名" value={opponentName} onChange={e => setOpponentName(e.target.value)} />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <label>自チーム 得点 (任意)</label>
+                <input type="number" min="0" className={styles.playerSelect} placeholder="0" value={ourScore} onChange={e => setOurScore(e.target.value)} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <label>相手チーム 得点 (任意)</label>
+                <input type="number" min="0" className={styles.playerSelect} placeholder="0" value={opponentScore} onChange={e => setOpponentScore(e.target.value)} />
+              </div>
             </div>
             
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>

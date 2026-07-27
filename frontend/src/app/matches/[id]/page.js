@@ -656,6 +656,7 @@ export default function MatchDetailPage() {
                       <th style={{ padding: '8px' }}>ブロック</th>
                       <th style={{ padding: '8px' }}>奪取・カット</th>
                       <th style={{ padding: '8px' }}>セーブ</th>
+                      <th style={{ padding: '8px' }}>評価</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -671,6 +672,10 @@ export default function MatchDetailPage() {
                       const steals = pEvents.filter(e => e.event_type === 'steal' || e.event_type === 'pass_cut').length;
                       const saves = s.saves > 0 ? s.saves : pEvents.filter(e => e.event_type === 'save' || e.event_type === 'catch').length;
                       
+                      const lostBalls = pEvents.filter(e => e.event_type === 'lost_ball').length;
+                      const shotsOff = pEvents.filter(e => e.event_type === 'shot_off').length;
+                      const rating = (6.0 + (goals * 1.0) + (assists * 0.5) + (passes * 0.1) + (shots * 0.1) + (blocks * 0.2) + (steals * 0.2) + (saves * 0.3) - (lostBalls * 0.2) - (shotsOff * 0.1)).toFixed(1);
+
                       return (
                         <tr key={s.user_id} style={{ borderBottom: '1px solid #333' }}>
                           <td style={{ padding: '8px' }}>{s.name}</td>
@@ -681,6 +686,7 @@ export default function MatchDetailPage() {
                           <td style={{ padding: '8px', color: blocks > 0 ? '#fff' : '#aaa' }}>{blocks}</td>
                           <td style={{ padding: '8px', color: steals > 0 ? '#fff' : '#aaa' }}>{steals}</td>
                           <td style={{ padding: '8px', color: saves > 0 ? '#fff' : '#aaa' }}>{saves}</td>
+                          <td style={{ padding: '8px', fontWeight: 'bold', color: rating >= 7.0 ? 'var(--color-gold)' : '#fff' }}>{rating}</td>
                         </tr>
                       );
                     })}
