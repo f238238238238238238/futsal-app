@@ -344,8 +344,8 @@
   to { background: rgba(77, 171, 247, 0.4); outline: 2px solid #4dabf7; }
 }
 .activePlayerAvatar {
-  width: 45px;
-  height: 45px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
   background: var(--color-dark-600);
   display: flex;
@@ -361,7 +361,7 @@
   object-fit: cover;
 }
 .activePlayerName {
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   color: var(--color-gray-300);
 }
 
