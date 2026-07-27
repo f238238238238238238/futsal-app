@@ -388,7 +388,7 @@ export default function MatchDetailPage() {
       } else if (team === 'blue') {
         if (ev.event_type === 'pass' || ev.event_type === 'opponent_pass') blueStats.passes++;
         if (ev.event_type === 'lost_ball' || ev.event_type === 'opponent_pass_fail') blueStats.lost++;
-        if (ev.event_type === 'goal') { blueStats.goals++; blueStats.shots++; }
+        if (ev.event_type === 'goal' || ev.event_type === 'opponent_goal') { blueStats.goals++; blueStats.shots++; }
         if (ev.event_type === 'shot') blueStats.shots++;
         if (ev.event_type === 'save' || ev.event_type === 'catch') blueStats.saves++;
       }
@@ -455,13 +455,21 @@ export default function MatchDetailPage() {
       name = '相手選手';
     }
     switch (ev.event_type) {
-      case 'goal': return `⚽ ${name} が得点！`;
+      case 'goal': 
+        if (ev.user_id === 'opponent') return `💢 失点 (相手ゴール)`;
+        return `⚽ ${name} が得点！`;
       case 'opponent_goal': return `💢 失点 (相手ゴール)`;
       case 'assist': return `🅰️ ${name} がアシスト！`;
-      case 'save': return `🧤 ${name} がセーブ(弾く)！`;
-      case 'catch': return `🧤 ${name} がボールキャッチ！`;
+      case 'save': 
+        if (ev.user_id === 'opponent') return `🧤 相手GKがセーブ！`;
+        return `🧤 ${name} がセーブ(弾く)！`;
+      case 'catch': 
+        if (ev.user_id === 'opponent') return `🧤 相手GKがボールキャッチ！`;
+        return `🧤 ${name} がボールキャッチ！`;
       case 'shot': return `👟 ${name} がシュート！(枠内)`;
-      case 'shot_off': return `👟 ${name} がシュート！(枠外)`;
+      case 'shot_off': 
+        if (ev.user_id === 'opponent') return `☄️ 相手チームの枠外シュート`;
+        return `👟 ${name} がシュート！(枠外)`;
       case 'defense': return `🛡️ ${name} がディフェンス！`;
       case 'steal': return `🛡️ ${name} がボール奪取！`;
       case 'pass_cut': return `🛡️ ${name} がパスカット！`;
@@ -476,6 +484,7 @@ export default function MatchDetailPage() {
         }
         return `📣 ${name} がキックオフ！`;
       case 'pass': 
+        if (ev.user_id === 'opponent') return `🔁 相手チームがパスを繋ぎました`;
         if (ev.target_user_name) {
           return `🔁 ${name} が ${ev.target_user_name} にパスを繋ぎました`;
         } else if (ev.target_user_id === 'opponent' || (ev.target_user_id && String(ev.target_user_id).startsWith('dummy_'))) {

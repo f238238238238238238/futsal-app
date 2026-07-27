@@ -121,75 +121,116 @@ export default function StandaloneVideoEditorPage() {
     setEvents(prev => [...prev, newEvent]);
   };
 
+  const isKickoffAvailable = () => {
+    const rev = [...events].reverse();
+    const lastKickoffIdx = rev.findIndex(e => e.event_type === 'kickoff');
+    const lastGoalIdx = rev.findIndex(e => e.event_type === 'goal');
+    if (lastKickoffIdx === -1) return true;
+    if (lastGoalIdx === -1) return false;
+    return lastGoalIdx < lastKickoffIdx; // index is reversed, so smaller index means more recent
+  };
+
   const addEvent = (type) => {
     if (!videoRef.current) return;
     
-    // Opponent / Automatic actions
-    if (['opponent_goal', 'opponent_pass'].includes(type)) {
-      insertEvent(type, 'opponent');
-      setPossessionUserId(null); 
-      setPendingAction(null);
+    const pauseForAction = () => {
+      if (!pendingAction && selectedEventIndex === null) setWasPlayingBeforeEdit(!videoRef.current.paused);
+      videoRef.current.pause();
+    };
+
+    if (type === 'kickoff') {
+      pauseForAction();
+      setPendingAction({ type: 'kickoff', step: 1 });
       return;
     }
 
     if (type === 'substitution') {
-      if (selectedEventIndex === null) setWasPlayingBeforeEdit(!videoRef.current.paused);
-      videoRef.current.pause();
+      pauseForAction();
       const newEvent = { event_type: type, user_id: '', minute: Math.floor(videoRef.current.currentTime), position: '' };
       setEvents(prev => [...prev, newEvent]);
-      // Open editor for substitution to let them choose players
       setTimeout(() => setSelectedEventIndex(events.length), 0);
       return;
     }
     
-    if (['save', 'catch'].includes(type)) {
-      const gks = Array.from(starters).filter(uid => positions[uid] === 'GK');
-      if (gks.length === 1) {
-        insertEvent(type, gks[0]);
-        setPossessionUserId(type === 'catch' ? gks[0] : null);
-      } else {
-        if (!pendingAction && selectedEventIndex === null) setWasPlayingBeforeEdit(!videoRef.current.paused);
-        videoRef.current.pause();
-        setPendingAction({ type, step: 1 });
-      }
-      return;
-    }
-
-    if (['goal', 'shot', 'block', 'pass_cut', 'lost_ball', 'shot_off'].includes(type)) {
-      if (type === 'shot_off' && !possessionUserId) {
-        insertEvent('shot_off', 'opponent');
-        setPossessionUserId(null);
-        setPendingAction(null);
-        return;
-      }
-      if (possessionUserId && type !== 'block' && type !== 'pass_cut') {
-        insertEvent(type, possessionUserId);
-        if (['lost_ball', 'shot', 'goal', 'shot_off'].includes(type)) {
-           setPossessionUserId(null);
-        }
-      } else {
-        if (!pendingAction && selectedEventIndex === null) setWasPlayingBeforeEdit(!videoRef.current.paused);
-        videoRef.current.pause();
-        setPendingAction({ type, step: 1 });
-      }
+    if (type === 'goal' || type === 'shot_off') {
+      const uid = possessionUserId || 'opponent';
+      insertEvent(type, uid);
+      setPossessionUserId(null);
+      setPendingAction(null);
       return;
     }
 
     if (type === 'pass') {
-      if (!pendingAction && selectedEventIndex === null) setWasPlayingBeforeEdit(!videoRef.current.paused);
-      videoRef.current.pause();
       if (possessionUserId) {
+        pauseForAction();
         setPendingAction({ type: 'pass', step: 2, actor: possessionUserId });
       } else {
-        setPendingAction({ type: 'pass', step: 1 });
+        insertEvent('pass', 'opponent', 'opponent');
       }
       return;
     }
-    
-    if (type === 'kickoff') {
-      if (!pendingAction && selectedEventIndex === null) setWasPlayingBeforeEdit(!videoRef.current.paused);
-      videoRef.current.pause();
-      setPendingAction({ type: 'kickoff', step: 1 });
+
+    if (type === 'lost_ball') {
+      const uid = possessionUserId || 'opponent';
+      insertEvent('lost_ball', uid);
+      setPossessionUserId(null);
+      setPendingAction(null);
+      return;
+    }
+
+    if (type === 'block') {
+      pauseForAction();
+      if (possessionUserId) {
+        insertEvent('shot', possessionUserId);
+        setPendingAction({ type: 'recovery', from: 'block', actor: 'opponent', step: 1 });
+      } else {
+        setPendingAction({ type: 'block_and_recovery', step: 1 });
+      }
+      return;
+    }
+
+    if (type === 'save') {
+      pauseForAction();
+      if (possessionUserId) {
+        insertEvent('shot', possessionUserId);
+        setPendingAction({ type: 'recovery', from: 'save', actor: 'opponent', step: 1 });
+      } else {
+        const gks = Array.from(starters).filter(uid => positions[uid] === 'GK');
+        if (gks.length === 1) {
+          setPendingAction({ type: 'recovery', from: 'save', actor: gks[0], step: 1 });
+        } else {
+          setPendingAction({ type: 'save_and_recovery', step: 1 });
+        }
+      }
+      return;
+    }
+
+    if (type === 'catch') {
+      if (possessionUserId) {
+        insertEvent('shot', possessionUserId);
+        insertEvent('catch', 'opponent');
+        setPossessionUserId('opponent');
+      } else {
+        const gks = Array.from(starters).filter(uid => positions[uid] === 'GK');
+        if (gks.length === 1) {
+          insertEvent('catch', gks[0]);
+          setPossessionUserId(gks[0]);
+        } else {
+          pauseForAction();
+          setPendingAction({ type: 'catch', step: 1 });
+        }
+      }
+      return;
+    }
+
+    if (type === 'pass_cut') {
+      if (possessionUserId) {
+        insertEvent('pass_cut', 'opponent');
+        setPossessionUserId('opponent');
+      } else {
+        pauseForAction();
+        setPendingAction({ type: 'pass_cut', step: 1 });
+      }
       return;
     }
   };
@@ -203,21 +244,30 @@ export default function StandaloneVideoEditorPage() {
     if (pendingAction.step === 1) {
       if (['pass', 'kickoff'].includes(pendingAction.type)) {
         setPendingAction({ type: pendingAction.type, step: 2, actor: userId });
+      } else if (pendingAction.type === 'block_and_recovery') {
+        setPendingAction({ type: 'recovery', from: 'block', actor: userId, step: 1 });
+      } else if (pendingAction.type === 'save_and_recovery') {
+        setPendingAction({ type: 'recovery', from: 'save', actor: userId, step: 1 });
+      } else if (pendingAction.type === 'recovery') {
+        insertEvent(pendingAction.from, pendingAction.actor);
+        setPossessionUserId(userId === 'opponent' ? null : userId);
+        setPendingAction(null);
+        resumeVideoIfNeeded();
       } else {
         insertEvent(pendingAction.type, userId);
         if (['pass_cut', 'catch'].includes(pendingAction.type)) {
-           setPossessionUserId(userId);
+           setPossessionUserId(userId === 'opponent' ? null : userId);
         } else if (['lost_ball', 'shot', 'goal', 'save', 'shot_off'].includes(pendingAction.type)) {
            setPossessionUserId(null);
         } else {
-           setPossessionUserId(userId);
+           setPossessionUserId(userId === 'opponent' ? null : userId);
         }
         setPendingAction(null);
         resumeVideoIfNeeded();
       }
     } else if (pendingAction.step === 2 && ['pass', 'kickoff'].includes(pendingAction.type)) {
       insertEvent(pendingAction.type, pendingAction.actor, userId);
-      setPossessionUserId(userId);
+      setPossessionUserId(userId === 'opponent' ? null : userId);
       setPendingAction(null);
       resumeVideoIfNeeded();
     }
@@ -242,11 +292,16 @@ export default function StandaloneVideoEditorPage() {
   const getPendingBannerText = () => {
     if (!pendingAction) return null;
     const actionName = getActionLabel(pendingAction);
+    
+    if (pendingAction.type === 'block_and_recovery') return 'ブロックした選手を選択してください';
+    if (pendingAction.type === 'save_and_recovery') return 'セーブしたGKを選択してください';
+    if (pendingAction.type === 'recovery') return 'こぼれ球を拾った選手(または相手)を選択してください';
+
     if (pendingAction.step === 1) {
       return `${actionName} を行った選手を選択してください`;
     }
     if (pendingAction.step === 2 && ['pass', 'kickoff'].includes(pendingAction.type)) {
-      const actorName = players.find(p => p.user_id === pendingAction.actor)?.name || '選手';
+      const actorName = pendingAction.actor === 'opponent' ? '相手' : (players.find(p => p.user_id === pendingAction.actor)?.name || '選手');
       return `${actorName} からの ${actionName} の受け手を選択してください`;
     }
     return null;
@@ -569,11 +624,9 @@ export default function StandaloneVideoEditorPage() {
         {/* Timeline Area */}
         <div className={styles.timelineSection}>
           <div className={styles.toolbar}>
-            <button className={`${styles.actionBtn} ${styles.kickoff}`} onClick={() => addEvent('kickoff')}>📣 キックオフ</button>
+            <button className={`${styles.actionBtn} ${styles.kickoff}`} onClick={() => addEvent('kickoff')} disabled={!isKickoffAvailable()}>📣 キックオフ</button>
             <button className={`${styles.actionBtn} ${styles.goal}`} onClick={() => addEvent('goal')}>⚽ 得点 (Goal)</button>
-            <button className={`${styles.actionBtn} ${styles.opponent_goal}`} onClick={() => addEvent('opponent_goal')}>💢 失点</button>
             <button className={`${styles.actionBtn} ${styles.pass}`} onClick={() => addEvent('pass')}>🔁 パス</button>
-            <button className={`${styles.actionBtn} ${styles.opponent_pass}`} onClick={() => addEvent('opponent_pass')}>🔄 相手パス</button>
             <button className={`${styles.actionBtn} ${styles.shot_off}`} onClick={() => addEvent('shot_off')}>☄️ 枠外シュート</button>
             <button className={`${styles.actionBtn} ${styles.block}`} onClick={() => addEvent('block')}>🛡️ ブロック</button>
             <button className={`${styles.actionBtn} ${styles.pass_cut}`} onClick={() => addEvent('pass_cut')}>🔶 パスカット</button>
@@ -611,6 +664,17 @@ export default function StandaloneVideoEditorPage() {
                   </div>
                 );
               })}
+              
+              <div 
+                className={`${styles.activePlayer} ${styles.opponent} ${possessionUserId === null ? styles.isPossessor : ''} ${pendingAction?.step === 2 && pendingAction?.actor !== 'opponent' ? styles.isPendingTarget : ''}`}
+                onClick={() => handlePlayerIconClick('opponent')}
+              >
+                <div className={styles.activePlayerAvatar}>
+                  <span style={{ fontSize: '1rem', fontWeight: 'bold' }}>相手</span>
+                </div>
+                <div className={styles.activePlayerName}>Opponent</div>
+              </div>
+
               {players.filter(p => starters.has(p.user_id)).length === 0 && (
                 <div style={{ color: '#aaa', fontSize: '0.9rem', padding: '1rem' }}>右側のパネルから「先発」にチェックを入れてください</div>
               )}

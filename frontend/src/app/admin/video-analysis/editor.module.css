@@ -165,11 +165,14 @@
   background: var(--color-dark-500);
 }
 
+.actionBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .actionBtn.pass { border-color: #4dabf7; color: #4dabf7; }
 .actionBtn.shot { border-color: #ff6b6b; color: #ff6b6b; }
 .actionBtn.goal { border-color: #ffd43b; color: #ffd43b; }
-.actionBtn.opponent_goal { border-color: #fa5252; color: #fa5252; }
-.actionBtn.opponent_pass { border-color: #adb5bd; color: #adb5bd; }
 .actionBtn.catch { border-color: #20c997; color: #20c997; }
 .actionBtn.block { border-color: #fcc419; color: #fcc419; }
 
@@ -335,6 +338,10 @@
 .activePlayer.isPossessor {
   background: rgba(255, 212, 59, 0.2);
   outline: 2px solid var(--color-gold);
+}
+.activePlayer.opponent .activePlayerAvatar {
+  background: #fa5252;
+  color: white;
 }
 .activePlayer.isPendingTarget {
   animation: pulse 1s infinite alternate;
