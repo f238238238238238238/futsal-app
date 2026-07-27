@@ -246,7 +246,11 @@ export default function VideoEditorPage() {
 
   const handlePlayerIconClick = (userId) => {
     if (!pendingAction) {
-      setPossessionUserId(possessionUserId === userId ? null : userId);
+      if (userId === 'opponent') {
+        setPossessionUserId(null);
+      } else {
+        setPossessionUserId(possessionUserId === userId ? null : userId);
+      }
       return;
     }
 
