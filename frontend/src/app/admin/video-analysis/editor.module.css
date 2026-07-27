@@ -44,6 +44,7 @@
   flex: 1;
   gap: var(--space-md);
   overflow: hidden;
+  min-width: 0;
 }
 
 .rightSidebar {
@@ -144,6 +145,7 @@
 
 .toolbar {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-sm);
   justify-content: center;
 }
