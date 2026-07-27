@@ -300,6 +300,24 @@ export default function StandaloneVideoEditorPage() {
     setStarters(next);
   };
 
+  const getActivePlayers = (minute) => {
+    if (starters.size === 0) return players;
+    const active = new Set(starters);
+    events.forEach(ev => {
+      if (ev.minute <= minute) {
+        if (ev.event_type === 'substitution') {
+          active.delete(ev.target_user_id);
+          if (ev.user_id) active.add(ev.user_id);
+        } else if (ev.event_type === 'sub_in') {
+          if (ev.user_id) active.add(ev.user_id);
+        } else if (ev.event_type === 'sub_out') {
+          active.delete(ev.user_id);
+        }
+      }
+    });
+    return players.filter(p => active.has(p.user_id));
+  };
+
   return (
     <div className={styles.editorPage}>
       <header className={styles.editorHeader}>
@@ -346,6 +364,7 @@ export default function StandaloneVideoEditorPage() {
             <button className={`${styles.actionBtn}`} style={{ background: '#f08c00', color: 'black' }} onClick={() => addEvent('pass_cut')}>🛡️ パスカット</button>
             <button className={`${styles.actionBtn}`} style={{ background: '#20c997', color: 'black' }} onClick={() => addEvent('save')}>🧤 セーブ</button>
             <button className={styles.actionBtn} onClick={() => addEvent('lost_ball')}>💥 ロスト</button>
+            <button className={styles.actionBtn} style={{ background: '#74c0fc', color: '#000' }} onClick={() => addEvent('substitution')}>🔄 交代</button>
             
             <div style={{ flex: 1 }} />
             <button className={styles.actionBtn} style={{ background: '#333', color: '#fff', border: '1px solid #555' }} onClick={() => setShowImportModal(true)}>🤖 AIデータを取り込む</button>
@@ -382,6 +401,7 @@ export default function StandaloneVideoEditorPage() {
             {selectedEventIndex !== null && events[selectedEventIndex] && duration > 0 && (() => {
               const ev = events[selectedEventIndex];
               const leftPercent = (ev.minute / duration) * 100;
+              const activePlayersList = getActivePlayers(ev.minute);
               return (
                 <div 
                   className={styles.eventEditDialog} 
@@ -389,7 +409,7 @@ export default function StandaloneVideoEditorPage() {
                   style={{
                     left: `${leftPercent}%`,
                     transform: leftPercent < 15 ? 'translateX(0)' : (leftPercent > 85 ? 'translateX(-100%)' : 'translateX(-50%)'),
-                    top: ev.event_type === 'pass' ? '-210px' : '-160px'
+                    top: (ev.event_type === 'pass' || ev.event_type === 'substitution') ? '-210px' : '-160px'
                   }}
                 >
                   <div className={styles.dialogTitle}>イベント編集 ({Math.floor(ev.minute/60)}:{(ev.minute%60).toString().padStart(2,'0')})</div>
@@ -408,32 +428,60 @@ export default function StandaloneVideoEditorPage() {
                     <option value="steal">奪取</option>
                     <option value="lost_ball">ロスト</option>
                     <option value="save">セーブ</option>
+                    <option value="substitution">交代</option>
                   </select>
 
-                  <select 
-                    className={styles.playerSelect}
-                    value={ev.user_id || ''}
-                    onChange={e => updateSelectedEvent('user_id', e.target.value)}
-                  >
-                    <option value="">-- {ev.event_type === 'pass' ? '出し手' : '選手'}を選択 --</option>
-                    <option value="opponent">相手チーム</option>
-                    {players.map(p => (
-                      <option key={p.user_id} value={p.user_id}>{p.name}</option>
-                    ))}
-                  </select>
+                  {ev.event_type === 'substitution' ? (
+                    <>
+                      <select 
+                        className={styles.playerSelect}
+                        value={ev.target_user_id || ''}
+                        onChange={e => updateSelectedEvent('target_user_id', e.target.value)}
+                      >
+                        <option value="">-- 下がる選手 (Out) --</option>
+                        {activePlayersList.map(p => (
+                          <option key={p.user_id} value={p.user_id}>{p.name}</option>
+                        ))}
+                      </select>
+                      <select 
+                        className={styles.playerSelect}
+                        value={ev.user_id || ''}
+                        onChange={e => updateSelectedEvent('user_id', e.target.value)}
+                      >
+                        <option value="">-- 入る選手 (In) --</option>
+                        {players.filter(p => !activePlayersList.find(a => a.user_id === p.user_id)).map(p => (
+                          <option key={p.user_id} value={p.user_id}>{p.name}</option>
+                        ))}
+                      </select>
+                    </>
+                  ) : (
+                    <>
+                      <select 
+                        className={styles.playerSelect}
+                        value={ev.user_id || ''}
+                        onChange={e => updateSelectedEvent('user_id', e.target.value)}
+                      >
+                        <option value="">-- {ev.event_type === 'pass' ? '出し手' : '選手'}を選択 --</option>
+                        <option value="opponent">相手チーム</option>
+                        {activePlayersList.map(p => (
+                          <option key={p.user_id} value={p.user_id}>{p.name}</option>
+                        ))}
+                      </select>
 
-                  {ev.event_type === 'pass' && (
-                    <select 
-                      className={styles.playerSelect}
-                      value={ev.target_user_id || ''}
-                      onChange={e => updateSelectedEvent('target_user_id', e.target.value)}
-                    >
-                      <option value="">-- 受け手を選択 --</option>
-                      <option value="opponent">相手チーム</option>
-                      {players.map(p => (
-                        <option key={p.user_id} value={p.user_id}>{p.name}</option>
-                      ))}
-                    </select>
+                      {ev.event_type === 'pass' && (
+                        <select 
+                          className={styles.playerSelect}
+                          value={ev.target_user_id || ''}
+                          onChange={e => updateSelectedEvent('target_user_id', e.target.value)}
+                        >
+                          <option value="">-- 受け手を選択 --</option>
+                          <option value="opponent">相手チーム</option>
+                          {activePlayersList.map(p => (
+                            <option key={p.user_id} value={p.user_id}>{p.name}</option>
+                          ))}
+                        </select>
+                      )}
+                    </>
                   )}
 
                   <div className={styles.dialogActions}>

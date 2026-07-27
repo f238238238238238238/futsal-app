@@ -466,6 +466,7 @@ export default function MatchDetailPage() {
       case 'block': return `🛡️ ${name} がブロック！`;
       case 'sub_in': return `🔼 ${name} がピッチに入りました`;
       case 'sub_out': return `🔽 ${name} がベンチに下がりました`;
+      case 'substitution': return `🔄 ${ev.target_user_name || '選手'} に代わって ${name} がピッチに入りました`;
       case 'position_change': return `🔄 ${name} が ${ev.position || '別ポジション'} に変更`;
       case 'pass': 
         if (ev.target_user_name) {

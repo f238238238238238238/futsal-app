@@ -25,6 +25,14 @@ function calculateMinutesPlayed(stats, events, matchLengthSeconds = 2400) {
       }
     } else if (ev.event_type === 'sub_in') {
       enteredAt[ev.user_id] = ev.minute;
+    } else if (ev.event_type === 'substitution') {
+      if (enteredAt[ev.target_user_id] !== undefined) {
+        playingTimesSecs[ev.target_user_id] = (playingTimesSecs[ev.target_user_id] || 0) + (ev.minute - enteredAt[ev.target_user_id]);
+        delete enteredAt[ev.target_user_id];
+      }
+      if (ev.user_id) {
+        enteredAt[ev.user_id] = ev.minute;
+      }
     }
   });
 
