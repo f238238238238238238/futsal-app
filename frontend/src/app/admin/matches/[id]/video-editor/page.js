@@ -34,6 +34,8 @@ export default function VideoEditorPage() {
   const [positions, setPositions] = useState({});
 
   const [wasPlayingBeforeEdit, setWasPlayingBeforeEdit] = useState(false);
+  const [possessionUserId, setPossessionUserId] = useState(null);
+  const [pendingAction, setPendingAction] = useState(null);
 
   useEffect(() => {
     if (id) {
@@ -98,7 +100,7 @@ export default function VideoEditorPage() {
     }
   };
 
-  const addEvent = (type) => {
+  const insertEvent = (type, actorId, targetId = '') => {
     if (!videoRef.current) return;
     if (selectedEventIndex === null) {
       setWasPlayingBeforeEdit(!videoRef.current.paused);
@@ -106,12 +108,109 @@ export default function VideoEditorPage() {
     videoRef.current.pause();
     const newEvent = {
       event_type: type,
-      user_id: '',
+      user_id: actorId || '',
+      target_user_id: targetId,
       minute: Math.floor(videoRef.current.currentTime),
       position: '' // Can be used for target_id later
     };
-    setEvents([...events, newEvent]);
-    setSelectedEventIndex(events.length); // select the newly added event
+    setEvents(prev => [...prev, newEvent]);
+  };
+
+  const addEvent = (type) => {
+    if (!videoRef.current) return;
+    
+    // Opponent / Automatic actions
+    if (['opponent_goal', 'opponent_pass', 'shot_off'].includes(type)) {
+      insertEvent(type, 'opponent');
+      setPossessionUserId(null); 
+      setPendingAction(null);
+      return;
+    }
+
+    if (type === 'substitution') {
+      if (selectedEventIndex === null) setWasPlayingBeforeEdit(!videoRef.current.paused);
+      videoRef.current.pause();
+      const newEvent = { event_type: type, user_id: '', minute: Math.floor(videoRef.current.currentTime), position: '' };
+      setEvents(prev => [...prev, newEvent]);
+      setTimeout(() => setSelectedEventIndex(events.length), 0);
+      return;
+    }
+
+    if (['goal', 'shot', 'block', 'save', 'catch', 'pass_cut', 'lost_ball'].includes(type)) {
+      if (possessionUserId) {
+        insertEvent(type, possessionUserId);
+        if (['lost_ball', 'shot', 'goal', 'save'].includes(type)) {
+           setPossessionUserId(null);
+        }
+      } else {
+        setPendingAction({ type, step: 1 });
+      }
+      return;
+    }
+
+    if (type === 'pass') {
+      if (possessionUserId) {
+        setPendingAction({ type: 'pass', step: 2, actor: possessionUserId });
+      } else {
+        setPendingAction({ type: 'pass', step: 1 });
+      }
+      return;
+    }
+  };
+
+  const handlePlayerIconClick = (userId) => {
+    if (!pendingAction) {
+      setPossessionUserId(possessionUserId === userId ? null : userId);
+      return;
+    }
+
+    if (pendingAction.step === 1) {
+      if (pendingAction.type === 'pass') {
+        setPendingAction({ type: 'pass', step: 2, actor: userId });
+      } else {
+        insertEvent(pendingAction.type, userId);
+        if (['pass_cut', 'catch'].includes(pendingAction.type)) {
+           setPossessionUserId(userId);
+        } else if (['lost_ball', 'shot', 'goal', 'save'].includes(pendingAction.type)) {
+           setPossessionUserId(null);
+        } else {
+           setPossessionUserId(userId);
+        }
+        setPendingAction(null);
+      }
+    } else if (pendingAction.step === 2 && pendingAction.type === 'pass') {
+      insertEvent('pass', pendingAction.actor, userId);
+      setPossessionUserId(userId);
+      setPendingAction(null);
+    }
+  };
+
+  const getActionLabel = (action) => {
+    switch(action?.type) {
+      case 'pass': return 'パス';
+      case 'shot': return 'シュート';
+      case 'goal': return '得点';
+      case 'block': return 'ブロック';
+      case 'save': return 'セーブ';
+      case 'catch': return 'キャッチ';
+      case 'pass_cut': return 'パスカット';
+      case 'lost_ball': return 'ロスト';
+      case 'shot_off': return '枠外シュート';
+      default: return '';
+    }
+  };
+
+  const getPendingBannerText = () => {
+    if (!pendingAction) return null;
+    const actionName = getActionLabel(pendingAction);
+    if (pendingAction.step === 1) {
+      return `${actionName} を行った選手を選択してください`;
+    }
+    if (pendingAction.step === 2 && pendingAction.type === 'pass') {
+      const actorName = players.find(p => p.user_id === pendingAction.actor)?.name || '選手';
+      return `${actorName} からの パス の受け手を選択してください`;
+    }
+    return null;
   };
 
   const closeEditor = () => {
@@ -353,6 +452,37 @@ export default function VideoEditorPage() {
             <button className={`${styles.actionBtn} ${styles.catch}`} onClick={() => addEvent('catch')}>🤲 キャッチ</button>
             <button className={`${styles.actionBtn} ${styles.lost_ball}`} onClick={() => addEvent('lost_ball')}>🔻 ロスト</button>
             <button className={`${styles.actionBtn}`} style={{ background: '#3b5bdb', borderColor: '#3b5bdb' }} onClick={() => addEvent('substitution')}>🔄 交代</button>
+          </div>
+
+          <div className={styles.activePlayersArea}>
+            {getPendingBannerText() && (
+              <div className={styles.pendingActionBanner}>{getPendingBannerText()}</div>
+            )}
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+              {players.filter(p => starters.has(p.user_id)).map(p => {
+                const isPossessor = possessionUserId === p.user_id;
+                const isPendingTarget = pendingAction?.step === 2 && pendingAction?.type === 'pass' && pendingAction?.actor !== p.user_id;
+                return (
+                  <div 
+                    key={p.user_id} 
+                    className={`${styles.activePlayer} ${isPossessor ? styles.isPossessor : ''} ${isPendingTarget ? styles.isPendingTarget : ''}`}
+                    onClick={() => handlePlayerIconClick(p.user_id)}
+                  >
+                    <div className={styles.activePlayerAvatar}>
+                      {p.photo_url ? (
+                        <img src={p.photo_url} alt={p.name} className={styles.activePlayerImg} />
+                      ) : (
+                        <span style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{p.jersey_number}</span>
+                      )}
+                    </div>
+                    <div className={styles.activePlayerName}>{p.name}</div>
+                  </div>
+                );
+              })}
+              {players.filter(p => starters.has(p.user_id)).length === 0 && (
+                <div style={{ color: '#aaa', fontSize: '0.9rem', padding: '1rem' }}>右側のパネルから「先発」にチェックを入れてください</div>
+              )}
+            </div>
           </div>
 
           <div 
