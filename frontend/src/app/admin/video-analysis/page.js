@@ -280,7 +280,15 @@ export default function StandaloneVideoEditorPage() {
                 >
                   {/* Editor Popup */}
                   {isSelected && (
-                    <div className={styles.eventEditDialog} onMouseDown={(e) => e.stopPropagation()}>
+                    <div 
+                      className={styles.eventEditDialog} 
+                      onMouseDown={(e) => e.stopPropagation()}
+                      style={{
+                        left: leftPercent < 10 ? '0' : (leftPercent > 90 ? 'auto' : '50%'),
+                        right: leftPercent > 90 ? '0' : 'auto',
+                        transform: leftPercent < 10 || leftPercent > 90 ? 'translateX(0)' : 'translateX(-50%)'
+                      }}
+                    >
                       <div className={styles.dialogTitle}>イベント編集 ({Math.floor(ev.minute/60)}:{(ev.minute%60).toString().padStart(2,'0')})</div>
                       
                       <select 
