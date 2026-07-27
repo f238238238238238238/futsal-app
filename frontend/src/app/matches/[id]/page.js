@@ -107,9 +107,10 @@ export default function MatchDetailPage() {
       case 'steal':
       case 'catch':
       case 'assist':
+      case 'pass_cut':
         setBallState({ top: pPos.top, left: pPos.left, opacity: 1 });
-        if(ev.event_type === 'steal' || ev.event_type === 'catch') {
-          setEffect({ key: Date.now(), type: 'badge', top: pPos.top, left: pPos.left, emoji: ev.event_type === 'steal' ? '🛡️' : '🧤' });
+        if(ev.event_type === 'steal' || ev.event_type === 'catch' || ev.event_type === 'pass_cut') {
+          setEffect({ key: Date.now(), type: 'badge', top: pPos.top, left: pPos.left, emoji: ev.event_type === 'catch' ? '🧤' : '🛡️' });
         }
         if(ev.event_type === 'assist') {
           setEffect({ key: Date.now(), type: 'badge', top: pPos.top, left: pPos.left, emoji: '🅰️' });
@@ -157,11 +158,16 @@ export default function MatchDetailPage() {
         }, 400);
         break;
       case 'shot':
+      case 'shot_off':
         setBallState({ top: pPos.top, left: pPos.left, opacity: 1 });
         setTimeout(() => {
           setBallState({ top: '-10%', left: '70%', opacity: 0 });
           setTimeout(() => {
-            setEffect({ key: Date.now(), type: 'miss', top: '50%', left: '50%', emoji: 'NO GOAL 😱' });
+            if (ev.event_type === 'shot') {
+              setEffect({ key: Date.now(), type: 'badge', top: '50%', left: '50%', emoji: '👟💥' });
+            } else {
+              setEffect({ key: Date.now(), type: 'miss', top: '50%', left: '50%', emoji: 'NO GOAL 😱' });
+            }
           }, 400);
         }, 400);
         break;
@@ -435,10 +441,12 @@ export default function MatchDetailPage() {
       case 'assist': return `🅰️ ${name} がアシスト！`;
       case 'save': return `🧤 ${name} がセーブ(弾く)！`;
       case 'catch': return `🧤 ${name} がボールキャッチ！`;
-      case 'shot': return `👟 ${name} がシュート！(ノーゴール)`;
+      case 'shot': return `👟 ${name} がシュート！(枠内)`;
+      case 'shot_off': return `👟 ${name} がシュート！(枠外)`;
       case 'defense': return `🛡️ ${name} がディフェンス！`;
       case 'steal': return `🛡️ ${name} がボール奪取！`;
-      case 'block': return `🛡️ ${name} がブロック/パスカット！`;
+      case 'pass_cut': return `🛡️ ${name} がパスカット！`;
+      case 'block': return `🛡️ ${name} がブロック！`;
       case 'sub_in': return `🔼 ${name} がピッチに入りました`;
       case 'sub_out': return `🔽 ${name} がベンチに下がりました`;
       case 'position_change': return `🔄 ${name} が ${ev.position || '別ポジション'} に変更`;
@@ -622,7 +630,8 @@ export default function MatchDetailPage() {
                       <th style={{ padding: '8px' }}>パス</th>
                       <th style={{ padding: '8px' }}>シュート</th>
                       <th style={{ padding: '8px' }}>ブロック</th>
-                      <th style={{ padding: '8px' }}>奪取</th>
+                      <th style={{ padding: '8px' }}>奪取・カット</th>
+                      <th style={{ padding: '8px' }}>セーブ</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -633,9 +642,10 @@ export default function MatchDetailPage() {
                       const assists = s.assists > 0 ? s.assists : pEvents.filter(e => e.event_type === 'assist').length;
                       
                       const passes = pEvents.filter(e => e.event_type === 'pass').length;
-                      const shots = pEvents.filter(e => e.event_type === 'shot' || e.event_type === 'goal').length;
+                      const shots = pEvents.filter(e => e.event_type === 'shot' || e.event_type === 'shot_off' || e.event_type === 'goal').length;
                       const blocks = pEvents.filter(e => e.event_type === 'block').length;
-                      const steals = pEvents.filter(e => e.event_type === 'steal').length;
+                      const steals = pEvents.filter(e => e.event_type === 'steal' || e.event_type === 'pass_cut').length;
+                      const saves = s.saves > 0 ? s.saves : pEvents.filter(e => e.event_type === 'save' || e.event_type === 'catch').length;
                       
                       return (
                         <tr key={s.user_id} style={{ borderBottom: '1px solid #333' }}>
@@ -646,6 +656,7 @@ export default function MatchDetailPage() {
                           <td style={{ padding: '8px', color: shots > 0 ? '#fff' : '#aaa' }}>{shots}</td>
                           <td style={{ padding: '8px', color: blocks > 0 ? '#fff' : '#aaa' }}>{blocks}</td>
                           <td style={{ padding: '8px', color: steals > 0 ? '#fff' : '#aaa' }}>{steals}</td>
+                          <td style={{ padding: '8px', color: saves > 0 ? '#fff' : '#aaa' }}>{saves}</td>
                         </tr>
                       );
                     })}

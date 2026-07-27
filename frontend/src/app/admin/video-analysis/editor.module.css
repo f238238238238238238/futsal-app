@@ -181,7 +181,11 @@
 }
 .eventMarker.pass { background: #4dabf7; }
 .eventMarker.shot { background: #ff6b6b; }
+.eventMarker.shot_off { background: #e03131; }
 .eventMarker.block { background: #fcc419; }
+.eventMarker.pass_cut { background: #f08c00; }
+.eventMarker.save { background: #20c997; }
+.eventMarker.lost_ball { background: #666; }
 .eventMarker.selected {
   box-shadow: 0 0 0 2px white;
   z-index: 15;

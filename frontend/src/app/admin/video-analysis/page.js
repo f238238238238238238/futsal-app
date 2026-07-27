@@ -21,6 +21,9 @@ export default function StandaloneVideoEditorPage() {
   const [selectedEventIndex, setSelectedEventIndex] = useState(null);
   const [showSaveModal, setShowSaveModal] = useState(false);
   
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importJsonText, setImportJsonText] = useState('');
+  
   // Japan time timezone offset applied for default date
   const tzOffset = (new Date()).getTimezoneOffset() * 60000;
   const localISOTime = (new Date(Date.now() - tzOffset)).toISOString().slice(0, 10);
@@ -144,6 +147,27 @@ export default function StandaloneVideoEditorPage() {
     setSelectedEventIndex(null);
   };
 
+  const handleImportJson = () => {
+    try {
+      const parsed = JSON.parse(importJsonText);
+      if (!Array.isArray(parsed)) throw new Error("JSONは配列である必要があります");
+      
+      const importedEvents = parsed.map(ev => ({
+        event_type: ev.event_type || 'pass',
+        user_id: ev.user_id || '',
+        minute: ev.minute || 0,
+        position: ev.position || ''
+      }));
+      
+      setEvents(prev => [...prev, ...importedEvents]);
+      setShowImportModal(false);
+      setImportJsonText('');
+      alert(`${importedEvents.length}件のイベントをインポートしました`);
+    } catch (err) {
+      alert("インポート失敗: " + err.message);
+    }
+  };
+
   const handleSaveClick = () => {
     if (events.length === 0) {
       if (!confirm('イベントが一つも記録されていません。このまま保存しますか？')) return;
@@ -205,7 +229,11 @@ export default function StandaloneVideoEditorPage() {
   const getEventClass = (type) => {
     if (type === 'pass') return styles.pass;
     if (type === 'shot' || type === 'goal') return styles.shot;
-    if (type === 'block' || type === 'save' || type === 'catch') return styles.block;
+    if (type === 'shot_off') return styles.shot_off;
+    if (type === 'block') return styles.block;
+    if (type === 'pass_cut') return styles.pass_cut;
+    if (type === 'save' || type === 'catch') return styles.save;
+    if (type === 'lost_ball') return styles.lost_ball;
     return '';
   };
 
@@ -247,11 +275,16 @@ export default function StandaloneVideoEditorPage() {
         {/* Timeline Area */}
         <div className={styles.timelineSection}>
           <div className={styles.toolbar}>
-            <button className={`${styles.actionBtn} ${styles.pass}`} onClick={() => addEvent('pass')}>+ パス</button>
-            <button className={`${styles.actionBtn} ${styles.shot}`} onClick={() => addEvent('shot')}>+ シュート</button>
-            <button className={`${styles.actionBtn} ${styles.block}`} onClick={() => addEvent('block')}>+ ブロック</button>
-            <button className={styles.actionBtn} onClick={() => addEvent('steal')}>+ 奪取</button>
-            <button className={styles.actionBtn} onClick={() => addEvent('lost_ball')}>+ ロスト</button>
+            <button className={`${styles.actionBtn} ${styles.pass}`} onClick={() => addEvent('pass')}>🔁 パス</button>
+            <button className={`${styles.actionBtn} ${styles.shot}`} onClick={() => addEvent('shot')}>👟 シュート (枠内)</button>
+            <button className={`${styles.actionBtn}`} style={{ background: '#e03131', color: 'white' }} onClick={() => addEvent('shot_off')}>👟 枠外シュート</button>
+            <button className={`${styles.actionBtn} ${styles.block}`} onClick={() => addEvent('block')}>🛡️ ブロック</button>
+            <button className={`${styles.actionBtn}`} style={{ background: '#f08c00', color: 'black' }} onClick={() => addEvent('pass_cut')}>🛡️ パスカット</button>
+            <button className={`${styles.actionBtn}`} style={{ background: '#20c997', color: 'black' }} onClick={() => addEvent('save')}>🧤 セーブ</button>
+            <button className={styles.actionBtn} onClick={() => addEvent('lost_ball')}>💥 ロスト</button>
+            
+            <div style={{ flex: 1 }} />
+            <button className={styles.actionBtn} style={{ background: '#333', color: '#fff', border: '1px solid #555' }} onClick={() => setShowImportModal(true)}>🤖 AIデータを取り込む</button>
           </div>
 
           <div 
@@ -277,55 +310,61 @@ export default function StandaloneVideoEditorPage() {
                   className={`${styles.eventMarker} ${getEventClass(ev.event_type)} ${isSelected ? styles.selected : ''}`}
                   style={{ left: `${leftPercent}%` }}
                   onMouseDown={(e) => handleMarkerMouseDown(e, idx)}
-                >
-                  {/* Editor Popup */}
-                  {isSelected && (
-                    <div 
-                      className={styles.eventEditDialog} 
-                      onMouseDown={(e) => e.stopPropagation()}
-                      style={{
-                        left: leftPercent < 10 ? '0' : (leftPercent > 90 ? 'auto' : '50%'),
-                        right: leftPercent > 90 ? '0' : 'auto',
-                        transform: leftPercent < 10 || leftPercent > 90 ? 'translateX(0)' : 'translateX(-50%)'
-                      }}
-                    >
-                      <div className={styles.dialogTitle}>イベント編集 ({Math.floor(ev.minute/60)}:{(ev.minute%60).toString().padStart(2,'0')})</div>
-                      
-                      <select 
-                        className={styles.playerSelect}
-                        value={ev.event_type}
-                        onChange={e => updateSelectedEvent('event_type', e.target.value)}
-                      >
-                        <option value="pass">パス</option>
-                        <option value="shot">シュート</option>
-                        <option value="goal">ゴール</option>
-                        <option value="block">ブロック</option>
-                        <option value="steal">奪取</option>
-                        <option value="lost_ball">ロスト</option>
-                        <option value="save">セーブ</option>
-                      </select>
-
-                      <select 
-                        className={styles.playerSelect}
-                        value={ev.user_id}
-                        onChange={e => updateSelectedEvent('user_id', e.target.value)}
-                      >
-                        <option value="">-- 選手を選択 --</option>
-                        <option value="opponent">相手チーム</option>
-                        {players.map(p => (
-                          <option key={p.user_id} value={p.user_id}>{p.name}</option>
-                        ))}
-                      </select>
-
-                      <div className={styles.dialogActions}>
-                        <button className={styles.deleteBtn} onClick={removeSelectedEvent}>削除</button>
-                        <button className={styles.saveBtn} onClick={() => setSelectedEventIndex(null)}>閉じる</button>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                />
               );
             })}
+
+            {/* Editor Popup (Rendered outside the marker to avoid clipping issues) */}
+            {selectedEventIndex !== null && events[selectedEventIndex] && duration > 0 && (() => {
+              const ev = events[selectedEventIndex];
+              const leftPercent = (ev.minute / duration) * 100;
+              return (
+                <div 
+                  className={styles.eventEditDialog} 
+                  onMouseDown={(e) => e.stopPropagation()}
+                  style={{
+                    left: `${leftPercent}%`,
+                    transform: leftPercent < 15 ? 'translateX(0)' : (leftPercent > 85 ? 'translateX(-100%)' : 'translateX(-50%)'),
+                    top: '-160px'
+                  }}
+                >
+                  <div className={styles.dialogTitle}>イベント編集 ({Math.floor(ev.minute/60)}:{(ev.minute%60).toString().padStart(2,'0')})</div>
+                  
+                  <select 
+                    className={styles.playerSelect}
+                    value={ev.event_type}
+                    onChange={e => updateSelectedEvent('event_type', e.target.value)}
+                  >
+                    <option value="pass">パス</option>
+                    <option value="shot">シュート (枠内)</option>
+                    <option value="shot_off">枠外シュート</option>
+                    <option value="goal">ゴール</option>
+                    <option value="block">ブロック</option>
+                    <option value="pass_cut">パスカット</option>
+                    <option value="steal">奪取</option>
+                    <option value="lost_ball">ロスト</option>
+                    <option value="save">セーブ</option>
+                  </select>
+
+                  <select 
+                    className={styles.playerSelect}
+                    value={ev.user_id}
+                    onChange={e => updateSelectedEvent('user_id', e.target.value)}
+                  >
+                    <option value="">-- 選手を選択 --</option>
+                    <option value="opponent">相手チーム</option>
+                    {players.map(p => (
+                      <option key={p.user_id} value={p.user_id}>{p.name}</option>
+                    ))}
+                  </select>
+
+                  <div className={styles.dialogActions}>
+                    <button className={styles.deleteBtn} onClick={removeSelectedEvent}>削除</button>
+                    <button className={styles.saveBtn} onClick={() => setSelectedEventIndex(null)}>閉じる</button>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
 
@@ -333,7 +372,7 @@ export default function StandaloneVideoEditorPage() {
 
       {showSaveModal && (
         <div className={styles.uploadOverlay}>
-          <div className={styles.eventEditDialog} style={{ position: 'relative', top: 0, transform: 'none', padding: '2rem' }}>
+          <div className={styles.eventEditDialog} style={{ position: 'relative', top: 0, transform: 'none', padding: '2rem', minWidth: '350px' }}>
             <h2 className={styles.dialogTitle} style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>試合データとして保存</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
               <label>試合日</label>
@@ -347,6 +386,29 @@ export default function StandaloneVideoEditorPage() {
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
               <button className={styles.deleteBtn} onClick={() => setShowSaveModal(false)}>キャンセル</button>
               <button className={styles.saveBtn} onClick={handleConfirmSave}>保存する</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showImportModal && (
+        <div className={styles.uploadOverlay}>
+          <div className={styles.eventEditDialog} style={{ position: 'relative', top: 0, transform: 'none', padding: '2rem', minWidth: '400px' }}>
+            <h2 className={styles.dialogTitle} style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>AIデータをインポート</h2>
+            <p style={{ fontSize: '0.8rem', color: '#aaa', marginBottom: '1rem' }}>
+              GeminiやYOLOなどが出力したJSON形式の配列を貼り付けてください。<br/>
+              例: <code>{`[{"minute":15, "event_type":"pass"}]`}</code>
+            </p>
+            <textarea 
+              className={styles.playerSelect} 
+              style={{ height: '150px', resize: 'vertical', fontFamily: 'monospace' }}
+              placeholder="JSONデータをここにペースト..."
+              value={importJsonText}
+              onChange={e => setImportJsonText(e.target.value)}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
+              <button className={styles.deleteBtn} onClick={() => setShowImportModal(false)}>キャンセル</button>
+              <button className={styles.saveBtn} onClick={handleImportJson}>反映する</button>
             </div>
           </div>
         </div>
