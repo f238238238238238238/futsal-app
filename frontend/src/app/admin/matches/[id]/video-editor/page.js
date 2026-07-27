@@ -263,6 +263,7 @@ export default function VideoEditorPage() {
         setPendingAction({ type: 'recovery', from: 'save', actor: userId, step: 1 });
       } else if (pendingAction.type === 'recovery') {
         insertEvent(pendingAction.from, pendingAction.actor);
+        insertEvent('recovery', userId === 'opponent' ? 'opponent' : userId);
         setPossessionUserId(userId === 'opponent' ? null : userId);
         setPendingAction(null);
         resumeVideoIfNeeded();
@@ -299,6 +300,7 @@ export default function VideoEditorPage() {
       case 'lost_ball': return 'ロスト';
       case 'shot_off': return '枠外シュート';
       case 'pass_miss': return 'パスミス';
+      case 'recovery': return 'リカバリー(こぼれ球回収)';
       default: return '';
     }
   };

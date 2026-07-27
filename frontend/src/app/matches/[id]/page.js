@@ -308,16 +308,33 @@ export default function MatchDetailPage() {
   }, [match, minute, sortedEvents]);
 
   const teamStats = useMemo(() => {
-    let redStats = { passes: 0, lost: 0, goals: 0, shots: 0, saves: 0 };
-    let blueStats = { passes: 0, lost: 0, goals: 0, shots: 0, saves: 0 };
+    let redStats = { passes: 0, lost: 0, goals: 0, shots: 0, saves: 0, possessionSeconds: 0 };
+    let blueStats = { passes: 0, lost: 0, goals: 0, shots: 0, saves: 0, possessionSeconds: 0 };
+    let playerPossessionSeconds = {};
     
-    if (!match || !match.stats) return { red: redStats, blue: blueStats };
+    if (!match || !match.stats) return { red: redStats, blue: blueStats, playerPossession: playerPossessionSeconds };
 
     let currentOnPitch = [];
     let totalDefenseSeconds = 0;
     let defenseStartTime = null;
     let currentMode = 'setup';
     let opponentPassFails = 0;
+    
+    let currentPossessorId = null;
+    let currentTeam = null;
+    let possessionStartTime = 0;
+
+    const getTeamForUser = (uid) => {
+       if (!uid || uid === 'opponent' || String(uid).startsWith('dummy_')) return 'blue';
+       if (match.match_mode === 'intra') {
+         const p = currentOnPitch.find(x => x.user_id === uid);
+         if (p && p.position.startsWith('red_')) return 'red';
+         if (p && p.position.startsWith('blue_')) return 'blue';
+         return null;
+       }
+       return 'red';
+    };
+
     match.stats.forEach(st => {
       if (st.is_starter === 1 || st.is_starter === true) {
         let startingPos = st.position || '';
@@ -337,6 +354,18 @@ export default function MatchDetailPage() {
 
     for (const ev of sortedEvents) {
       if (ev.minute > minute) break;
+      
+      // Calculate time elapsed since last possession change
+      if (currentPossessorId && ev.minute >= possessionStartTime) {
+         const duration = ev.minute - possessionStartTime;
+         if (currentTeam === 'red') redStats.possessionSeconds += duration;
+         else if (currentTeam === 'blue') blueStats.possessionSeconds += duration;
+         
+         if (!playerPossessionSeconds[currentPossessorId]) playerPossessionSeconds[currentPossessorId] = 0;
+         playerPossessionSeconds[currentPossessorId] += duration;
+      }
+      
+      possessionStartTime = ev.minute;
       
       if (ev.event_type === 'context_defense') {
         currentMode = 'defense';
@@ -396,6 +425,41 @@ export default function MatchDetailPage() {
       // Override for opponent-specific events in external matches
       if (ev.event_type === 'concede') { blueStats.goals++; blueStats.shots++; }
       if (ev.event_type === 'opponent_shot') blueStats.shots++;
+      
+      switch(ev.event_type) {
+         case 'pass':
+         case 'kickoff':
+           currentPossessorId = ev.target_user_id || 'opponent';
+           currentTeam = getTeamForUser(currentPossessorId);
+           break;
+         case 'pass_cut':
+         case 'steal':
+         case 'recovery':
+         case 'catch':
+           currentPossessorId = ev.user_id || 'opponent';
+           currentTeam = getTeamForUser(currentPossessorId);
+           break;
+         case 'lost_ball':
+         case 'pass_miss':
+         case 'goal':
+         case 'opponent_goal':
+         case 'shot':
+         case 'shot_off':
+         case 'concede':
+           currentPossessorId = null;
+           currentTeam = null;
+           break;
+         default:
+           break;
+      }
+    }
+    
+    if (currentPossessorId && minute > possessionStartTime) {
+       const duration = minute - possessionStartTime;
+       if (currentTeam === 'red') redStats.possessionSeconds += duration;
+       else if (currentTeam === 'blue') blueStats.possessionSeconds += duration;
+       if (!playerPossessionSeconds[currentPossessorId]) playerPossessionSeconds[currentPossessorId] = 0;
+       playerPossessionSeconds[currentPossessorId] += duration;
     }
     
     if (currentMode === 'defense' && defenseStartTime !== null) {
@@ -412,7 +476,7 @@ export default function MatchDetailPage() {
       blueStats.lost = opponentPassFails;
     }
 
-    return { red: redStats, blue: blueStats };
+    return { red: redStats, blue: blueStats, playerPossession: playerPossessionSeconds };
   }, [match, minute, sortedEvents]);
 
   function getYouTubeId(url) {
@@ -585,11 +649,11 @@ export default function MatchDetailPage() {
                 </div>
 
                 <StatBar 
-                  label="ボール支配率" 
-                  leftVal={teamStats.red.passes} 
-                  rightVal={teamStats.blue.passes} 
-                  leftStr={teamStats.red.passes + teamStats.blue.passes > 0 ? `${Math.round((teamStats.red.passes / (teamStats.red.passes + teamStats.blue.passes)) * 100)}%` : '50%'}
-                  rightStr={teamStats.red.passes + teamStats.blue.passes > 0 ? `${Math.round((teamStats.blue.passes / (teamStats.red.passes + teamStats.blue.passes)) * 100)}%` : '50%'}
+                  label="ボール支配率 (時間)" 
+                  leftVal={teamStats.red.possessionSeconds} 
+                  rightVal={teamStats.blue.possessionSeconds} 
+                  leftStr={teamStats.red.possessionSeconds + teamStats.blue.possessionSeconds > 0 ? `${Math.round((teamStats.red.possessionSeconds / (teamStats.red.possessionSeconds + teamStats.blue.possessionSeconds)) * 100)}%` : '50%'}
+                  rightStr={teamStats.red.possessionSeconds + teamStats.blue.possessionSeconds > 0 ? `${Math.round((teamStats.blue.possessionSeconds / (teamStats.red.possessionSeconds + teamStats.blue.possessionSeconds)) * 100)}%` : '50%'}
                 />
                 <StatBar 
                   label="シュート数 (枠内含む)" 
@@ -673,6 +737,7 @@ export default function MatchDetailPage() {
                       <th style={{ padding: '8px' }}>ブロック</th>
                       <th style={{ padding: '8px' }}>奪取・カット</th>
                       <th style={{ padding: '8px' }}>セーブ</th>
+                      <th style={{ padding: '8px' }}>キープ(秒)</th>
                       <th style={{ padding: '8px' }}>評価</th>
                     </tr>
                   </thead>
@@ -691,6 +756,7 @@ export default function MatchDetailPage() {
                       
                       const lostBalls = pEvents.filter(e => e.event_type === 'lost_ball').length;
                       const shotsOff = pEvents.filter(e => e.event_type === 'shot_off').length;
+                      const keepTime = teamStats.playerPossession ? (teamStats.playerPossession[s.user_id] || teamStats.playerPossession[String(s.user_id)] || 0) : 0;
                       const rating = (6.0 + (goals * 1.0) + (assists * 0.5) + (passes * 0.1) + (shots * 0.1) + (blocks * 0.2) + (steals * 0.2) + (saves * 0.3) - (lostBalls * 0.2) - (shotsOff * 0.1)).toFixed(1);
 
                       return (
@@ -703,6 +769,7 @@ export default function MatchDetailPage() {
                           <td style={{ padding: '8px', color: blocks > 0 ? '#fff' : '#aaa' }}>{blocks}</td>
                           <td style={{ padding: '8px', color: steals > 0 ? '#fff' : '#aaa' }}>{steals}</td>
                           <td style={{ padding: '8px', color: saves > 0 ? '#fff' : '#aaa' }}>{saves}</td>
+                          <td style={{ padding: '8px', color: keepTime > 0 ? '#fff' : '#aaa' }}>{keepTime}s</td>
                           <td style={{ padding: '8px', fontWeight: 'bold', color: rating >= 7.0 ? 'var(--color-gold)' : '#fff' }}>{rating}</td>
                         </tr>
                       );
