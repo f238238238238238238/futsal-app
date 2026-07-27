@@ -34,11 +34,16 @@ export default function StandaloneVideoEditorPage() {
   const videoRef = useRef(null);
   const trackRef = useRef(null);
   
+  const [ourFeature, setOurFeature] = useState('緑のビブス');
+  const [oppFeature, setOppFeature] = useState('白のシャツ');
+  const [attackDir, setAttackDir] = useState('左から右');
+
   // Drag state
   const [draggingIdx, setDraggingIdx] = useState(null);
 
   const [attendees, setAttendees] = useState(new Set());
   const [starters, setStarters] = useState(new Set());
+  const [positions, setPositions] = useState({});
 
   useEffect(() => {
     getPlayers()
@@ -233,7 +238,8 @@ export default function StandaloneVideoEditorPage() {
         const st = userStats[userId] || { goals: 0, assists: 0, saves: 0 };
         return {
           user_id: parseInt(userId, 10),
-          is_starter: starters.has(parseInt(userId, 10)),
+          is_starter: starters.has(parseInt(userId, 10)) ? 1 : 0,
+          position: positions[userId] || null,
           goals: st.goals,
           assists: st.assists,
           saves: st.saves
@@ -298,6 +304,10 @@ export default function StandaloneVideoEditorPage() {
       setAttendees(nextAttendees);
     }
     setStarters(next);
+  };
+
+  const updatePosition = (userId, pos) => {
+    setPositions(prev => ({ ...prev, [userId]: pos }));
   };
 
   const getActivePlayers = (minute) => {
@@ -496,19 +506,20 @@ export default function StandaloneVideoEditorPage() {
         </div>
 
         {/* Sidebar */}
-        <div className={styles.rightSidebar}>
+        <div className={styles.rightSidebar} style={{ width: '300px' }}>
           <div className={styles.sidebarTitle}>👥 参加メンバー設定</div>
           <div style={{ fontSize: '0.8rem', color: '#aaa', marginBottom: '8px' }}>
             参加とスタメンを設定できます。<br/>
             (イベントを追加した選手は自動で集計されます)
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 30px 30px', gap: '4px', borderBottom: '1px solid #444', paddingBottom: '4px', marginBottom: '4px', fontSize: '0.8rem', color: '#ccc', textAlign: 'center' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 30px 30px 70px', gap: '4px', borderBottom: '1px solid #444', paddingBottom: '4px', marginBottom: '4px', fontSize: '0.8rem', color: '#ccc', textAlign: 'center' }}>
             <div style={{ textAlign: 'left' }}>選手名</div>
             <div>参加</div>
             <div>先発</div>
+            <div>Pos</div>
           </div>
           {players.map(p => (
-            <div key={p.user_id} style={{ display: 'grid', gridTemplateColumns: '1fr 30px 30px', gap: '4px', alignItems: 'center', padding: '2px 0' }}>
+            <div key={p.user_id} style={{ display: 'grid', gridTemplateColumns: '1fr 30px 30px 70px', gap: '4px', alignItems: 'center', padding: '2px 0' }}>
               <div style={{ fontSize: '0.9rem', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {p.name}
               </div>
@@ -527,6 +538,21 @@ export default function StandaloneVideoEditorPage() {
                   onChange={() => toggleStarter(p.user_id)} 
                   style={{ transform: 'scale(1.2)', cursor: 'pointer' }}
                 />
+              </div>
+              <div>
+                {starters.has(p.user_id) && (
+                  <select 
+                    style={{ width: '100%', fontSize: '0.75rem', padding: '2px', background: '#222', color: '#fff', border: '1px solid #555', borderRadius: '3px' }}
+                    value={positions[p.user_id] || ''}
+                    onChange={e => updatePosition(p.user_id, e.target.value)}
+                  >
+                    <option value="">--</option>
+                    <option value="FIXO">FIXO</option>
+                    <option value="ALA">ALA</option>
+                    <option value="PIVO">PIVO</option>
+                    <option value="GOLEIRO">GK</option>
+                  </select>
+                )}
               </div>
             </div>
           ))}
@@ -555,13 +581,65 @@ export default function StandaloneVideoEditorPage() {
         </div>
       )}
 
-      {showImportModal && (
+      {showImportModal && (() => {
+        const promptTemplate = `あなたはプロのフットサルアナリストです。
+アップロードされた動画を解析し、以下の条件に従ってイベントを時系列でJSON配列として出力してください。
+
+【チーム情報】
+・自チームの特徴: ${ourFeature}
+・相手チームの特徴: ${oppFeature}
+・前半の自チームの攻める方向: ${attackDir}
+
+【出力フォーマット】
+[
+  { "minute": 15, "event_type": "pass" },
+  { "minute": 45, "event_type": "shot" }
+]
+※ event_typeは以下から選択してください: pass, shot, shot_off, goal, block, pass_cut, steal, lost_ball, save
+※ minuteは動画開始からの秒数です。`;
+
+        return (
         <div className={styles.uploadOverlay}>
-          <div className={styles.eventEditDialog} style={{ position: 'relative', top: 0, transform: 'none', padding: '2rem', minWidth: '400px' }}>
+          <div className={styles.eventEditDialog} style={{ position: 'relative', top: 0, transform: 'none', padding: '2rem', minWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
             <h2 className={styles.dialogTitle} style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>AIデータをインポート</h2>
+            
+            <div style={{ marginBottom: '1.5rem', padding: '1rem', background: '#111', borderRadius: '4px', border: '1px solid #333' }}>
+              <h3 style={{ fontSize: '1rem', color: '#74c0fc', marginBottom: '0.5rem' }}>🤖 AI用プロンプト作成</h3>
+              <p style={{ fontSize: '0.8rem', color: '#aaa', marginBottom: '1rem' }}>ChatGPTやGeminiに動画を渡す際、以下の指示文を一緒に送信すると精度が上がります。</p>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', marginBottom: '1rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.8rem', color: '#ccc' }}>自チームの特徴</label>
+                  <input type="text" className={styles.playerSelect} value={ourFeature} onChange={e => setOurFeature(e.target.value)} placeholder="例: 緑のビブス" />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.8rem', color: '#ccc' }}>相手チームの特徴</label>
+                  <input type="text" className={styles.playerSelect} value={oppFeature} onChange={e => setOppFeature(e.target.value)} placeholder="例: 白のシャツ" />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.8rem', color: '#ccc' }}>前半の攻める方向</label>
+                  <input type="text" className={styles.playerSelect} value={attackDir} onChange={e => setAttackDir(e.target.value)} placeholder="例: 左から右" />
+                </div>
+              </div>
+              
+              <div style={{ position: 'relative' }}>
+                <textarea 
+                  readOnly 
+                  value={promptTemplate} 
+                  style={{ width: '100%', height: '120px', background: '#222', color: '#fff', border: '1px solid #444', borderRadius: '4px', padding: '0.5rem', fontSize: '0.8rem', fontFamily: 'monospace', resize: 'none' }} 
+                />
+                <button 
+                  onClick={() => { navigator.clipboard.writeText(promptTemplate); alert('コピーしました！'); }}
+                  style={{ position: 'absolute', top: '0.5rem', right: '0.5rem', background: '#74c0fc', color: '#000', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem' }}
+                >
+                  📋 コピー
+                </button>
+              </div>
+            </div>
+
+            <h3 style={{ fontSize: '1rem', color: '#fff', marginBottom: '0.5rem' }}>📥 解析結果(JSON)の貼り付け</h3>
             <p style={{ fontSize: '0.8rem', color: '#aaa', marginBottom: '1rem' }}>
-              GeminiやYOLOなどが出力したJSON形式の配列を貼り付けてください。<br/>
-              例: <code>{`[{"minute":15, "event_type":"pass"}]`}</code>
+              AIが出力したJSON形式の配列を貼り付けてください。
             </p>
             <textarea 
               className={styles.playerSelect} 
@@ -576,7 +654,8 @@ export default function StandaloneVideoEditorPage() {
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

@@ -31,6 +31,7 @@ export default function VideoEditorPage() {
 
   const [attendees, setAttendees] = useState(new Set());
   const [starters, setStarters] = useState(new Set());
+  const [positions, setPositions] = useState({});
 
   useEffect(() => {
     if (id) {
@@ -43,8 +44,13 @@ export default function VideoEditorPage() {
           if (m.stats) {
             const initialAttendees = new Set(m.stats.map(s => s.user_id));
             const initialStarters = new Set(m.stats.filter(s => s.is_starter).map(s => s.user_id));
+            const initialPositions = {};
+            m.stats.forEach(s => {
+              if (s.position) initialPositions[s.user_id] = s.position;
+            });
             setAttendees(initialAttendees);
             setStarters(initialStarters);
+            setPositions(initialPositions);
           }
         })
         .catch(err => console.error(err));
@@ -194,6 +200,7 @@ export default function VideoEditorPage() {
         return {
           user_id: parseInt(userId, 10),
           is_starter: starters.has(parseInt(userId, 10)) ? 1 : 0,
+          position: positions[userId] || null,
           goals: st.goals,
           assists: st.assists,
           saves: st.saves
@@ -246,6 +253,10 @@ export default function VideoEditorPage() {
       setAttendees(nextAttendees);
     }
     setStarters(next);
+  };
+
+  const updatePosition = (userId, pos) => {
+    setPositions(prev => ({ ...prev, [userId]: pos }));
   };
 
   const getActivePlayers = (minute) => {
@@ -441,19 +452,20 @@ export default function VideoEditorPage() {
         </div>
 
         {/* Sidebar */}
-        <div className={styles.rightSidebar}>
+        <div className={styles.rightSidebar} style={{ width: '300px' }}>
           <div className={styles.sidebarTitle}>👥 参加メンバー設定</div>
           <div style={{ fontSize: '0.8rem', color: '#aaa', marginBottom: '8px' }}>
             参加とスタメンを設定できます。<br/>
             (イベントを追加した選手は自動で集計されます)
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 30px 30px', gap: '4px', borderBottom: '1px solid #444', paddingBottom: '4px', marginBottom: '4px', fontSize: '0.8rem', color: '#ccc', textAlign: 'center' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 30px 30px 70px', gap: '4px', borderBottom: '1px solid #444', paddingBottom: '4px', marginBottom: '4px', fontSize: '0.8rem', color: '#ccc', textAlign: 'center' }}>
             <div style={{ textAlign: 'left' }}>選手名</div>
             <div>参加</div>
             <div>先発</div>
+            <div>Pos</div>
           </div>
           {players.map(p => (
-            <div key={p.user_id} style={{ display: 'grid', gridTemplateColumns: '1fr 30px 30px', gap: '4px', alignItems: 'center', padding: '2px 0' }}>
+            <div key={p.user_id} style={{ display: 'grid', gridTemplateColumns: '1fr 30px 30px 70px', gap: '4px', alignItems: 'center', padding: '2px 0' }}>
               <div style={{ fontSize: '0.9rem', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {p.name}
               </div>
@@ -472,6 +484,21 @@ export default function VideoEditorPage() {
                   onChange={() => toggleStarter(p.user_id)} 
                   style={{ transform: 'scale(1.2)', cursor: 'pointer' }}
                 />
+              </div>
+              <div>
+                {starters.has(p.user_id) && (
+                  <select 
+                    style={{ width: '100%', fontSize: '0.75rem', padding: '2px', background: '#222', color: '#fff', border: '1px solid #555', borderRadius: '3px' }}
+                    value={positions[p.user_id] || ''}
+                    onChange={e => updatePosition(p.user_id, e.target.value)}
+                  >
+                    <option value="">--</option>
+                    <option value="FIXO">FIXO</option>
+                    <option value="ALA">ALA</option>
+                    <option value="PIVO">PIVO</option>
+                    <option value="GOLEIRO">GK</option>
+                  </select>
+                )}
               </div>
             </div>
           ))}
