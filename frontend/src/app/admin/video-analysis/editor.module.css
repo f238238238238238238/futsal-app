@@ -166,6 +166,10 @@
 
 .actionBtn.pass { border-color: #4dabf7; color: #4dabf7; }
 .actionBtn.shot { border-color: #ff6b6b; color: #ff6b6b; }
+.actionBtn.goal { border-color: #ffd43b; color: #ffd43b; }
+.actionBtn.opponent_goal { border-color: #fa5252; color: #fa5252; }
+.actionBtn.opponent_pass { border-color: #adb5bd; color: #adb5bd; }
+.actionBtn.catch { border-color: #20c997; color: #20c997; }
 .actionBtn.block { border-color: #fcc419; color: #fcc419; }
 
 /* Timeline Track */
@@ -220,6 +224,10 @@
 .eventMarker.pass { background: #4dabf7; }
 .eventMarker.shot { background: #ff6b6b; }
 .eventMarker.shot_off { background: #e03131; }
+.eventMarker.goal { background: #ffd43b; }
+.eventMarker.opponent_goal { background: #fa5252; }
+.eventMarker.opponent_pass { background: #adb5bd; }
+.eventMarker.catch { background: #20c997; }
 .eventMarker.block { background: #fcc419; }
 .eventMarker.pass_cut { background: #f08c00; }
 .eventMarker.save { background: #20c997; }

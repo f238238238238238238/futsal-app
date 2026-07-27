@@ -454,7 +454,8 @@ export default function MatchDetailPage() {
       name = '相手選手';
     }
     switch (ev.event_type) {
-      case 'goal': return `⚽ ${name} がゴール！`;
+      case 'goal': return `⚽ ${name} が得点！`;
+      case 'opponent_goal': return `💢 失点 (相手ゴール)`;
       case 'assist': return `🅰️ ${name} がアシスト！`;
       case 'save': return `🧤 ${name} がセーブ(弾く)！`;
       case 'catch': return `🧤 ${name} がボールキャッチ！`;

@@ -226,6 +226,16 @@ export default function StandaloneVideoEditorPage() {
     if (events.length === 0) {
       if (!confirm('イベントが一つも記録されていません。このまま保存しますか？')) return;
     }
+    
+    if (ourScore === '') {
+       const goals = events.filter(e => e.event_type === 'goal').length;
+       setOurScore(goals.toString());
+    }
+    if (opponentScore === '') {
+       const oppGoals = events.filter(e => e.event_type === 'opponent_goal').length;
+       setOpponentScore(oppGoals.toString());
+    }
+    
     setShowSaveModal(true);
   };
 
@@ -292,7 +302,10 @@ export default function StandaloneVideoEditorPage() {
 
   const getEventClass = (type) => {
     if (type === 'pass') return styles.pass;
-    if (type === 'shot' || type === 'goal') return styles.shot;
+    if (type === 'shot') return styles.shot;
+    if (type === 'goal') return styles.goal;
+    if (type === 'opponent_goal') return styles.opponent_goal;
+    if (type === 'opponent_pass') return styles.opponent_pass;
     if (type === 'shot_off') return styles.shot_off;
     if (type === 'block') return styles.block;
     if (type === 'pass_cut') return styles.pass_cut;
@@ -390,14 +403,18 @@ export default function StandaloneVideoEditorPage() {
         {/* Timeline Area */}
         <div className={styles.timelineSection}>
           <div className={styles.toolbar}>
+            <button className={`${styles.actionBtn} ${styles.goal}`} onClick={() => addEvent('goal')}>⚽ 得点 (Goal)</button>
+            <button className={`${styles.actionBtn} ${styles.opponent_goal}`} onClick={() => addEvent('opponent_goal')}>💢 失点</button>
             <button className={`${styles.actionBtn} ${styles.pass}`} onClick={() => addEvent('pass')}>🔁 パス</button>
+            <button className={`${styles.actionBtn} ${styles.opponent_pass}`} onClick={() => addEvent('opponent_pass')}>🔄 相手パス</button>
             <button className={`${styles.actionBtn} ${styles.shot}`} onClick={() => addEvent('shot')}>👟 シュート (枠内)</button>
-            <button className={`${styles.actionBtn}`} style={{ background: '#e03131', color: 'white' }} onClick={() => addEvent('shot_off')}>👟 枠外シュート</button>
+            <button className={`${styles.actionBtn} ${styles.shot_off}`} onClick={() => addEvent('shot_off')}>☄️ 枠外シュート</button>
             <button className={`${styles.actionBtn} ${styles.block}`} onClick={() => addEvent('block')}>🛡️ ブロック</button>
-            <button className={`${styles.actionBtn}`} style={{ background: '#f08c00', color: 'black' }} onClick={() => addEvent('pass_cut')}>🛡️ パスカット</button>
-            <button className={`${styles.actionBtn}`} style={{ background: '#20c997', color: 'black' }} onClick={() => addEvent('save')}>🧤 セーブ</button>
-            <button className={styles.actionBtn} onClick={() => addEvent('lost_ball')}>💥 ロスト</button>
-            <button className={styles.actionBtn} style={{ background: '#74c0fc', color: '#000' }} onClick={() => addEvent('substitution')}>🔄 交代</button>
+            <button className={`${styles.actionBtn} ${styles.pass_cut}`} onClick={() => addEvent('pass_cut')}>🔶 パスカット</button>
+            <button className={`${styles.actionBtn} ${styles.save}`} onClick={() => addEvent('save')}>🧤 セーブ</button>
+            <button className={`${styles.actionBtn} ${styles.catch}`} onClick={() => addEvent('catch')}>🤲 キャッチ</button>
+            <button className={`${styles.actionBtn} ${styles.lost_ball}`} onClick={() => addEvent('lost_ball')}>🔻 ロスト</button>
+            <button className={`${styles.actionBtn}`} style={{ background: '#3b5bdb', borderColor: '#3b5bdb' }} onClick={() => addEvent('substitution')}>🔄 交代</button>
             
             <div style={{ flex: 1 }} />
             <button className={styles.actionBtn} style={{ background: '#333', color: '#fff', border: '1px solid #555' }} onClick={() => setShowImportModal(true)}>🤖 AIデータを取り込む</button>
