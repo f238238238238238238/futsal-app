@@ -130,7 +130,7 @@ export default function StandaloneVideoEditorPage() {
     videoRef.current.pause();
 
     // Opponent / Automatic actions
-    if (['opponent_goal', 'opponent_pass', 'shot_off'].includes(type)) {
+    if (['opponent_goal', 'opponent_pass'].includes(type)) {
       insertEvent(type, 'opponent');
       setPossessionUserId(null); 
       setPendingAction(null);
@@ -145,11 +145,23 @@ export default function StandaloneVideoEditorPage() {
       setTimeout(() => setSelectedEventIndex(events.length), 0);
       return;
     }
+    
+    if (['save', 'catch'].includes(type)) {
+      const gks = Array.from(starters).filter(uid => positions[uid] === 'GK');
+      if (gks.length === 1) {
+        insertEvent(type, gks[0]);
+        setPossessionUserId(type === 'catch' ? gks[0] : null);
+        resumeVideoIfNeeded();
+      } else {
+        setPendingAction({ type, step: 1 });
+      }
+      return;
+    }
 
-    if (['goal', 'shot', 'block', 'save', 'catch', 'pass_cut', 'lost_ball'].includes(type)) {
-      if (possessionUserId) {
+    if (['goal', 'shot', 'block', 'pass_cut', 'lost_ball', 'shot_off'].includes(type)) {
+      if (possessionUserId && type !== 'block' && type !== 'pass_cut') {
         insertEvent(type, possessionUserId);
-        if (['lost_ball', 'shot', 'goal', 'save'].includes(type)) {
+        if (['lost_ball', 'shot', 'goal', 'shot_off'].includes(type)) {
            setPossessionUserId(null);
         }
         resumeVideoIfNeeded();
@@ -167,6 +179,11 @@ export default function StandaloneVideoEditorPage() {
       }
       return;
     }
+    
+    if (type === 'kickoff') {
+      setPendingAction({ type: 'kickoff', step: 1 });
+      return;
+    }
   };
 
   const handlePlayerIconClick = (userId) => {
@@ -176,13 +193,13 @@ export default function StandaloneVideoEditorPage() {
     }
 
     if (pendingAction.step === 1) {
-      if (pendingAction.type === 'pass') {
-        setPendingAction({ type: 'pass', step: 2, actor: userId });
+      if (['pass', 'kickoff'].includes(pendingAction.type)) {
+        setPendingAction({ type: pendingAction.type, step: 2, actor: userId });
       } else {
         insertEvent(pendingAction.type, userId);
         if (['pass_cut', 'catch'].includes(pendingAction.type)) {
            setPossessionUserId(userId);
-        } else if (['lost_ball', 'shot', 'goal', 'save'].includes(pendingAction.type)) {
+        } else if (['lost_ball', 'shot', 'goal', 'save', 'shot_off'].includes(pendingAction.type)) {
            setPossessionUserId(null);
         } else {
            setPossessionUserId(userId);
@@ -190,8 +207,8 @@ export default function StandaloneVideoEditorPage() {
         setPendingAction(null);
         resumeVideoIfNeeded();
       }
-    } else if (pendingAction.step === 2 && pendingAction.type === 'pass') {
-      insertEvent('pass', pendingAction.actor, userId);
+    } else if (pendingAction.step === 2 && ['pass', 'kickoff'].includes(pendingAction.type)) {
+      insertEvent(pendingAction.type, pendingAction.actor, userId);
       setPossessionUserId(userId);
       setPendingAction(null);
       resumeVideoIfNeeded();
@@ -201,6 +218,7 @@ export default function StandaloneVideoEditorPage() {
   const getActionLabel = (action) => {
     switch(action?.type) {
       case 'pass': return 'パス';
+      case 'kickoff': return 'キックオフ';
       case 'shot': return 'シュート';
       case 'goal': return '得点';
       case 'block': return 'ブロック';
@@ -219,9 +237,9 @@ export default function StandaloneVideoEditorPage() {
     if (pendingAction.step === 1) {
       return `${actionName} を行った選手を選択してください`;
     }
-    if (pendingAction.step === 2 && pendingAction.type === 'pass') {
+    if (pendingAction.step === 2 && ['pass', 'kickoff'].includes(pendingAction.type)) {
       const actorName = players.find(p => p.user_id === pendingAction.actor)?.name || '選手';
-      return `${actorName} からの パス の受け手を選択してください`;
+      return `${actorName} からの ${actionName} の受け手を選択してください`;
     }
     return null;
   };
@@ -513,6 +531,7 @@ export default function StandaloneVideoEditorPage() {
         {/* Timeline Area */}
         <div className={styles.timelineSection}>
           <div className={styles.toolbar}>
+            <button className={`${styles.actionBtn} ${styles.kickoff}`} onClick={() => addEvent('kickoff')}>📣 キックオフ</button>
             <button className={`${styles.actionBtn} ${styles.goal}`} onClick={() => addEvent('goal')}>⚽ 得点 (Goal)</button>
             <button className={`${styles.actionBtn} ${styles.opponent_goal}`} onClick={() => addEvent('opponent_goal')}>💢 失点</button>
             <button className={`${styles.actionBtn} ${styles.pass}`} onClick={() => addEvent('pass')}>🔁 パス</button>
@@ -536,7 +555,7 @@ export default function StandaloneVideoEditorPage() {
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
               {players.filter(p => starters.has(p.user_id)).map(p => {
                 const isPossessor = possessionUserId === p.user_id;
-                const isPendingTarget = pendingAction?.step === 2 && pendingAction?.type === 'pass' && pendingAction?.actor !== p.user_id;
+                const isPendingTarget = pendingAction?.step === 2 && ['pass', 'kickoff'].includes(pendingAction?.type) && pendingAction?.actor !== p.user_id;
                 return (
                   <div 
                     key={p.user_id} 

@@ -222,6 +222,7 @@
 .eventMarker:active {
   cursor: grabbing;
 }
+.eventMarker.kickoff { background: #9775fa; }
 .eventMarker.pass { background: #4dabf7; }
 .eventMarker.shot { background: #ff6b6b; }
 .eventMarker.shot_off { background: #e03131; }

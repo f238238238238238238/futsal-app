@@ -103,6 +103,7 @@ export default function MatchDetailPage() {
     const pPos = getPlayerPosition(ev.user_id, ev.minute, ev.position);
     
     switch (ev.event_type) {
+      case 'kickoff':
       case 'pass':
       case 'assist':
         setBallState({ top: pPos.top, left: pPos.left, opacity: 1 });
@@ -469,6 +470,11 @@ export default function MatchDetailPage() {
       case 'sub_out': return `🔽 ${name} がベンチに下がりました`;
       case 'substitution': return `🔄 ${ev.target_user_name || '選手'} に代わって ${name} がピッチに入りました`;
       case 'position_change': return `🔄 ${name} が ${ev.position || '別ポジション'} に変更`;
+      case 'kickoff':
+        if (ev.target_user_name) {
+          return `📣 ${name} から ${ev.target_user_name} へキックオフ！`;
+        }
+        return `📣 ${name} がキックオフ！`;
       case 'pass': 
         if (ev.target_user_name) {
           return `🔁 ${name} が ${ev.target_user_name} にパスを繋ぎました`;
