@@ -102,12 +102,15 @@ export default function StandaloneVideoEditorPage() {
     }
   };
 
+  const resumeVideoIfNeeded = () => {
+    if (wasPlayingBeforeEdit && videoRef.current) {
+      videoRef.current.play();
+    }
+    setWasPlayingBeforeEdit(false);
+  };
+
   const insertEvent = (type, actorId, targetId = '') => {
     if (!videoRef.current) return;
-    if (selectedEventIndex === null) {
-      setWasPlayingBeforeEdit(!videoRef.current.paused);
-    }
-    videoRef.current.pause();
     const newEvent = {
       event_type: type,
       user_id: actorId || '',
@@ -121,17 +124,21 @@ export default function StandaloneVideoEditorPage() {
   const addEvent = (type) => {
     if (!videoRef.current) return;
     
+    if (!pendingAction && selectedEventIndex === null) {
+      setWasPlayingBeforeEdit(!videoRef.current.paused);
+    }
+    videoRef.current.pause();
+
     // Opponent / Automatic actions
     if (['opponent_goal', 'opponent_pass', 'shot_off'].includes(type)) {
       insertEvent(type, 'opponent');
       setPossessionUserId(null); 
       setPendingAction(null);
+      resumeVideoIfNeeded();
       return;
     }
 
     if (type === 'substitution') {
-      if (selectedEventIndex === null) setWasPlayingBeforeEdit(!videoRef.current.paused);
-      videoRef.current.pause();
       const newEvent = { event_type: type, user_id: '', minute: Math.floor(videoRef.current.currentTime), position: '' };
       setEvents(prev => [...prev, newEvent]);
       // Open editor for substitution to let them choose players
@@ -145,6 +152,7 @@ export default function StandaloneVideoEditorPage() {
         if (['lost_ball', 'shot', 'goal', 'save'].includes(type)) {
            setPossessionUserId(null);
         }
+        resumeVideoIfNeeded();
       } else {
         setPendingAction({ type, step: 1 });
       }
@@ -180,11 +188,13 @@ export default function StandaloneVideoEditorPage() {
            setPossessionUserId(userId);
         }
         setPendingAction(null);
+        resumeVideoIfNeeded();
       }
     } else if (pendingAction.step === 2 && pendingAction.type === 'pass') {
       insertEvent('pass', pendingAction.actor, userId);
       setPossessionUserId(userId);
       setPendingAction(null);
+      resumeVideoIfNeeded();
     }
   };
 
