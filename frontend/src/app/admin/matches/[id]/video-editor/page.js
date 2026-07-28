@@ -218,16 +218,12 @@ export default function VideoEditorPage() {
       if (possessionUserId) {
         insertEvent('shot', possessionUserId);
         insertEvent('catch', 'opponent');
-        setPossessionUserId('opponent');
+        setPossessionUserId(null);
       } else {
         const gks = Array.from(starters).filter(uid => positions[uid] === 'GK');
-        if (gks.length === 1) {
-          insertEvent('catch', gks[0]);
-          setPossessionUserId(gks[0]);
-        } else {
-          pauseForAction();
-          setPendingAction({ type: 'catch', step: 1 });
-        }
+        const gkId = gks.length > 0 ? gks[0] : (Array.from(starters)[0] || 'dummy');
+        insertEvent('catch', gkId);
+        setPossessionUserId(gkId);
       }
       return;
     }
@@ -235,7 +231,7 @@ export default function VideoEditorPage() {
     if (type === 'pass_cut') {
       if (possessionUserId) {
         insertEvent('pass_cut', 'opponent');
-        setPossessionUserId('opponent');
+        setPossessionUserId(null);
       } else {
         pauseForAction();
         setPendingAction({ type: 'pass_cut', step: 1 });
