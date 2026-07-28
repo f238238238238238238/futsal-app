@@ -103,6 +103,10 @@ def main(video_path, output_path):
                     last_event_time = current_time_sec
                     
             current_possessor = new_possessor
+            
+        # 10秒ごとに進捗を表示
+        if frame_count % int(fps * 10) == 0:
+            print(f"... 動画の {int(current_time_sec)} 秒まで解析完了 (見つかったイベント数: {len(events)})")
 
     cap.release()
     
