@@ -230,13 +230,13 @@ export default function StandaloneVideoEditorPage() {
       return;
     }
 
-    if (type === 'pass_cut') {
+    if (type === 'pass_cut' || type === 'steal') {
       if (possessionUserId) {
-        insertEvent('pass_cut', 'opponent');
+        insertEvent(type, 'opponent');
         setPossessionUserId(null);
       } else {
         pauseForAction();
-        setPendingAction({ type: 'pass_cut', step: 1 });
+        setPendingAction({ type: type, step: 1 });
       }
       return;
     }
@@ -267,7 +267,7 @@ export default function StandaloneVideoEditorPage() {
         resumeVideoIfNeeded();
       } else {
         insertEvent(pendingAction.type, userId);
-        if (['pass_cut', 'catch'].includes(pendingAction.type)) {
+        if (['pass_cut', 'catch', 'steal'].includes(pendingAction.type)) {
            setPossessionUserId(userId === 'opponent' ? null : userId);
         } else if (['lost_ball', 'shot', 'goal', 'save', 'shot_off'].includes(pendingAction.type)) {
            setPossessionUserId(null);
@@ -296,6 +296,7 @@ export default function StandaloneVideoEditorPage() {
       case 'save': return 'セーブ';
       case 'catch': return 'キャッチ';
       case 'pass_cut': return 'パスカット';
+      case 'steal': return 'スティール';
       case 'lost_ball': return 'ロスト';
       case 'shot_off': return '枠外シュート';
       case 'pass_miss': return 'パスミス';
@@ -514,7 +515,7 @@ export default function StandaloneVideoEditorPage() {
     if (type === 'opponent_pass') return styles.opponent_pass;
     if (type === 'shot_off') return styles.shot_off;
     if (type === 'block') return styles.block;
-    if (type === 'pass_cut') return styles.pass_cut;
+    if (type === 'pass_cut' || type === 'steal') return styles.pass_cut;
     if (type === 'save' || type === 'catch') return styles.save;
     if (type === 'lost_ball' || type === 'pass_miss') return styles.lost_ball;
     return '';
@@ -645,7 +646,8 @@ export default function StandaloneVideoEditorPage() {
             <button className={`${styles.actionBtn} ${styles.pass_miss}`} onClick={() => addEvent('pass_miss')}>💥 パスミス</button>
             <button className={`${styles.actionBtn} ${styles.shot_off}`} onClick={() => addEvent('shot_off')}>☄️ 枠外シュート</button>
             <button className={`${styles.actionBtn} ${styles.block}`} onClick={() => addEvent('block')}>🛡️ ブロック</button>
-            <button className={`${styles.actionBtn} ${styles.pass_cut}`} onClick={() => addEvent('pass_cut')}>🔶 パスカット</button>
+            <button className={`${styles.actionBtn} ${styles.pass_cut}`} onClick={() => addEvent('pass_cut')}>🛡️ パスカット</button>
+            <button className={`${styles.actionBtn} ${styles.pass_cut}`} onClick={() => addEvent('steal')}>🛡️ スティール</button>
             <button className={`${styles.actionBtn} ${styles.save}`} onClick={() => addEvent('save')}>🧤 セーブ</button>
             <button className={`${styles.actionBtn} ${styles.catch}`} onClick={() => addEvent('catch')}>🤲 キャッチ</button>
             <button className={`${styles.actionBtn} ${styles.lost_ball}`} onClick={() => addEvent('lost_ball')}>🔻 ロスト</button>
@@ -752,6 +754,7 @@ export default function StandaloneVideoEditorPage() {
                     <option value="goal">ゴール</option>
                     <option value="block">ブロック</option>
                     <option value="pass_cut">パスカット</option>
+                    <option value="steal">スティール</option>
                     <option value="recovery">リカバリー(こぼれ球回収)</option>
                     <option value="lost_ball">ロスト</option>
                     <option value="pass_miss">パスミス</option>
