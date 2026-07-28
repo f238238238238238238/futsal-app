@@ -204,13 +204,14 @@ export default function VideoEditorPage() {
         insertEvent('shot', possessionUserId);
         setPendingAction({ type: 'recovery', from: 'save', actor: 'opponent', step: 1 });
       } else {
-        const gks = Array.from(starters).filter(uid => {
-          if (positions[uid] === 'GK') return true;
-          const p = players.find(pl => pl.user_id === uid);
+        const currentActive = getActivePlayers(Math.floor(videoRef.current.currentTime));
+        const gks = currentActive.filter(p => {
+          const uid = p.user_id;
+          if (positions[uid] === 'GOLEIRO' || positions[uid] === 'GK') return true;
           return p && (p.position === 'ゴレイロ' || p.position === 'GK');
         });
         if (gks.length === 1) {
-          setPendingAction({ type: 'recovery', from: 'save', actor: gks[0], step: 1 });
+          setPendingAction({ type: 'recovery', from: 'save', actor: gks[0].user_id, step: 1 });
         } else {
           setPendingAction({ type: 'save_and_recovery', step: 1 });
         }
@@ -224,12 +225,13 @@ export default function VideoEditorPage() {
         insertEvent('catch', 'opponent');
         setPossessionUserId(null);
       } else {
-        const gks = Array.from(starters).filter(uid => {
-          if (positions[uid] === 'GK') return true;
-          const p = players.find(pl => pl.user_id === uid);
+        const currentActive = getActivePlayers(Math.floor(videoRef.current.currentTime));
+        const gks = currentActive.filter(p => {
+          const uid = p.user_id;
+          if (positions[uid] === 'GOLEIRO' || positions[uid] === 'GK') return true;
           return p && (p.position === 'ゴレイロ' || p.position === 'GK');
         });
-        const gkId = gks.length > 0 ? gks[0] : (Array.from(starters)[0] || 'dummy');
+        const gkId = gks.length > 0 ? gks[0].user_id : (currentActive.length > 0 ? currentActive[0].user_id : 'dummy');
         insertEvent('catch', gkId);
         setPossessionUserId(gkId);
       }
@@ -514,7 +516,36 @@ export default function VideoEditorPage() {
         }
       }
     });
-    return players.filter(p => active.has(p.user_id));
+    
+    // Process position inheritance for subbed-in players
+    const activePlayers = players.filter(p => active.has(p.user_id)).map(p => {
+      // Create a shallow copy to modify position if inherited
+      const playerCopy = { ...p };
+      let tracedUid = p.user_id;
+      const pastEvents = [...events].filter(e => e.minute <= minute).sort((a,b) => b.minute - a.minute);
+      for (const ev of pastEvents) {
+        if (ev.event_type === 'substitution' && ev.user_id === tracedUid) {
+          tracedUid = ev.target_user_id;
+        }
+      }
+      if (tracedUid !== p.user_id) {
+        // Inherit from the traced user
+        if (positions[tracedUid]) {
+           playerCopy.position = positions[tracedUid] === 'GOLEIRO' ? 'ゴレイロ' : positions[tracedUid];
+        } else {
+           const tp = players.find(pl => pl.user_id === tracedUid);
+           if (tp && tp.position) playerCopy.position = tp.position;
+        }
+      } else {
+        // Use manually set position if available
+        if (positions[p.user_id]) {
+          playerCopy.position = positions[p.user_id] === 'GOLEIRO' ? 'ゴレイロ' : positions[p.user_id];
+        }
+      }
+      return playerCopy;
+    });
+
+    return activePlayers;
   };
 
   return (
@@ -605,7 +636,7 @@ export default function VideoEditorPage() {
               <div className={styles.pendingActionBanner}>{getPendingBannerText()}</div>
             )}
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-              {players.filter(p => starters.has(p.user_id)).map(p => {
+              {getActivePlayers(Math.floor(currentTime)).map(p => {
                 const isPossessor = possessionUserId === p.user_id;
                 const isPendingTarget = pendingAction?.step === 2 && ['pass', 'kickoff'].includes(pendingAction?.type) && pendingAction?.actor !== p.user_id;
                 return (
@@ -636,7 +667,7 @@ export default function VideoEditorPage() {
                 <div className={styles.activePlayerName}>Opponent</div>
               </div>
 
-              {players.filter(p => starters.has(p.user_id)).length === 0 && (
+              {getActivePlayers(Math.floor(currentTime)).length === 0 && (
                 <div style={{ color: '#aaa', fontSize: '0.9rem', padding: '1rem' }}>右側のパネルから「先発」にチェックを入れてください</div>
               )}
             </div>
