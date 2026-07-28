@@ -687,10 +687,11 @@ export default function VideoEditorPage() {
                     <option value="goal">ゴール</option>
                     <option value="block">ブロック</option>
                     <option value="pass_cut">パスカット</option>
-                    <option value="steal">奪取</option>
+                    <option value="recovery">リカバリー(こぼれ球回収)</option>
                     <option value="lost_ball">ロスト</option>
                     <option value="pass_miss">パスミス</option>
                     <option value="save">セーブ</option>
+                    <option value="catch">キャッチ</option>
                     <option value="substitution">交代</option>
                   </select>
 
