@@ -456,7 +456,7 @@ export default function VideoEditorPage() {
     if (type === 'block') return styles.block;
     if (type === 'pass_cut') return styles.pass_cut;
     if (type === 'save' || type === 'catch') return styles.save;
-    if (type === 'lost_ball') return styles.lost_ball;
+    if (type === 'lost_ball' || type === 'pass_miss') return styles.lost_ball;
     return '';
   };
 
@@ -689,6 +689,7 @@ export default function VideoEditorPage() {
                     <option value="pass_cut">パスカット</option>
                     <option value="steal">奪取</option>
                     <option value="lost_ball">ロスト</option>
+                    <option value="pass_miss">パスミス</option>
                     <option value="save">セーブ</option>
                     <option value="substitution">交代</option>
                   </select>
