@@ -286,7 +286,8 @@ export default function StandaloneVideoEditorPage() {
   };
 
   const getActionLabel = (action) => {
-    switch(action?.type) {
+    const type = action?.type || action?.event_type;
+    switch(type) {
       case 'pass': return 'パス';
       case 'kickoff': return 'キックオフ';
       case 'shot': return 'シュート';
