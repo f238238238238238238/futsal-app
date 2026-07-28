@@ -204,7 +204,11 @@ export default function VideoEditorPage() {
         insertEvent('shot', possessionUserId);
         setPendingAction({ type: 'recovery', from: 'save', actor: 'opponent', step: 1 });
       } else {
-        const gks = Array.from(starters).filter(uid => positions[uid] === 'GK');
+        const gks = Array.from(starters).filter(uid => {
+          if (positions[uid] === 'GK') return true;
+          const p = players.find(pl => pl.user_id === uid);
+          return p && (p.position === 'ゴレイロ' || p.position === 'GK');
+        });
         if (gks.length === 1) {
           setPendingAction({ type: 'recovery', from: 'save', actor: gks[0], step: 1 });
         } else {
@@ -220,7 +224,11 @@ export default function VideoEditorPage() {
         insertEvent('catch', 'opponent');
         setPossessionUserId(null);
       } else {
-        const gks = Array.from(starters).filter(uid => positions[uid] === 'GK');
+        const gks = Array.from(starters).filter(uid => {
+          if (positions[uid] === 'GK') return true;
+          const p = players.find(pl => pl.user_id === uid);
+          return p && (p.position === 'ゴレイロ' || p.position === 'GK');
+        });
         const gkId = gks.length > 0 ? gks[0] : (Array.from(starters)[0] || 'dummy');
         insertEvent('catch', gkId);
         setPossessionUserId(gkId);
