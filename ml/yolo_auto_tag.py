@@ -39,7 +39,8 @@ def main(video_path, output_path):
         if frame_count % skip_frames != 0:
             continue
             
-        results = model.track(frame, classes=[0, 32], persist=True, verbose=False)
+        # ByteTrackを使用するとBoT-SORTよりCPU上で高速に動作します
+        results = model.track(frame, classes=[0, 32], persist=True, tracker="bytetrack.yaml", verbose=False)
         
         if not results or not results[0].boxes or results[0].boxes.id is None:
             continue
@@ -104,9 +105,9 @@ def main(video_path, output_path):
                     
             current_possessor = new_possessor
             
-        # 10秒ごとに進捗を表示
-        if frame_count % int(fps * 10) == 0:
-            print(f"... 動画の {int(current_time_sec)} 秒まで解析完了 (見つかったイベント数: {len(events)})")
+        # 5秒(動画内時間)ごとに進捗を表示
+        if frame_count % int(fps * 5) == 0:
+            print(f"... 動画の {int(current_time_sec)} 秒まで解析完了 (見つかったイベント数: {len(events)})", flush=True)
 
     cap.release()
     
