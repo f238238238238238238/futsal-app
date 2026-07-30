@@ -251,6 +251,7 @@ export default function MatchDetailPage() {
     if (!match || !match.stats) return { onPitch: [], bench: [] };
     
     let currentOnPitch = [];
+    let currentBench = [];
     const occupiedPositions = new Set(match.stats.map(st => st.position).filter(Boolean));
     const allExternalPos = ['GK', 'Fixo', 'Ala L', 'Ala R', 'Pivo'];
     let missingExternal = allExternalPos.filter(pos => !occupiedPositions.has(pos));

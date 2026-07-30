@@ -428,8 +428,10 @@ export default function VideoEditorPage() {
     try {
       const userStats = {};
       events.forEach(ev => {
-        const uid = ev.user_id;
-        if (!uid || typeof uid === 'string' || uid === 'opponent') return;
+        const uidStr = String(ev.user_id);
+        if (!uidStr || uidStr === 'opponent' || uidStr.startsWith('dummy_')) return;
+        const uid = parseInt(uidStr, 10);
+        if (isNaN(uid)) return;
         if (!userStats[uid]) userStats[uid] = { goals: 0, assists: 0, saves: 0 };
         if (ev.event_type === 'goal') userStats[uid].goals += 1;
         if (ev.event_type === 'assist') userStats[uid].assists += 1;

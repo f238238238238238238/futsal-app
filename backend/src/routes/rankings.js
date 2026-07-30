@@ -196,7 +196,7 @@ router.get('/shot_accuracy', async (req, res) => {
     let query = `
       SELECT u.user_id, u.name, u.photo_url, 
              SUM(ms.goals) as total_goals,
-             (SELECT COUNT(*) FROM match_events me2 WHERE me2.user_id = u.user_id AND me2.event_type = 'shot' ${year && year !== 'all' ? `AND me2.match_id IN (SELECT match_id FROM matches WHERE EXTRACT(YEAR FROM date::date) = $1)` : ''}) as total_missed_shots
+             (SELECT COUNT(*) FROM match_events me2 WHERE me2.user_id = u.user_id AND me2.event_type IN ('shot', 'shot_off') ${year && year !== 'all' ? `AND me2.match_id IN (SELECT match_id FROM matches WHERE EXTRACT(YEAR FROM date::date) = $1)` : ''}) as total_missed_shots
       FROM users u
       JOIN match_stats ms ON u.user_id = ms.user_id
     `;

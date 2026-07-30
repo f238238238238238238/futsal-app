@@ -475,8 +475,11 @@ export default function StandaloneVideoEditorPage() {
       const userStats = {};
       
       events.forEach(ev => {
-        if (!ev.user_id || ev.user_id === 'opponent' || typeof ev.user_id === 'string') return;
-        const uid = parseInt(ev.user_id, 10);
+        const uidStr = String(ev.user_id);
+        if (!uidStr || uidStr === 'opponent' || uidStr.startsWith('dummy_')) return;
+        const uid = parseInt(uidStr, 10);
+        if (isNaN(uid)) return;
+        
         if (!userStats[uid]) {
           userStats[uid] = { goals: 0, assists: 0, saves: 0 };
         }
