@@ -404,9 +404,17 @@ export default function StandaloneVideoEditorPage() {
 
   const updateSelectedEvent = (field, value) => {
     if (selectedEventIndex === null) return;
+    
+    let parsedValue = value;
+    if (field === 'user_id' || field === 'target_user_id') {
+      if (value && !isNaN(value) && value !== 'opponent') {
+        parsedValue = parseInt(value, 10);
+      }
+    }
+
     setEvents(prev => {
       const next = [...prev];
-      next[selectedEventIndex][field] = value;
+      next[selectedEventIndex][field] = parsedValue;
       return next;
     });
   };
