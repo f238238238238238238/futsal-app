@@ -124,7 +124,7 @@ router.get('/:id', async (req, res) => {
       const passes = yEvents.pass || 0;
       const lost = yEvents.lost_ball || 0;
       const shots = yEvents.shot || 0;
-      const defense = (yEvents.defense || 0) + (yEvents.steal || 0) + (yEvents.block || 0) + (yEvents.cut || 0);
+      const defense = (yEvents.defense || 0) + (yEvents.steal || 0) + (yEvents.block || 0) + (yEvents.pass_cut || 0);
       
       const goals = parseInt(row.goals, 10);
       const assists = parseInt(row.assists, 10);
