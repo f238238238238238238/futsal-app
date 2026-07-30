@@ -179,7 +179,7 @@ export default function MatchesPage() {
                           )}
 
                           <div style={{ marginTop: '1rem', textAlign: 'center' }}>
-                            <Link href={`/matches/${match.match_id || match.id}`} className={styles.moreLink} style={{ display: 'inline-block', padding: '0.5rem 1.5rem', background: 'var(--color-primary-500)', color: 'white', borderRadius: '4px', textDecoration: 'none', fontWeight: 600 }}>
+                            <Link href={`/matches/${match.match_id || match.id}`} className={styles.moreLink} style={{ display: 'inline-block', padding: '0.5rem 1.5rem', background: 'var(--color-gold)', color: 'white', borderRadius: '4px', textDecoration: 'none', fontWeight: 600 }}>
                               詳細フォーメーションを見る →
                             </Link>
                           </div>
