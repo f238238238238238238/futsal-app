@@ -306,7 +306,7 @@ export default function VideoEditorPage() {
       case 'pass_cut': return 'パスカット';
       case 'steal': return 'スティール';
       case 'lost_ball': return 'ロスト';
-      case 'shot_off': return '枠外シュート';
+      case 'shot_off': return 'ノーゴール';
       case 'pass_miss': return 'パスミス';
       case 'recovery': return 'リカバリー(こぼれ球回収)';
       default: return '';
@@ -629,7 +629,7 @@ export default function VideoEditorPage() {
             <button className={`${styles.actionBtn} ${styles.goal}`} onClick={() => addEvent('goal')}>⚽ 得点 (Goal)</button>
             <button className={`${styles.actionBtn} ${styles.pass}`} onClick={() => addEvent('pass')}>🔁 パス</button>
             <button className={`${styles.actionBtn} ${styles.pass_miss}`} onClick={() => addEvent('pass_miss')}>💥 パスミス</button>
-            <button className={`${styles.actionBtn} ${styles.shot_off}`} onClick={() => addEvent('shot_off')}>☄️ 枠外シュート</button>
+            <button className={`${styles.actionBtn} ${styles.shot_off}`} onClick={() => addEvent('shot_off')}>☄️ ノーゴール</button>
             <button className={`${styles.actionBtn} ${styles.block}`} onClick={() => addEvent('block')}>🛡️ ブロック</button>
             <button className={`${styles.actionBtn} ${styles.pass_cut}`} onClick={() => addEvent('pass_cut')}>🛡️ パスカット</button>
             <button className={`${styles.actionBtn} ${styles.pass_cut}`} onClick={() => addEvent('steal')}>🛡️ スティール</button>
@@ -704,7 +704,23 @@ export default function VideoEditorPage() {
                   className={`${styles.eventMarker} ${getEventClass(ev.event_type)} ${isSelected ? styles.selected : ''}`}
                   style={{ left: `${leftPercent}%` }}
                   onMouseDown={(e) => handleMarkerMouseDown(e, idx)}
-                />
+                  title={(() => {
+                    if (ev.event_type === 'substitution') {
+                      const outP = players.find(p => p.user_id === ev.target_user_id)?.name || '未選択';
+                      const inP = players.find(p => p.user_id === ev.user_id)?.name || '未選択';
+                      return `交代 (Out: ${outP}, In: ${inP})`;
+                    }
+                    if (ev.user_id === 'opponent') return `${getActionLabel(ev)} (相手)`;
+                    const pName = players.find(p => p.user_id === ev.user_id)?.name || '';
+                    const tName = players.find(p => p.user_id === ev.target_user_id)?.name || '';
+                    let t = `${getActionLabel(ev)} ${pName ? '('+pName+')' : ''}`;
+                    if (tName) t += ` -> ${tName}`;
+                    return t;
+                  })()}
+                >
+                  <div className={styles.eventDot} />
+                  <div className={styles.eventLabel}>{getActionLabel(ev)}</div>
+                </div>
               );
             })}
 
@@ -732,7 +748,7 @@ export default function VideoEditorPage() {
                   >
                     <option value="pass">パス</option>
                     <option value="shot">シュート (枠内)</option>
-                    <option value="shot_off">枠外シュート</option>
+                    <option value="shot_off">ノーゴール</option>
                     <option value="goal">ゴール</option>
                     <option value="block">ブロック</option>
                     <option value="pass_cut">パスカット</option>

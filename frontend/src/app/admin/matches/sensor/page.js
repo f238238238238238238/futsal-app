@@ -1206,7 +1206,7 @@ export default function SensorMatchPage() {
                  const min = Math.floor(e.minute / 60);
                  const sec = String(e.minute % 60).padStart(2, '0');
                  const eventNames = {
-                   app_goal: '⚽ ゴール', app_shot_on_target: '🎯 枠内シュート', app_shot_miss: '❌ 枠外シュート', app_opponent_goal: '💀 失点',
+                   app_goal: '⚽ ゴール', app_shot_on_target: '🎯 枠内シュート', app_shot_miss: '❌ ノーゴール', app_opponent_goal: '💀 失点',
                    save: '🧤 セーブ', catch: '👐 キャッチ', context_attack: '⚔️ 攻撃モード開始', context_defense: '🛡️ 守備モード開始',
                    sub_in: '🔄 IN', sub_out: '🔄 OUT'
                  };

@@ -532,8 +532,8 @@ export default function MatchDetailPage() {
         return `🧤 ${name} がボールキャッチ！`;
       case 'shot': return `👟 ${name} がシュート！(枠内)`;
       case 'shot_off': 
-        if (ev.user_id === 'opponent') return `☄️ 相手チームの枠外シュート`;
-        return `👟 ${name} がシュート！(枠外)`;
+        if (ev.user_id === 'opponent') return `☄️ 相手チームのノーゴール`;
+        return `👟 ${name} がシュート！(ノーゴール)`;
       case 'defense': return `🛡️ ${name} がディフェンス！`;
       case 'steal': return `🛡️ ${name} がボール奪取！`;
       case 'pass_cut': return `🛡️ ${name} がパスカット！`;
