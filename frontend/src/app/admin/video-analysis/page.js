@@ -949,8 +949,8 @@ export default function StandaloneVideoEditorPage() {
       </div>
 
       {showSaveModal && (
-        <div className={styles.uploadOverlay}>
-          <div className={styles.eventEditDialog} style={{ position: 'relative', top: 0, transform: 'none', padding: '2rem', minWidth: '400px' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.8)', zIndex: 10000 }}>
+          <div className={styles.eventEditDialog} style={{ position: 'relative', top: 0, transform: 'none', padding: '2rem', minWidth: '400px', margin: 'auto' }}>
             <h2 className={styles.dialogTitle} style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>試合データとして保存</h2>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -1003,8 +1003,8 @@ export default function StandaloneVideoEditorPage() {
 ※ minuteは動画開始からの秒数です。`;
 
         return (
-        <div className={styles.uploadOverlay}>
-          <div className={styles.eventEditDialog} style={{ position: 'relative', top: 0, transform: 'none', padding: '2rem', minWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.8)', zIndex: 10000 }}>
+          <div className={styles.eventEditDialog} style={{ position: 'relative', top: 0, transform: 'none', padding: '2rem', minWidth: '600px', maxHeight: '90vh', overflowY: 'auto', margin: 'auto' }}>
             <h2 className={styles.dialogTitle} style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>AIデータをインポート</h2>
             
             <div style={{ marginBottom: '1.5rem', padding: '1rem', background: '#111', borderRadius: '4px', border: '1px solid #333' }}>
