@@ -566,6 +566,10 @@ export default function MatchDetailPage() {
       case 'pass_miss': return `💥 ${name} がパスミス！`;
       case 'opponent_pass': return `🔁 相手チームがパスを繋ぎました`;
       case 'opponent_pass_fail': return `💥 相手チームがボールをロストしました`;
+      case 'concede': return `💢 ${name} が失点`;
+      case 'clear': return `🛡️ ${name} がクリア！`;
+      case 'recovery': return ev.team === 'opponent' ? `🔄 相手チームがこぼれ球を拾いました` : `🔄 ${name} がこぼれ球を拾いました`;
+      case 'opponent_shot_off': return `☄️ 相手チームがシュートミス(枠外)`;
       default: return `${name} - ${ev.event_type}`;
     }
   };
