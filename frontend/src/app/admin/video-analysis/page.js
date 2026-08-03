@@ -112,6 +112,18 @@ export default function VideoAnalysisPage() {
   };
   const currentPossessor = getBallPossessor(currentTime);
 
+  const getPlayerPosition = (minute, userId) => {
+    let pos = starters.has(userId) ? (userId === gkId ? 'GK' : positions[userId]) : null;
+    const sorted = [...events].sort((a,b) => a.minute - b.minute);
+    for (const ev of sorted) {
+      if (ev.minute > minute) break;
+      if (ev.event_type === 'sub_in' && ev.user_id === userId) {
+        pos = ev.position;
+      }
+    }
+    return pos || 'Fixo';
+  };
+
   const handleVideoUpload = (e) => {
     const file = e.target.files[0];
     if (file) setVideoSrc(URL.createObjectURL(file));
@@ -126,7 +138,26 @@ export default function VideoAnalysisPage() {
       setWasPlaying(!videoRef.current.paused);
       videoRef.current.pause();
     }
-    setPendingAction({ type: actionType, step: 1, data: {} });
+    const possessor = getBallPossessor(currentTime);
+    
+    let initialStep = 1;
+    let initialData = { minute: currentTime };
+    
+    if (actionType === 'pass' && possessor && possessor !== 'opponent') {
+      initialStep = 2;
+      initialData.passer = possessor;
+    }
+    
+    if (actionType === 'shot') {
+      if (possessor === 'opponent') {
+        initialStep = 20;
+      } else if (possessor && possessor !== 'opponent') {
+        initialStep = 10;
+        initialData.shooter = possessor;
+      }
+    }
+    
+    setPendingAction({ type: actionType, step: initialStep, data: initialData });
   };
 
   const resumeVideo = () => {
@@ -365,6 +396,7 @@ export default function VideoAnalysisPage() {
           activePlayers={activePlayers}
           benchPlayers={players.filter(p => attendees.has(p.user_id) && !activePlayers.find(a => a.user_id === p.user_id))}
           gkId={gkId}
+          getPlayerPosition={getPlayerPosition}
         />
       )}
     </div>
@@ -374,7 +406,7 @@ export default function VideoAnalysisPage() {
 // ----------------------------------------------------
 // EVENT MODAL COMPONENT (State Machine)
 // ----------------------------------------------------
-function EventModal({ action, setAction, addEvent, resume, activePlayers, benchPlayers, gkId }) {
+function EventModal({ action, setAction, addEvent, resume, activePlayers, benchPlayers, gkId, getPlayerPosition }) {
   const updateData = (updates) => setAction(prev => ({ ...prev, data: { ...prev.data, ...updates } }));
   const nextStep = (nextStepNum) => setAction(prev => ({ ...prev, step: nextStepNum }));
   
@@ -423,10 +455,10 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
         <>
           <Title text="シュートの結果は？" />
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            <button className={styles.saveBtn} onClick={() => { updateData({ res: 'goal' }); nextStep(11); }}>得点</button>
-            <button className={styles.saveBtn} onClick={() => { updateData({ res: 'shot' }); nextStep(11); }}>キャッチされた</button>
-            <button className={styles.saveBtn} onClick={() => { updateData({ res: 'shot_off' }); nextStep(11); }}>枠外</button>
-            <button className={styles.saveBtn} onClick={() => { updateData({ res: 'saved' }); nextStep(11); }}>セーブされた</button>
+            <button className={styles.saveBtn} onClick={() => { updateData({ res: 'goal' }); nextStep(data.shooter ? 12 : 11); }}>得点</button>
+            <button className={styles.saveBtn} onClick={() => { updateData({ res: 'shot' }); nextStep(data.shooter ? 14 : 11); }}>キャッチされた</button>
+            <button className={styles.saveBtn} onClick={() => { updateData({ res: 'shot_off' }); nextStep(data.shooter ? 14 : 11); }}>枠外</button>
+            <button className={styles.saveBtn} onClick={() => { updateData({ res: 'saved' }); nextStep(data.shooter ? 13 : 11); }}>セーブされた</button>
           </div>
         </>
       );
@@ -590,20 +622,13 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
         <>
           <Title text="入れる選手(IN)" />
           {benchPlayers.length > 0 ? (
-            <PlayerGrid players={benchPlayers} onSelect={(id) => { updateData({ in: id }); nextStep(3); }} />
+            <PlayerGrid players={benchPlayers} onSelect={(id) => {
+                const outPos = getPlayerPosition(data.minute, data.out);
+                finish([{ event_type: 'sub_out', user_id: data.out }, { event_type: 'sub_in', user_id: id, position: outPos }]);
+            }} />
           ) : (
             <div style={{ textAlign: 'center', color: '#aaa', padding: '1rem' }}>ベンチに選手がいません</div>
           )}
-        </>
-      );
-      if (step === 3) return (
-        <>
-          <Title text="ポジションは？" />
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            {['Fixo', 'Ala L', 'Ala R', 'Pivo', 'GK'].map(pos => (
-              <button key={pos} className={styles.saveBtn} onClick={() => finish([{ event_type: 'sub_out', user_id: data.out }, { event_type: 'sub_in', user_id: data.in, position: pos }])}>{pos}</button>
-            ))}
-          </div>
         </>
       );
     }
