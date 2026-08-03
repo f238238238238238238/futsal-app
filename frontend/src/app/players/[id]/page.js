@@ -162,28 +162,16 @@ export default function PlayerDetailPage({ params }) {
 
   const selectedYearStat = player.yearlyStats?.find(s => s.year.toString() === selectedYear);
 
-  // Decide if we should show Goalkeeping
-  const hasGK = selectedYearStat?.calculated_goalkeeping > 0;
-  const statLabels = hasGK 
-    ? ['オフェンス', 'テクニック', 'ディフェンス', 'スピード', 'スタミナ', 'キーパー力']
-    : ['オフェンス', 'テクニック', 'ディフェンス', 'スピード', 'スタミナ'];
-  
-  const currentStats = hasGK
-    ? [
-        selectedYearStat?.calculated_offense ?? player.stat_offense ?? 50,
-        selectedYearStat?.calculated_technique ?? player.stat_technique ?? 50,
-        selectedYearStat?.calculated_defense ?? player.stat_defense ?? 50,
-        selectedYearStat?.calculated_speed ?? player.stat_speed ?? 75,
-        selectedYearStat?.calculated_stamina ?? player.stat_stamina ?? 50,
-        selectedYearStat?.calculated_goalkeeping ?? 0,
-      ]
-    : [
-        selectedYearStat?.calculated_offense ?? player.stat_offense ?? 50,
-        selectedYearStat?.calculated_technique ?? player.stat_technique ?? 50,
-        selectedYearStat?.calculated_defense ?? player.stat_defense ?? 50,
-        selectedYearStat?.calculated_speed ?? player.stat_speed ?? 75,
-        selectedYearStat?.calculated_stamina ?? player.stat_stamina ?? 50,
-      ];
+  // Always show 6 axes. If they haven't played GK, goalkeeping is 0.
+  const statLabels = ['オフェンス', 'テクニック', 'ディフェンス', 'スピード', 'スタミナ', 'キーパー力'];
+  const currentStats = [
+    selectedYearStat?.calculated_offense ?? player.stat_offense ?? 0,
+    selectedYearStat?.calculated_technique ?? player.stat_technique ?? 0,
+    selectedYearStat?.calculated_defense ?? player.stat_defense ?? 0,
+    selectedYearStat?.calculated_speed ?? player.stat_speed ?? 75,
+    selectedYearStat?.calculated_stamina ?? player.stat_stamina ?? 0,
+    selectedYearStat?.calculated_goalkeeping ?? 0,
+  ];
 
   const profileItems = [
     { label: 'キャッチコピー', value: player.catchphrase || player.catch_copy },
@@ -366,18 +354,14 @@ export default function PlayerDetailPage({ params }) {
                   <div><span>運動量</span> <span>{selectedYearStat?.sub_stats?.staminaWorkRate ?? '-'}</span></div>
                 </div>
 
-                {hasGK && (
-                  <>
-                    <div className={styles.attrMain} style={{marginTop: '1rem'}}>
-                      <span>{currentStats[5]}</span> <span>キーパー力</span>
-                    </div>
-                    <div className={styles.attrSub}>
-                      <div><span>セーブ</span> <span>{selectedYearStat?.sub_stats?.saving ?? '-'}</span></div>
-                      <div><span>キャッチ</span> <span>{selectedYearStat?.sub_stats?.catching ?? '-'}</span></div>
-                      <div><span>キーパー</span> <span>{selectedYearStat?.sub_stats?.gkPositioning ?? '-'}</span></div>
-                    </div>
-                  </>
-                )}
+                <div className={styles.attrMain} style={{marginTop: '1rem'}}>
+                  <span>{currentStats[5]}</span> <span>キーパー力</span>
+                </div>
+                <div className={styles.attrSub}>
+                  <div><span>セーブ</span> <span>{selectedYearStat?.sub_stats?.saving ?? '0'}</span></div>
+                  <div><span>キャッチ</span> <span>{selectedYearStat?.sub_stats?.catching ?? '0'}</span></div>
+                  <div><span>キーパー</span> <span>{selectedYearStat?.sub_stats?.gkPositioning ?? '0'}</span></div>
+                </div>
               </div>
             </div>
           </div>

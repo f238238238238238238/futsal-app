@@ -155,24 +155,24 @@ router.get('/:id', async (req, res) => {
       const matchesPlayed = parseInt(row.matches_played, 10);
       const minutesPlayed = parseInt(row.minutes_played, 10);
       
-      // Calculate score mapping to 40-99
+      // Calculate score mapping to 0-99
       const calcStat = (value, targetValue) => {
-        if (value <= 0) return 40;
+        if (value <= 0) return 0;
         const ratio = value / targetValue;
-        return Math.min(99, Math.max(40, Math.round(40 + (59 * ratio))));
+        return Math.min(99, Math.max(0, Math.round(99 * ratio)));
       };
 
       // === ① オフェンス (Offense) ===
       const positioning = calcStat(matchesPlayed > 0 ? received_passes / matchesPlayed : 0, 5.0); // Target: 5 received passes per match
       const totalShotsForAcc = goals + shots;
       const shotAccuracy = totalShotsForAcc > 0 ? (goals / totalShotsForAcc) : 0;
-      const finishing = totalShotsForAcc > 0 ? calcStat(shotAccuracy, 0.5) : 40; // Target: 50% accuracy
+      const finishing = totalShotsForAcc > 0 ? calcStat(shotAccuracy, 0.5) : 0; // Target: 50% accuracy
       const shootingFreq = calcStat(matchesPlayed > 0 ? totalShotsForAcc / matchesPlayed : 0, 3.0); // Target: 3 shots per match
       const offense = Math.round((positioning + finishing + shootingFreq) / 3);
 
       // === ② テクニック (Technique) ===
       const passSuccessRate = (passes + lost) > 0 ? (passes / (passes + lost)) : 0;
-      const passing = (passes + lost) > 0 ? calcStat(passSuccessRate, 0.8) : 40; // Target: 80% pass accuracy
+      const passing = (passes + lost) > 0 ? calcStat(passSuccessRate, 0.8) : 0; // Target: 80% pass accuracy
       const ballControlRatio = passes > 0 ? (passes / (passes + lost + 1)) : 0; 
       const ballControl = calcStat(ballControlRatio, 0.85); // High passing with low lost ball
       const vision = calcStat(matchesPlayed > 0 ? assists / matchesPlayed : 0, 0.5); // Target: 0.5 assists per match
