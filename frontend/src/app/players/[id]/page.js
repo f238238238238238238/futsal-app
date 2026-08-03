@@ -12,14 +12,12 @@ const POSITION_CLASSES = {
   'ピヴォ': 'posPivo',
 };
 
-const STAT_LABELS = ['オフェンス', 'ディフェンス', 'キック', 'スピード', 'テクニック', 'スタミナ'];
-const STAT_KEYS = ['stat_offense', 'stat_defense', 'stat_kick', 'stat_speed', 'stat_technique', 'stat_stamina'];
-
-function RadarChart({ stats, size = 220 }) {
+function RadarChart({ stats, labels, size = 220 }) {
   const cx = size / 2;
   const cy = size / 2;
-  const r = size * 0.38;
-  const angleStep = (Math.PI * 2) / 6;
+  const r = size * 0.35;
+  const numAxes = stats.length;
+  const angleStep = (Math.PI * 2) / numAxes;
   const offset = -Math.PI / 2;
 
   const getPoint = (i, value) => {
@@ -41,7 +39,7 @@ function RadarChart({ stats, size = 220 }) {
       {gridLevels.map((level, li) => (
         <polygon
           key={li}
-          points={Array.from({ length: 6 }, (_, i) => {
+          points={Array.from({ length: numAxes }, (_, i) => {
             const angle = offset + i * angleStep;
             return `${cx + r * level * Math.cos(angle)},${cy + r * level * Math.sin(angle)}`;
           }).join(' ')}
@@ -49,7 +47,7 @@ function RadarChart({ stats, size = 220 }) {
         />
       ))}
       {/* Axes */}
-      {Array.from({ length: 6 }, (_, i) => {
+      {Array.from({ length: numAxes }, (_, i) => {
         const angle = offset + i * angleStep;
         return (
           <line
@@ -69,10 +67,10 @@ function RadarChart({ stats, size = 220 }) {
         <circle key={i} cx={p.x} cy={p.y} r="3.5" className={styles.radarDot} />
       ))}
       {/* Labels */}
-      {STAT_LABELS.map((label, i) => {
+      {labels.map((label, i) => {
         const angle = offset + i * angleStep;
-        const lx = cx + (r + 22) * Math.cos(angle);
-        const ly = cy + (r + 22) * Math.sin(angle);
+        const lx = cx + (r + 26) * Math.cos(angle);
+        const ly = cy + (r + 26) * Math.sin(angle);
         return (
           <text key={i} x={lx} y={ly} className={styles.radarLabel} textAnchor="middle" dominantBaseline="central">
             {label}
@@ -164,14 +162,28 @@ export default function PlayerDetailPage({ params }) {
 
   const selectedYearStat = player.yearlyStats?.find(s => s.year.toString() === selectedYear);
 
-  const stats = [
-    selectedYearStat?.calculated_offense ?? player.stat_offense ?? 50,
-    selectedYearStat?.calculated_defense ?? player.stat_defense ?? 50,
-    selectedYearStat?.calculated_kick ?? player.stat_kick ?? 50,
-    player.stat_speed ?? 50,
-    selectedYearStat?.calculated_technique ?? player.stat_technique ?? 50,
-    selectedYearStat?.calculated_stamina ?? player.stat_stamina ?? 50,
-  ];
+  // Decide if we should show Goalkeeping
+  const hasGK = selectedYearStat?.calculated_goalkeeping > 0;
+  const statLabels = hasGK 
+    ? ['オフェンス', 'テクニック', 'ディフェンス', 'スピード', 'スタミナ', 'キーパー力']
+    : ['オフェンス', 'テクニック', 'ディフェンス', 'スピード', 'スタミナ'];
+  
+  const currentStats = hasGK
+    ? [
+        selectedYearStat?.calculated_offense ?? player.stat_offense ?? 50,
+        selectedYearStat?.calculated_technique ?? player.stat_technique ?? 50,
+        selectedYearStat?.calculated_defense ?? player.stat_defense ?? 50,
+        selectedYearStat?.calculated_speed ?? player.stat_speed ?? 75,
+        selectedYearStat?.calculated_stamina ?? player.stat_stamina ?? 50,
+        selectedYearStat?.calculated_goalkeeping ?? 0,
+      ]
+    : [
+        selectedYearStat?.calculated_offense ?? player.stat_offense ?? 50,
+        selectedYearStat?.calculated_technique ?? player.stat_technique ?? 50,
+        selectedYearStat?.calculated_defense ?? player.stat_defense ?? 50,
+        selectedYearStat?.calculated_speed ?? player.stat_speed ?? 75,
+        selectedYearStat?.calculated_stamina ?? player.stat_stamina ?? 50,
+      ];
 
   const profileItems = [
     { label: 'キャッチコピー', value: player.catchphrase || player.catch_copy },
@@ -279,7 +291,7 @@ export default function PlayerDetailPage({ params }) {
           </div>
         </div>
 
-        {/* Radar Chart */}
+        {/* Radar Chart & FIFA Style Attributes */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
           <h2 className={styles.sectionTitle} style={{ margin: 0 }}>能力チャート</h2>
           {availableYears.length > 0 && (
@@ -301,8 +313,77 @@ export default function PlayerDetailPage({ params }) {
             </select>
           )}
         </div>
-        <div className={styles.radarWrap}>
-          <RadarChart stats={stats} size={280} />
+        
+        <div className={styles.statsRow}>
+          <div className={styles.radarWrap}>
+            <RadarChart stats={currentStats} labels={statLabels} size={280} />
+          </div>
+
+          <div className={styles.attributesCard}>
+            <div className={styles.attributesGrid}>
+              <div className={styles.attrCol}>
+                <div className={styles.attrMain}>
+                  <span>{currentStats[0]}</span> <span>オフェンス</span>
+                </div>
+                <div className={styles.attrSub}>
+                  <div><span>ポジショニング</span> <span>{selectedYearStat?.sub_stats?.positioning ?? '-'}</span></div>
+                  <div><span>決定力</span> <span>{selectedYearStat?.sub_stats?.finishing ?? '-'}</span></div>
+                  <div><span>シュート</span> <span>{selectedYearStat?.sub_stats?.shooting ?? '-'}</span></div>
+                </div>
+
+                <div className={styles.attrMain} style={{marginTop: '1rem'}}>
+                  <span>{currentStats[1]}</span> <span>テクニック</span>
+                </div>
+                <div className={styles.attrSub}>
+                  <div><span>パス</span> <span>{selectedYearStat?.sub_stats?.passing ?? '-'}</span></div>
+                  <div><span>ボールコントロール</span> <span>{selectedYearStat?.sub_stats?.ballControl ?? '-'}</span></div>
+                  <div><span>アシスト</span> <span>{selectedYearStat?.sub_stats?.vision ?? '-'}</span></div>
+                </div>
+              </div>
+
+              <div className={styles.attrCol}>
+                <div className={styles.attrMain}>
+                  <span>{currentStats[2]}</span> <span>ディフェンス</span>
+                </div>
+                <div className={styles.attrSub}>
+                  <div><span>ブロック</span> <span>{selectedYearStat?.sub_stats?.blocking ?? '-'}</span></div>
+                  <div><span>インターセプト</span> <span>{selectedYearStat?.sub_stats?.intercepting ?? '-'}</span></div>
+                  <div><span>クリア</span> <span>{selectedYearStat?.sub_stats?.clearing ?? '-'}</span></div>
+                  <div><span>スティール</span> <span>{selectedYearStat?.sub_stats?.stealing ?? '-'}</span></div>
+                </div>
+
+                <div className={styles.attrMain} style={{marginTop: '1rem'}}>
+                  <span>{currentStats[3]}</span> <span>スピード</span>
+                </div>
+                <div className={styles.attrSub}>
+                  <div><span>加速度</span> <span>{selectedYearStat?.sub_stats?.acceleration ?? 75}</span></div>
+                  <div><span>スプリント力</span> <span>{selectedYearStat?.sub_stats?.sprintSpeed ?? 75}</span></div>
+                </div>
+              </div>
+
+              <div className={styles.attrCol}>
+                <div className={styles.attrMain}>
+                  <span>{currentStats[4]}</span> <span>スタミナ</span>
+                </div>
+                <div className={styles.attrSub}>
+                  <div><span>運動量</span> <span>{selectedYearStat?.sub_stats?.staminaWorkRate ?? '-'}</span></div>
+                </div>
+
+                {hasGK && (
+                  <>
+                    <div className={styles.attrMain} style={{marginTop: '1rem'}}>
+                      <span>{currentStats[5]}</span> <span>キーパー力</span>
+                    </div>
+                    <div className={styles.attrSub}>
+                      <div><span>セーブ</span> <span>{selectedYearStat?.sub_stats?.saving ?? '-'}</span></div>
+                      <div><span>キャッチ</span> <span>{selectedYearStat?.sub_stats?.catching ?? '-'}</span></div>
+                      <div><span>キーパー</span> <span>{selectedYearStat?.sub_stats?.gkPositioning ?? '-'}</span></div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
