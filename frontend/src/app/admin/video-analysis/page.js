@@ -691,16 +691,14 @@ export default function StandaloneVideoEditorPage() {
         <div className={styles.timelineSection}>
           <div className={styles.toolbar}>
             <button className={`${styles.actionBtn} ${styles.kickoff}`} onClick={() => addEvent('kickoff')} disabled={!isKickoffAvailable()}>📣 キックオフ</button>
-            <button className={`${styles.actionBtn} ${styles.goal}`} onClick={() => addEvent('goal')}>⚽ 得点 (Goal)</button>
+            <button className={`${styles.actionBtn} ${styles.goal}`} onClick={() => addEvent('shot')}>👟 シュート</button>
             <button className={`${styles.actionBtn} ${styles.pass}`} onClick={() => addEvent('pass')}>🔁 パス</button>
-            <button className={`${styles.actionBtn} ${styles.pass_miss}`} onClick={() => addEvent('pass_miss')}>💥 パスミス</button>
-            <button className={`${styles.actionBtn} ${styles.shot_off}`} onClick={() => addEvent('shot_off')}>☄️ ノーゴール</button>
-            <button className={`${styles.actionBtn} ${styles.block}`} onClick={() => addEvent('block')}>🛡️ ブロック</button>
-            <button className={`${styles.actionBtn} ${styles.pass_cut}`} onClick={() => addEvent('pass_cut')}>🛡️ パスカット</button>
-            <button className={`${styles.actionBtn} ${styles.pass_cut}`} onClick={() => addEvent('steal')}>🛡️ スティール</button>
             <button className={`${styles.actionBtn} ${styles.save}`} onClick={() => addEvent('save')}>🧤 セーブ</button>
             <button className={`${styles.actionBtn} ${styles.catch}`} onClick={() => addEvent('catch')}>🤲 キャッチ</button>
-            <button className={`${styles.actionBtn} ${styles.lost_ball}`} onClick={() => addEvent('lost_ball')}>🔻 ロスト</button>
+            <button className={`${styles.actionBtn} ${styles.pass_cut}`} onClick={() => addEvent('pass_cut')}>🛡️ パスカット</button>
+            <button className={`${styles.actionBtn} ${styles.pass_cut}`} onClick={() => addEvent('steal')}>🛡️ スティール</button>
+            <button className={`${styles.actionBtn} ${styles.block}`} onClick={() => addEvent('block')}>🛡️ ブロック</button>
+            <button className={`${styles.actionBtn} ${styles.pass_miss}`} onClick={() => addEvent('pass_miss')}>💥 パスミス</button>
             <button className={`${styles.actionBtn}`} style={{ background: '#3b5bdb', borderColor: '#3b5bdb' }} onClick={() => addEvent('substitution')}>🔄 交代</button>
             
             <div style={{ flex: 1 }} />
