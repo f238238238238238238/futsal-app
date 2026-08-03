@@ -138,18 +138,18 @@ router.get('/saves', async (req, res) => {
     const db = getDb();
     const { year } = req.query;
     let query = `
-      SELECT u.user_id, u.name, u.photo_url, SUM(ms.saves) as total_saves
+      SELECT u.user_id, u.name, u.photo_url, COUNT(me.event_id) as total_saves
       FROM users u
-      JOIN match_stats ms ON u.user_id = ms.user_id
+      JOIN match_events me ON u.user_id = me.user_id AND me.event_type IN ('save', 'catch')
     `;
     const params = [];
     if (year && year !== 'all') {
-      query += ` JOIN matches m ON ms.match_id = m.match_id WHERE EXTRACT(YEAR FROM m.date::date) = $1`;
+      query += ` JOIN matches m ON me.match_id = m.match_id WHERE EXTRACT(YEAR FROM m.date::date) = $1`;
       params.push(parseInt(year, 10));
     }
     query += `
       GROUP BY u.user_id
-      HAVING SUM(ms.saves) > 0
+      HAVING COUNT(me.event_id) > 0
       ORDER BY total_saves DESC, u.name ASC
       LIMIT 10
     `;

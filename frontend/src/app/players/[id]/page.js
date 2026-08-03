@@ -252,7 +252,7 @@ export default function PlayerDetailPage({ params }) {
                   <div className={styles.yearHeader}>{stat.year}年度</div>
                   <div className={styles.yearGrid}>
                     <div className={styles.yearStat}>
-                      <span className={styles.yearStatLabel}>出場数</span>
+                      <span className={styles.yearStatLabel}>出場試合数</span>
                       <span className={styles.yearStatValue}>{stat.matches_played}</span>
                     </div>
                     <div className={styles.yearStat}>
@@ -267,10 +267,7 @@ export default function PlayerDetailPage({ params }) {
                       <span className={styles.yearStatLabel}>セーブ</span>
                       <span className={styles.yearStatValue}>{stat.saves}</span>
                     </div>
-                    <div className={styles.yearStat}>
-                      <span className={styles.yearStatLabel}>体力(分)</span>
-                      <span className={styles.yearStatValue}>{stat.minutes_played}</span>
-                    </div>
+
                     <div className={styles.yearStat}>
                       <span className={styles.yearStatLabel}>出席率</span>
                       <span className={styles.yearStatValue}>{Math.round(stat.attendance_rate)}%</span>
@@ -285,7 +282,7 @@ export default function PlayerDetailPage({ params }) {
             ) : (
               <div className={styles.perfCard}>
                 <div className={styles.perfNumber}>{player.total_matches_played ?? player.matches_played ?? 0}</div>
-                <div className={styles.perfLabel}>出場数</div>
+                <div className={styles.perfLabel}>出場試合数</div>
               </div>
             )}
           </div>
