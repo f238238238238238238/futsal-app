@@ -185,41 +185,44 @@ export default function VideoAnalysisPage() {
 
       <div className={styles.mainContent}>
         {step === 'setup' && (
-          <div style={{ padding: '2rem', background: '#1a1a1a', borderRadius: '8px', overflowY: 'auto' }}>
-            <h2>1. 出席者とスタメンの設定</h2>
-            <div style={{ marginBottom: '1rem' }}>
-              {!videoSrc && (
-                <label className={styles.uploadLabel}>
-                  📁 ローカル動画を選択 (MP4)
-                  <input type="file" accept="video/*" style={{ display: 'none' }} onChange={handleVideoUpload} />
-                </label>
-              )}
-              {videoSrc && <span style={{ color: '#4CAF50' }}>✓ 動画選択済み</span>}
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 60px 60px 60px', gap: '8px', marginBottom: '8px', textAlign: 'center' }}>
-              <div style={{ textAlign: 'left' }}>選手名</div>
-              <div>出席</div>
-              <div>スタメン</div>
-              <div>GK</div>
-            </div>
-            {players.map(p => (
-              <div key={p.user_id} style={{ display: 'grid', gridTemplateColumns: '1fr 60px 60px 60px', gap: '8px', alignItems: 'center', padding: '4px 0', borderBottom: '1px solid #333' }}>
-                <div>{p.name}</div>
-                <div style={{ textAlign: 'center' }}><input type="checkbox" checked={attendees.has(p.user_id)} onChange={() => toggleAttendee(p.user_id)} style={{ transform: 'scale(1.2)' }} /></div>
-                <div style={{ textAlign: 'center' }}><input type="checkbox" checked={starters.has(p.user_id)} onChange={() => toggleStarter(p.user_id)} style={{ transform: 'scale(1.2)' }} /></div>
-                <div style={{ textAlign: 'center' }}><input type="radio" checked={gkId === p.user_id} onChange={() => setGkId(p.user_id)} disabled={!starters.has(p.user_id)} style={{ transform: 'scale(1.2)' }} /></div>
+          <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'flex-start' }}>
+            <div style={{ padding: '2rem', background: '#1a1a1a', borderRadius: '8px', overflowY: 'auto', width: '100%', maxWidth: '800px', maxHeight: '100%' }}>
+              <h2 style={{ marginBottom: '1rem', color: 'var(--color-gold)' }}>1. 出席者とスタメンの設定</h2>
+              <div style={{ marginBottom: '1rem' }}>
+                {!videoSrc && (
+                  <label className={styles.uploadLabel}>
+                    📁 ローカル動画を選択 (MP4)
+                    <input type="file" accept="video/*" style={{ display: 'none' }} onChange={handleVideoUpload} />
+                  </label>
+                )}
+                {videoSrc && <span style={{ color: '#4CAF50', fontWeight: 'bold' }}>✓ 動画選択済み</span>}
               </div>
-            ))}
-            
-            <div style={{ marginTop: '2rem' }}>
-              <button 
-                className={styles.saveBtn} 
-                disabled={!videoSrc || starters.size === 0 || !gkId}
-                onClick={() => setStep('analyze')}
-              >
-                解析を開始する
-              </button>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 60px 60px 60px', gap: '8px', marginBottom: '8px', textAlign: 'center', borderBottom: '1px solid #444', paddingBottom: '8px' }}>
+                <div style={{ textAlign: 'left', fontWeight: 'bold' }}>選手名</div>
+                <div style={{ fontWeight: 'bold' }}>出席</div>
+                <div style={{ fontWeight: 'bold' }}>スタメン</div>
+                <div style={{ fontWeight: 'bold' }}>GK</div>
+              </div>
+              {players.map(p => (
+                <div key={p.user_id} style={{ display: 'grid', gridTemplateColumns: '1fr 60px 60px 60px', gap: '8px', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #333' }}>
+                  <div>{p.name}</div>
+                  <div style={{ textAlign: 'center' }}><input type="checkbox" checked={attendees.has(p.user_id)} onChange={() => toggleAttendee(p.user_id)} style={{ transform: 'scale(1.2)' }} /></div>
+                  <div style={{ textAlign: 'center' }}><input type="checkbox" checked={starters.has(p.user_id)} onChange={() => toggleStarter(p.user_id)} style={{ transform: 'scale(1.2)' }} /></div>
+                  <div style={{ textAlign: 'center' }}><input type="radio" checked={gkId === p.user_id} onChange={() => setGkId(p.user_id)} disabled={!starters.has(p.user_id)} style={{ transform: 'scale(1.2)' }} /></div>
+                </div>
+              ))}
+              
+              <div style={{ marginTop: '2rem', textAlign: 'center' }}>
+                <button 
+                  className={styles.saveBtn} 
+                  disabled={!videoSrc || starters.size === 0 || !gkId}
+                  onClick={() => setStep('analyze')}
+                  style={{ width: '100%', padding: '1rem', fontSize: '1.1rem' }}
+                >
+                  解析を開始する
+                </button>
+              </div>
             </div>
           </div>
         )}
