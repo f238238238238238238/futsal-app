@@ -309,8 +309,8 @@ export default function MatchDetailPage() {
   }, [match, minute, sortedEvents]);
 
   const teamStats = useMemo(() => {
-    let redStats = { passes: 0, lost: 0, goals: 0, shots: 0, saves: 0, possessionSeconds: 0 };
-    let blueStats = { passes: 0, lost: 0, goals: 0, shots: 0, saves: 0, possessionSeconds: 0 };
+    let redStats = { passes: 0, lost: 0, goals: 0, shots: 0, saves: 0, fouls: 0, corners: 0, possessionSeconds: 0 };
+    let blueStats = { passes: 0, lost: 0, goals: 0, shots: 0, saves: 0, fouls: 0, corners: 0, possessionSeconds: 0 };
     let playerPossessionSeconds = {};
     
     if (!match || !match.stats) return { red: redStats, blue: blueStats, playerPossession: playerPossessionSeconds };
@@ -415,17 +415,22 @@ export default function MatchDetailPage() {
           redStats.saves++;
           blueStats.shots++; // 私たちのセーブ・キャッチ＝相手のシュート
         }
+        if (ev.event_type === 'foul') redStats.fouls++;
+        if (ev.event_type === 'corner_kick') redStats.corners++;
       } else if (team === 'blue') {
         if (ev.event_type === 'pass' || ev.event_type === 'opponent_pass') blueStats.passes++;
         if (ev.event_type === 'lost_ball' || ev.event_type === 'opponent_pass_fail' || ev.event_type === 'pass_miss') blueStats.lost++;
         if (ev.event_type === 'goal' || ev.event_type === 'opponent_goal') { blueStats.goals++; blueStats.shots++; }
         if (ev.event_type === 'shot') blueStats.shots++;
         if (ev.event_type === 'save' || ev.event_type === 'catch') blueStats.saves++;
+        if (ev.event_type === 'foul' || ev.event_type === 'foul_opponent') blueStats.fouls++;
+        if (ev.event_type === 'corner_kick') blueStats.corners++;
       }
       
       // Override for opponent-specific events in external matches
       if (ev.event_type === 'concede') { blueStats.goals++; blueStats.shots++; }
       if (ev.event_type === 'opponent_shot') blueStats.shots++;
+      if (ev.event_type === 'foul_opponent') blueStats.fouls++;
       
       switch(ev.event_type) {
          case 'pass':
@@ -677,6 +682,16 @@ export default function MatchDetailPage() {
                   rightVal={teamStats.blue.passes > 0 ? teamStats.blue.passes / (teamStats.blue.passes + teamStats.blue.lost) : 0} 
                   leftStr={teamStats.red.passes + teamStats.red.lost > 0 ? `${Math.round((teamStats.red.passes / (teamStats.red.passes + teamStats.red.lost)) * 100)}%` : '0%'}
                   rightStr={teamStats.blue.passes + teamStats.blue.lost > 0 ? `${Math.round((teamStats.blue.passes / (teamStats.blue.passes + teamStats.blue.lost)) * 100)}%` : '0%'}
+                />
+                <StatBar 
+                  label="コーナーキック" 
+                  leftVal={teamStats.red.corners} 
+                  rightVal={teamStats.blue.corners} 
+                />
+                <StatBar 
+                  label="ファール" 
+                  leftVal={teamStats.red.fouls} 
+                  rightVal={teamStats.blue.fouls} 
                 />
               </div>
             </div>

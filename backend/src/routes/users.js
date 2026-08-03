@@ -147,6 +147,8 @@ router.get('/:id', async (req, res) => {
       const block = yEvents.block || 0;
       const pass_cut = yEvents.pass_cut || 0;
       const catches = yEvents.catch || 0;
+      const concede = yEvents.concede || 0;
+      const fouls = yEvents.foul || 0;
       const received_passes = tEvents.pass || 0;
       
       const goals = parseInt(row.goals, 10);
@@ -183,7 +185,8 @@ router.get('/:id', async (req, res) => {
       const intercepting = calcStat(matchesPlayed > 0 ? pass_cut / matchesPlayed : 0, 1.5); // Target: 1.5 pass cuts
       const clearing = calcStat(matchesPlayed > 0 ? defense / matchesPlayed : 0, 1.0); // Target: 1 clear (defense)
       const stealing = calcStat(matchesPlayed > 0 ? steal / matchesPlayed : 0, 1.5); // Target: 1.5 steals
-      const defenseTotal = Math.round((blocking + intercepting + clearing + stealing) / 4);
+      const foulPenalty = fouls > 0 ? Math.min(20, fouls * 2) : 0; // Penalty for fouls
+      const defenseTotal = Math.max(0, Math.round((blocking + intercepting + clearing + stealing) / 4) - foulPenalty);
 
       // === ④ スピード (Speed) ===
       const acceleration = 75; // Temporary fixed value
@@ -199,8 +202,10 @@ router.get('/:id', async (req, res) => {
       const isGK = saves > 0 || catches > 0 || user.position === 'GK' || user.position === 'ゴレイロ';
       const saving = isGK ? calcStat(matchesPlayed > 0 ? saves / matchesPlayed : 0, 3.0) : 0; // Target: 3 saves per match
       const catching = isGK ? calcStat(matchesPlayed > 0 ? catches / matchesPlayed : 0, 2.0) : 0; // Target: 2 catches per match
-      // For GK positioning/overall, we don't have conceded goals, so we base it on saves/catches frequency
-      const gkPositioning = isGK ? calcStat(matchesPlayed > 0 ? (saves + catches) / matchesPlayed : 0, 4.0) : 0;
+      // For GK overall, use save percentage
+      const totalFaced = saves + catches + concede;
+      const savePercentage = totalFaced > 0 ? (saves + catches) / totalFaced : (isGK ? 0.5 : 0);
+      const gkPositioning = isGK ? calcStat(savePercentage, 0.75) : 0; // Target: 75% save rate
       const goalkeeping = isGK ? Math.round((saving + catching + gkPositioning) / 3) : 0;
 
       matchStatsByYear[row.year] = {
