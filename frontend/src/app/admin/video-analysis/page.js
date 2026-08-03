@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { getPlayers, createMatch } from '@/lib/api';
+import { getPlayers, createMatch, getImageUrl } from '@/lib/api';
 import styles from './editor.module.css';
 
 export default function VideoAnalysisPage() {
@@ -72,6 +72,42 @@ export default function VideoAnalysisPage() {
   };
   
   const activePlayers = getActivePlayers(currentTime);
+
+  // Ball Possessor Logic
+  const getBallPossessor = (minute) => {
+    let possessor = null;
+    const sorted = [...events].sort((a,b) => a.minute - b.minute);
+    for (const ev of sorted) {
+      if (ev.minute > minute) break;
+      switch (ev.event_type) {
+        case 'pass':
+        case 'kickoff':
+          possessor = ev.target_user_id || 'opponent';
+          break;
+        case 'pass_cut':
+        case 'steal':
+        case 'recovery':
+        case 'catch':
+          possessor = ev.user_id || 'opponent';
+          break;
+        case 'lost_ball':
+        case 'pass_miss':
+        case 'goal':
+        case 'opponent_goal':
+        case 'shot':
+        case 'shot_off':
+        case 'concede':
+        case 'foul':
+        case 'foul_opponent':
+        case 'side_out':
+        case 'corner_kick':
+          possessor = null; 
+          break;
+      }
+    }
+    return possessor;
+  };
+  const currentPossessor = getBallPossessor(currentTime);
 
   const handleVideoUpload = (e) => {
     const file = e.target.files[0];
@@ -188,9 +224,9 @@ export default function VideoAnalysisPage() {
           <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'flex-start' }}>
             <div style={{ padding: '2rem', background: '#1a1a1a', borderRadius: '8px', overflowY: 'auto', width: '100%', maxWidth: '800px', maxHeight: '100%' }}>
               <h2 style={{ marginBottom: '1rem', color: 'var(--color-gold)' }}>1. 出席者とスタメンの設定</h2>
-              <div style={{ marginBottom: '1rem' }}>
+              <div style={{ marginBottom: '1rem', textAlign: 'center' }}>
                 {!videoSrc && (
-                  <label className={styles.uploadLabel}>
+                  <label className={styles.uploadLabel} style={{ display: 'inline-block', margin: '0 auto' }}>
                     📁 ローカル動画を選択 (MP4)
                     <input type="file" accept="video/*" style={{ display: 'none' }} onChange={handleVideoUpload} />
                   </label>
@@ -206,7 +242,10 @@ export default function VideoAnalysisPage() {
               </div>
               {players.map(p => (
                 <div key={p.user_id} style={{ display: 'grid', gridTemplateColumns: '1fr 60px 60px 60px', gap: '8px', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #333' }}>
-                  <div>{p.name}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    {p.photo_url ? <img src={getImageUrl(p.photo_url)} alt={p.name} style={{ width: '30px', height: '30px', borderRadius: '50%', objectFit: 'cover' }} /> : <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: '#555', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem' }}>{p.jersey_number || '-'}</div>}
+                    <span>{p.name}</span>
+                  </div>
                   <div style={{ textAlign: 'center' }}><input type="checkbox" checked={attendees.has(p.user_id)} onChange={() => toggleAttendee(p.user_id)} style={{ transform: 'scale(1.2)' }} /></div>
                   <div style={{ textAlign: 'center' }}><input type="checkbox" checked={starters.has(p.user_id)} onChange={() => toggleStarter(p.user_id)} style={{ transform: 'scale(1.2)' }} /></div>
                   <div style={{ textAlign: 'center' }}><input type="radio" checked={gkId === p.user_id} onChange={() => setGkId(p.user_id)} disabled={!starters.has(p.user_id)} style={{ transform: 'scale(1.2)' }} /></div>
@@ -235,6 +274,9 @@ export default function VideoAnalysisPage() {
               </div>
               
               <div className={styles.logSection} style={{ flex: '1', overflowY: 'auto', background: '#111', padding: '1rem' }}>
+                <div style={{ padding: '0.5rem', background: '#333', borderRadius: '4px', marginBottom: '10px', textAlign: 'center', fontWeight: 'bold' }}>
+                  ⚽ 現在ボール保持: {currentPossessor === 'opponent' ? <span style={{color: '#ff6b6b'}}>相手チーム</span> : (currentPossessor ? <span style={{color: '#4CAF50'}}>{players.find(p => p.user_id === currentPossessor)?.name}</span> : <span style={{color: '#aaa'}}>不明/プレー外</span>)}
+                </div>
                 <h3 style={{ marginBottom: '10px' }}>アクション</h3>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '1.5rem' }}>
                   <button className={styles.actionBtn} onClick={() => pauseForAction('kickoff')}>⚽ キックオフ</button>
@@ -319,7 +361,10 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
   const PlayerGrid = ({ onSelect, allowNone, players = activePlayers }) => (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '1rem' }}>
       {players.map(p => (
-        <button key={p.user_id} onClick={() => onSelect(p.user_id)} className={styles.saveBtn} style={{ background: '#333', border: '1px solid #555' }}>{p.name}</button>
+        <button key={p.user_id} onClick={() => onSelect(p.user_id)} className={styles.saveBtn} style={{ background: '#333', border: '1px solid #555', padding: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
+          {p.photo_url ? <img src={getImageUrl(p.photo_url)} alt={p.name} style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} /> : <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#555', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem' }}>{p.jersey_number || '-'}</div>}
+          <span style={{ fontSize: '0.8rem' }}>{p.name}</span>
+        </button>
       ))}
       {allowNone && <button onClick={() => onSelect(null)} className={styles.deleteBtn}>なし</button>}
     </div>
@@ -393,10 +438,23 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
       if (step === 2) return (
         <>
           <Title text="結果は？" />
-          <div style={{ display: 'flex', gap: '1rem' }}><button className={styles.saveBtn} style={{ flex: 1, padding: '2rem' }} onClick={() => nextStep(3)}>成功</button><button className={styles.deleteBtn} style={{ flex: 1, padding: '2rem' }} onClick={() => finish({ event_type: 'pass_miss', user_id: data.passer })}>ミス</button></div>
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <button className={styles.saveBtn} style={{ flex: 1, padding: '2rem' }} onClick={() => nextStep(3)}>成功</button>
+            <button className={styles.deleteBtn} style={{ flex: 1, padding: '2rem' }} onClick={() => nextStep(4)}>ミス</button>
+          </div>
         </>
       );
       if (step === 3) return <><Title text="誰が受けた？" /><PlayerGrid onSelect={(id) => finish({ event_type: 'pass', user_id: data.passer, target_user_id: id })} /></>;
+      if (step === 4) return (
+        <>
+          <Title text="ボールはどうなった？" />
+          <div style={{ display: 'grid', gap: '8px' }}>
+            <button className={styles.deleteBtn} onClick={() => finish({ event_type: 'pass_miss', user_id: data.passer })}>相手に奪われた</button>
+            <button className={styles.saveBtn} onClick={() => finish([{ event_type: 'pass_miss', user_id: data.passer }, { event_type: 'side_out' }])}>サイドアウト</button>
+            <button className={styles.saveBtn} onClick={() => finish([{ event_type: 'pass_miss', user_id: data.passer }, { event_type: 'corner_kick' }])}>相手のコーナーキック</button>
+          </div>
+        </>
+      );
     }
 
     // --- DEFENSE ---
