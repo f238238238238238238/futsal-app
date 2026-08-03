@@ -24,6 +24,7 @@ export default function VideoAnalysisPage() {
   const [attendees, setAttendees] = useState(new Set());
   const [starters, setStarters] = useState(new Set());
   const [gkId, setGkId] = useState(null);
+  const [positions, setPositions] = useState({});
   
   // Save state
   const tzOffset = (new Date()).getTimezoneOffset() * 60000;
@@ -66,6 +67,8 @@ export default function VideoAnalysisPage() {
           active.delete(ev.user_id); // Out
           active.add(ev.target_user_id); // In
         }
+        if (ev.event_type === 'sub_out') active.delete(ev.user_id);
+        if (ev.event_type === 'sub_in') active.add(ev.user_id);
       }
     });
     return players.filter(p => active.has(p.user_id));
@@ -170,6 +173,15 @@ export default function VideoAnalysisPage() {
     setStarters(next);
   };
 
+  const handlePositionChange = (id, pos) => {
+    setPositions(prev => ({ ...prev, [id]: pos }));
+    if (pos === 'GK') {
+      setGkId(id);
+    } else if (gkId === id) {
+      setGkId(null);
+    }
+  };
+
   const handleSaveMatch = async () => {
     try {
       // Calculate goals, assists, saves from events
@@ -194,7 +206,7 @@ export default function VideoAnalysisPage() {
         stats: Array.from(attendees).map(uid => ({
           user_id: uid,
           is_starter: starters.has(uid) ? 1 : 0,
-          position: uid === gkId ? 'GOLEIRO' : 'ALA',
+          position: starters.has(uid) ? (uid === gkId ? 'GK' : (positions[uid] || 'Fixo')) : null,
           goals: statsMap[uid]?.goals || 0,
           assists: statsMap[uid]?.assists || 0,
           saves: statsMap[uid]?.saves || 0,
@@ -234,21 +246,35 @@ export default function VideoAnalysisPage() {
                 {videoSrc && <span style={{ color: '#4CAF50', fontWeight: 'bold' }}>✓ 動画選択済み</span>}
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 60px 60px 60px', gap: '8px', marginBottom: '8px', textAlign: 'center', borderBottom: '1px solid #444', paddingBottom: '8px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 60px 60px 80px', gap: '8px', marginBottom: '8px', textAlign: 'center', borderBottom: '1px solid #444', paddingBottom: '8px' }}>
                 <div style={{ textAlign: 'left', fontWeight: 'bold' }}>選手名</div>
                 <div style={{ fontWeight: 'bold' }}>出席</div>
                 <div style={{ fontWeight: 'bold' }}>スタメン</div>
-                <div style={{ fontWeight: 'bold' }}>GK</div>
+                <div style={{ fontWeight: 'bold' }}>ポジション</div>
               </div>
               {players.map(p => (
-                <div key={p.user_id} style={{ display: 'grid', gridTemplateColumns: '1fr 60px 60px 60px', gap: '8px', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #333' }}>
+                <div key={p.user_id} style={{ display: 'grid', gridTemplateColumns: '1fr 60px 60px 80px', gap: '8px', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #333' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     {p.photo_url ? <img src={getImageUrl(p.photo_url)} alt={p.name} style={{ width: '30px', height: '30px', borderRadius: '50%', objectFit: 'cover' }} /> : <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: '#555', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem' }}>{p.jersey_number || '-'}</div>}
                     <span>{p.name}</span>
                   </div>
                   <div style={{ textAlign: 'center' }}><input type="checkbox" checked={attendees.has(p.user_id)} onChange={() => toggleAttendee(p.user_id)} style={{ transform: 'scale(1.2)' }} /></div>
                   <div style={{ textAlign: 'center' }}><input type="checkbox" checked={starters.has(p.user_id)} onChange={() => toggleStarter(p.user_id)} style={{ transform: 'scale(1.2)' }} /></div>
-                  <div style={{ textAlign: 'center' }}><input type="radio" checked={gkId === p.user_id} onChange={() => setGkId(p.user_id)} disabled={!starters.has(p.user_id)} style={{ transform: 'scale(1.2)' }} /></div>
+                  <div style={{ textAlign: 'center' }}>
+                    <select 
+                      value={gkId === p.user_id ? 'GK' : (positions[p.user_id] || '')}
+                      onChange={(e) => handlePositionChange(p.user_id, e.target.value)}
+                      disabled={!starters.has(p.user_id)}
+                      style={{ background: '#333', color: '#fff', border: '1px solid #555', padding: '4px', borderRadius: '4px', width: '100%' }}
+                    >
+                      <option value=""></option>
+                      <option value="Fixo">Fixo</option>
+                      <option value="Ala L">Ala L</option>
+                      <option value="Ala R">Ala R</option>
+                      <option value="Pivo">Pivo</option>
+                      <option value="GK">GK</option>
+                    </select>
+                  </div>
                 </div>
               ))}
               
@@ -564,10 +590,20 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
         <>
           <Title text="入れる選手(IN)" />
           {benchPlayers.length > 0 ? (
-            <PlayerGrid players={benchPlayers} onSelect={(id) => finish({ event_type: 'substitution', user_id: data.out, target_user_id: id })} />
+            <PlayerGrid players={benchPlayers} onSelect={(id) => { updateData({ in: id }); nextStep(3); }} />
           ) : (
             <div style={{ textAlign: 'center', color: '#aaa', padding: '1rem' }}>ベンチに選手がいません</div>
           )}
+        </>
+      );
+      if (step === 3) return (
+        <>
+          <Title text="ポジションは？" />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+            {['Fixo', 'Ala L', 'Ala R', 'Pivo', 'GK'].map(pos => (
+              <button key={pos} className={styles.saveBtn} onClick={() => finish([{ event_type: 'sub_out', user_id: data.out }, { event_type: 'sub_in', user_id: data.in, position: pos }])}>{pos}</button>
+            ))}
+          </div>
         </>
       );
     }
