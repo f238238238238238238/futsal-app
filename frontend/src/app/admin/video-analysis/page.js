@@ -589,7 +589,7 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
         <>
           <Title text="相手にどう防がれた？" />
           <div style={{ display: 'grid', gap: '8px' }}>
-            <button data-key="1" className={styles.deleteBtn} onClick={() => finish({ event_type: 'pass_miss', user_id: data.passer })}>インターセプトされた [1]</button>
+            <button data-key="1" className={styles.deleteBtn} onClick={() => finish([{ event_type: 'pass_miss', user_id: data.passer }, { event_type: 'recovery', team: 'opponent' }])}>インターセプトされた [1]</button>
             <button data-key="2" className={styles.saveBtn} onClick={() => nextStep(5)}>クリアされた [2]</button>
             <button data-key="3" className={styles.saveBtn} onClick={() => finish([{ event_type: 'pass_miss', user_id: data.passer }, { event_type: 'side_out', team: 'opponent' }])}>サイドアウトになった [3]</button>
             <button data-key="4" className={styles.saveBtn} onClick={() => finish([{ event_type: 'pass_miss', user_id: data.passer }, { event_type: 'corner_kick', team: 'opponent' }])}>相手のコーナーキック [4]</button>
