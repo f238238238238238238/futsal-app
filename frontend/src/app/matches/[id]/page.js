@@ -570,6 +570,9 @@ export default function MatchDetailPage() {
       case 'clear': return `🛡️ ${name} がクリア！`;
       case 'recovery': return ev.team === 'opponent' ? `🔄 相手チームがこぼれ球を拾いました` : `🔄 ${name} がこぼれ球を拾いました`;
       case 'opponent_shot_off': return `☄️ 相手チームがシュートミス(枠外)`;
+      case 'side_out': return ev.team === 'opponent' ? `🚩 相手ボールのサイドアウト` : `🚩 マイボールのサイドアウト`;
+      case 'corner_kick': return ev.team === 'opponent' ? `🚩 相手のコーナーキック` : `🚩 マイボールのコーナーキック`;
+      case 'goal_kick': return ev.team === 'opponent' ? `🚩 相手のゴールキック` : `🚩 マイボールのゴールキック`;
       default: return `${name} - ${ev.event_type}`;
     }
   };

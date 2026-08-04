@@ -501,7 +501,8 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
             <button data-key="1" className={styles.saveBtn} onClick={() => nextStep(15)}>自チームが拾った [1]</button>
             <button data-key="2" className={styles.deleteBtn} onClick={() => finish([{ event_type: data.res === 'block' ? 'shot_off' : 'shot', user_id: data.shooter }, { event_type: 'recovery', team: 'opponent' }])}>相手が拾った [2]</button>
             <button data-key="3" className={styles.saveBtn} onClick={() => { updateData({ out_type: 'side_out' }); nextStep(16); }}>サイドアウトになった [3]</button>
-            <button data-key="4" className={styles.saveBtn} onClick={() => { updateData({ out_type: 'corner_kick' }); nextStep(16); }}>コーナー/ゴールキック [4]</button>
+            <button data-key="4" className={styles.saveBtn} onClick={() => { updateData({ out_type: 'corner_kick' }); nextStep(16); }}>コーナーキックになった [4]</button>
+            <button data-key="5" className={styles.saveBtn} onClick={() => { updateData({ out_type: 'goal_kick' }); nextStep(16); }}>ゴールキックになった [5]</button>
           </div>
         </>
       );
@@ -559,7 +560,8 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
             <button className={styles.saveBtn} onClick={() => nextStep(26)}>自チームが拾った</button>
             <button className={styles.deleteBtn} onClick={() => finish([{ event_type: 'block', user_id: data.blocker }, { event_type: 'recovery', team: 'opponent' }])}>相手が拾った</button>
             <button className={styles.saveBtn} onClick={() => { updateData({ out_type: 'side_out' }); nextStep(24); }}>サイドアウトになった</button>
-            <button className={styles.saveBtn} onClick={() => { updateData({ out_type: 'corner_kick' }); nextStep(24); }}>コーナー/ゴールキックになった</button>
+            <button className={styles.saveBtn} onClick={() => { updateData({ out_type: 'corner_kick' }); nextStep(24); }}>コーナーキックになった</button>
+            <button className={styles.saveBtn} onClick={() => { updateData({ out_type: 'goal_kick' }); nextStep(24); }}>ゴールキックになった</button>
           </div>
         </>
       );
@@ -584,9 +586,10 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
           <Title text="相手にどう防がれた？" />
           <div style={{ display: 'grid', gap: '8px' }}>
             <button data-key="1" className={styles.deleteBtn} onClick={() => finish({ event_type: 'pass_miss', user_id: data.passer })}>インターセプトされた [1]</button>
-            <button data-key="2" className={styles.saveBtn} onClick={() => nextStep(5)}>クリア/ブロックされた [2]</button>
+            <button data-key="2" className={styles.saveBtn} onClick={() => nextStep(5)}>クリアされた [2]</button>
             <button data-key="3" className={styles.saveBtn} onClick={() => finish([{ event_type: 'pass_miss', user_id: data.passer }, { event_type: 'side_out', team: 'opponent' }])}>サイドアウトになった [3]</button>
-            <button data-key="4" className={styles.saveBtn} onClick={() => finish([{ event_type: 'pass_miss', user_id: data.passer }, { event_type: 'corner_kick', team: 'opponent' }])}>相手のコーナー/ゴールキック [4]</button>
+            <button data-key="4" className={styles.saveBtn} onClick={() => finish([{ event_type: 'pass_miss', user_id: data.passer }, { event_type: 'corner_kick', team: 'opponent' }])}>相手のコーナーキック [4]</button>
+            <button data-key="5" className={styles.saveBtn} onClick={() => finish([{ event_type: 'pass_miss', user_id: data.passer }, { event_type: 'goal_kick', team: 'opponent' }])}>相手のゴールキック [5]</button>
           </div>
         </>
       );
@@ -597,7 +600,8 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
             <button data-key="1" className={styles.saveBtn} onClick={() => nextStep(6)}>自チームが拾った [1]</button>
             <button data-key="2" className={styles.deleteBtn} onClick={() => finish([{ event_type: 'pass_miss', user_id: data.passer }, { event_type: 'recovery', team: 'opponent' }])}>相手が拾った [2]</button>
             <button data-key="3" className={styles.saveBtn} onClick={() => finish([{ event_type: 'pass_miss', user_id: data.passer }, { event_type: 'side_out', team: 'opponent' }])}>サイドアウトになった [3]</button>
-            <button data-key="4" className={styles.saveBtn} onClick={() => finish([{ event_type: 'pass_miss', user_id: data.passer }, { event_type: 'corner_kick', team: 'opponent' }])}>相手のコーナー/ゴールキック [4]</button>
+            <button data-key="4" className={styles.saveBtn} onClick={() => finish([{ event_type: 'pass_miss', user_id: data.passer }, { event_type: 'corner_kick', team: 'opponent' }])}>相手のコーナーキック [4]</button>
+            <button data-key="5" className={styles.saveBtn} onClick={() => finish([{ event_type: 'pass_miss', user_id: data.passer }, { event_type: 'goal_kick', team: 'opponent' }])}>相手のゴールキック [5]</button>
           </div>
         </>
       );
@@ -627,8 +631,10 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
           <Title text="自チームはどう防いだ？" />
           <div style={{ display: 'grid', gap: '8px' }}>
             <button data-key="1" className={styles.saveBtn} onClick={() => { updateData({ action: 'pass_cut' }); nextStep(22); }}>インターセプトした [1]</button>
-            <button data-key="2" className={styles.saveBtn} onClick={() => { updateData({ action: 'clear' }); nextStep(23); }}>クリア/ブロックした [2]</button>
+            <button data-key="2" className={styles.saveBtn} onClick={() => { updateData({ action: 'clear' }); nextStep(23); }}>クリアした [2]</button>
             <button data-key="3" className={styles.deleteBtn} onClick={() => finish({ event_type: 'opponent_pass_fail' })}>相手の自滅 [3]</button>
+            <button data-key="4" className={styles.saveBtn} onClick={() => finish([{ event_type: 'opponent_pass_fail' }, { event_type: 'side_out', team: 'own' }])}>サイドアウト [4]</button>
+            <button data-key="5" className={styles.saveBtn} onClick={() => finish([{ event_type: 'opponent_pass_fail' }, { event_type: 'goal_kick', team: 'own' }])}>ゴールキック [5]</button>
           </div>
         </>
       );
@@ -641,7 +647,8 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
             <button className={styles.saveBtn} onClick={() => nextStep(25)}>自チームが拾った</button>
             <button className={styles.deleteBtn} onClick={() => finish([{ event_type: 'clear', user_id: data.clearer }, { event_type: 'recovery', team: 'opponent' }])}>相手が拾った</button>
             <button className={styles.saveBtn} onClick={() => { updateData({ out_type: 'side_out' }); nextStep(26); }}>サイドアウトになった</button>
-            <button className={styles.saveBtn} onClick={() => { updateData({ out_type: 'corner_kick' }); nextStep(26); }}>コーナー/ゴールキックになった</button>
+            <button className={styles.saveBtn} onClick={() => { updateData({ out_type: 'corner_kick' }); nextStep(26); }}>コーナーキックになった</button>
+            <button className={styles.saveBtn} onClick={() => { updateData({ out_type: 'goal_kick' }); nextStep(26); }}>ゴールキックになった</button>
           </div>
         </>
       );
@@ -687,8 +694,9 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
         <>
           <Title text="ボールアウト" />
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            <button data-key="1" className={styles.saveBtn} onClick={() => { updateData({ out_type: 'corner_kick' }); nextStep(2); }}>コーナー/ゴールキック [1]</button>
-            <button data-key="2" className={styles.saveBtn} onClick={() => { updateData({ out_type: 'side_out' }); nextStep(2); }}>サイドアウト [2]</button>
+            <button data-key="1" className={styles.saveBtn} onClick={() => { updateData({ out_type: 'side_out' }); nextStep(2); }}>サイドアウト [1]</button>
+            <button data-key="2" className={styles.saveBtn} onClick={() => { updateData({ out_type: 'corner_kick' }); nextStep(2); }}>コーナーキック [2]</button>
+            <button data-key="3" className={styles.saveBtn} onClick={() => { updateData({ out_type: 'goal_kick' }); nextStep(2); }}>ゴールキック [3]</button>
           </div>
         </>
       );
