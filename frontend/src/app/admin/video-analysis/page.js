@@ -45,18 +45,37 @@ export default function VideoAnalysisPage() {
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.code === 'Space' && !pendingAction && step === 'analyze') {
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-        e.preventDefault();
-        if (videoRef.current) {
-          if (videoRef.current.paused) videoRef.current.play();
-          else videoRef.current.pause();
+      // ignore inputs
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+      
+      const key = e.key.replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
+
+      if (!pendingAction && step === 'analyze') {
+        if (key === ' ' || key === '0') {
+          e.preventDefault();
+          if (videoRef.current) {
+            if (videoRef.current.paused) videoRef.current.play();
+            else videoRef.current.pause();
+          }
+        } else if (key === '1') { e.preventDefault(); pauseForAction('kickoff'); }
+        else if (key === '2') { e.preventDefault(); pauseForAction('shot'); }
+        else if (key === '3') { e.preventDefault(); pauseForAction('pass'); }
+        else if (key === '4') { e.preventDefault(); pauseForAction('steal'); }
+        else if (key === '5') { e.preventDefault(); pauseForAction('ball_out'); }
+        else if (key === '6') { e.preventDefault(); pauseForAction('free_kick'); }
+        else if (key === '7') { e.preventDefault(); pauseForAction('foul'); }
+        else if (key === '8') { e.preventDefault(); pauseForAction('sub'); }
+      } else if (pendingAction) {
+        if (['1','2','3','4','5','6','7','8','9','0'].includes(key)) {
+          e.preventDefault();
+          const btn = document.querySelector(`button[data-key="${key}"]`);
+          if (btn) btn.click();
         }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [pendingAction, step]);
+  }, [pendingAction, step, events, starters, positions, currentTime]);
 
   // Derived Active Players
   const getActivePlayers = (minute) => {
@@ -171,7 +190,7 @@ export default function VideoAnalysisPage() {
 
   const resumeVideo = () => {
     setPendingAction(null);
-    if (wasPlaying && videoRef.current) {
+    if (videoRef.current) {
         videoRef.current.play().catch(e => console.log('play error', e));
     }
   };
