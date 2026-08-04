@@ -38,6 +38,32 @@ export default function VideoAnalysisPage() {
   // Modal State
   const [pendingAction, setPendingAction] = useState(null); // { type, step, data }
   const [wasPlaying, setWasPlaying] = useState(false);
+  const [setupLoaded, setSetupLoaded] = useState(false);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('futsal_video_editor_setup');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.attendees) setAttendees(new Set(parsed.attendees));
+        if (parsed.starters) setStarters(new Set(parsed.starters));
+        if (parsed.gkId) setGkId(parsed.gkId);
+        if (parsed.positions) setPositions(parsed.positions);
+      }
+    } catch (e) {}
+    setSetupLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (setupLoaded) {
+      localStorage.setItem('futsal_video_editor_setup', JSON.stringify({
+        attendees: Array.from(attendees),
+        starters: Array.from(starters),
+        gkId,
+        positions
+      }));
+    }
+  }, [attendees, starters, gkId, positions, setupLoaded]);
 
   useEffect(() => {
     getPlayers().then(p => setPlayers(p.users || p || [])).catch(console.error);
