@@ -717,22 +717,11 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
         <>
           <Title text="結果はどうなった？" />
           <div style={{ display: 'grid', gap: '8px' }}>
-            <button data-key="1" className={styles.saveBtn} onClick={() => finish({ event_type: 'steal', user_id: data.actor })}>成功（奪った） [1]</button>
-            <button data-key="2" className={styles.deleteBtn} onClick={() => nextStep(11)}>失敗 [2]</button>
-            <button data-key="3" className={styles.deleteBtn} onClick={() => finish({ event_type: 'foul', user_id: data.actor })}>ファールになった [3]</button>
+            <button data-key="1" className={styles.saveBtn} onClick={() => finish({ event_type: 'steal', user_id: data.actor })}>奪った [1]</button>
+            <button data-key="2" className={styles.deleteBtn} onClick={() => finish({ event_type: 'foul', user_id: data.actor })}>ファールになった [2]</button>
           </div>
         </>
       );
-      if (step === 11) return (
-        <>
-          <Title text="ボールはどっちに渡った？" />
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            <button data-key="1" className={styles.deleteBtn} onClick={() => finish({ event_type: 'steal_miss', user_id: data.actor })}>相手チーム [1]</button>
-            <button data-key="2" className={styles.saveBtn} onClick={() => nextStep(12)}>自チーム [2]</button>
-          </div>
-        </>
-      );
-      if (step === 12) return <><Title text="誰が拾った？" /><PlayerGrid onSelect={(id) => finish([{ event_type: 'steal_miss', user_id: data.actor }, { event_type: 'recovery', user_id: id }])} /></>;
 
       // -- Clear flow
       if (step === 20) return (
