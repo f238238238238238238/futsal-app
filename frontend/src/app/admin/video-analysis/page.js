@@ -577,13 +577,20 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
             <button data-key="1" className={styles.saveBtn} onClick={() => { updateData({ res: 'goal' }); nextStep(data.shooter ? 12 : 11); }}>得点 [1]</button>
             <button data-key="2" className={styles.saveBtn} onClick={() => { updateData({ res: 'shot' }); nextStep(data.shooter ? 14 : 11); }}>キャッチされた [2]</button>
-            <button data-key="3" className={styles.saveBtn} onClick={() => { updateData({ res: 'shot_off' }); nextStep(data.shooter ? 14 : 11); }}>枠外 [3]</button>
+            <button data-key="3" className={styles.saveBtn} onClick={() => { 
+              if (data.shooter) finish([{ event_type: 'shot_off', user_id: data.shooter }, { event_type: 'goal_kick', team: 'opponent' }]);
+              else { updateData({ res: 'shot_off' }); nextStep(11); }
+            }}>枠外 [3]</button>
             <button data-key="4" className={styles.saveBtn} onClick={() => { updateData({ res: 'saved' }); nextStep(data.shooter ? 13 : 11); }}>セーブされた [4]</button>
             <button data-key="5" className={styles.deleteBtn} onClick={() => { updateData({ res: 'block' }); nextStep(data.shooter ? 13 : 11); }}>ブロックされた [5]</button>
           </div>
         </>
       );
-      if (step === 11) return <><Title text="誰が打ったか？" /><PlayerGrid onSelect={(id) => { updateData({ shooter: id }); nextStep(data.res === 'goal' ? 12 : (data.res === 'saved' || data.res === 'block' ? 13 : 14)); }} /></>;
+      if (step === 11) return <><Title text="誰が打ったか？" /><PlayerGrid onSelect={(id) => { 
+        if (data.res === 'goal') { updateData({ shooter: id }); nextStep(12); }
+        else if (data.res === 'saved' || data.res === 'block') { updateData({ shooter: id }); nextStep(13); }
+        else { finish([{ event_type: 'shot_off', user_id: id }, { event_type: 'goal_kick', team: 'opponent' }]); }
+      }} /></>;
       if (step === 12) return <><Title text="アシストは？" /><PlayerGrid allowNone onSelect={(id) => finish({ event_type: 'goal', user_id: data.shooter, target_user_id: id })} /></>;
       if (step === 13) return (
         <>
@@ -597,7 +604,7 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
           </div>
         </>
       );
-      if (step === 14) return <><Title text="確定します" /><button data-key="1" className={styles.saveBtn} style={{ width: '100%', padding: '1rem' }} onClick={() => finish({ event_type: data.res === 'block' ? 'shot_off' : data.res, user_id: data.shooter })}>保存 [1]</button></>;
+      // step 14 is intentionally skipped
       if (step === 15) return <><Title text="誰が拾ったか？" /><PlayerGrid onSelect={(id) => finish([{ event_type: data.res === 'block' ? 'shot_off' : 'shot', user_id: data.shooter }, { event_type: 'pass', user_id: data.shooter, target_user_id: id }])} /></>;
       if (step === 16) return (
         <>
@@ -619,7 +626,7 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
             <button data-key="2" className={styles.saveBtn} onClick={() => finish({ event_type: 'catch', user_id: gkId })}>自チームがキャッチ [2]</button>
             <button data-key="3" className={styles.saveBtn} onClick={() => { updateData({ res: 'save' }); nextStep(21); }}>自チームのセーブ [3]</button>
             <button data-key="4" className={styles.saveBtn} onClick={() => { updateData({ res: 'block' }); nextStep(22); }}>自チームのブロック [4]</button>
-            <button data-key="5" className={styles.deleteBtn} onClick={() => finish({ event_type: 'opponent_shot_off' })}>枠外 [5]</button>
+            <button data-key="5" className={styles.saveBtn} onClick={() => nextStep(30)}>枠外 [5]</button>
           </div>
         </>
       );
@@ -660,6 +667,7 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
         </>
       );
       if (step === 26) return <><Title text="誰が拾った？" /><PlayerGrid onSelect={(id) => finish([{ event_type: 'block', user_id: data.blocker }, { event_type: 'recovery', user_id: id }])} /></>;
+      if (step === 30) return <><Title text="誰がゴールクリアランス(GK)する？" /><PlayerGrid onSelect={(id) => finish([{ event_type: 'opponent_shot_off' }, { event_type: 'goal_kick', team: 'own', user_id: id }])} /></>;
     }
 
     // --- PASS ---
