@@ -163,14 +163,14 @@ export default function PlayerDetailPage({ params }) {
   const selectedYearStat = player.yearlyStats?.find(s => s.year.toString() === selectedYear);
 
   // Always show 6 axes. If they haven't played GK, goalkeeping is 0.
-  const statLabels = ['オフェンス', 'テクニック', 'ディフェンス', 'スピード', 'スタミナ', 'キーパー力'];
+  const statLabels = ['オフェンス', 'ディフェンス', 'テクニック', 'フィジカル', 'スピード', 'キーパー'];
   const currentStats = [
-    selectedYearStat?.calculated_offense ?? player.stat_offense ?? 0,
-    selectedYearStat?.calculated_technique ?? player.stat_technique ?? 0,
-    selectedYearStat?.calculated_defense ?? player.stat_defense ?? 0,
+    selectedYearStat?.calculated_offense ?? player.stat_offense ?? 40,
+    selectedYearStat?.calculated_defense ?? player.stat_defense ?? 40,
+    selectedYearStat?.calculated_technique ?? player.stat_technique ?? 40,
+    75, // Physical fixed
     selectedYearStat?.calculated_speed ?? player.stat_speed ?? 75,
-    selectedYearStat?.calculated_stamina ?? player.stat_stamina ?? 0,
-    selectedYearStat?.calculated_goalkeeping ?? 0,
+    selectedYearStat?.calculated_goalkeeping ?? 40,
   ];
 
   const profileItems = [
@@ -311,56 +311,60 @@ export default function PlayerDetailPage({ params }) {
                   <span>{currentStats[0]}</span> <span>オフェンス</span>
                 </div>
                 <div className={styles.attrSub}>
-                  <div><span>ポジショニング</span> <span>{selectedYearStat?.sub_stats?.positioning ?? '-'}</span></div>
+                  <div><span>シュート力</span> <span>{selectedYearStat?.sub_stats?.shooting ?? '-'}</span></div>
                   <div><span>決定力</span> <span>{selectedYearStat?.sub_stats?.finishing ?? '-'}</span></div>
-                  <div><span>シュート</span> <span>{selectedYearStat?.sub_stats?.shooting ?? '-'}</span></div>
+                  <div><span>ポジショニング</span> <span>{selectedYearStat?.sub_stats?.positioning ?? '-'}</span></div>
+                  <div><span>アシスト</span> <span>{selectedYearStat?.sub_stats?.vision ?? '-'}</span></div>
                 </div>
 
                 <div className={styles.attrMain} style={{marginTop: '1rem'}}>
-                  <span>{currentStats[1]}</span> <span>テクニック</span>
+                  <span>{currentStats[1]}</span> <span>ディフェンス</span>
                 </div>
                 <div className={styles.attrSub}>
-                  <div><span>パス</span> <span>{selectedYearStat?.sub_stats?.passing ?? '-'}</span></div>
-                  <div><span>ボールコントロール</span> <span>{selectedYearStat?.sub_stats?.ballControl ?? '-'}</span></div>
-                  <div><span>アシスト</span> <span>{selectedYearStat?.sub_stats?.vision ?? '-'}</span></div>
+                  <div><span>タックル</span> <span>{selectedYearStat?.sub_stats?.stealing ?? '-'}</span></div>
+                  <div><span>インターセプト</span> <span>{selectedYearStat?.sub_stats?.intercepting ?? '-'}</span></div>
+                  <div><span>ブロック</span> <span>{selectedYearStat?.sub_stats?.blocking ?? '-'}</span></div>
+                  <div><span>クリア</span> <span>{selectedYearStat?.sub_stats?.clearing ?? '-'}</span></div>
+                  <div><span>ボールリカバリー</span> <span>{selectedYearStat?.sub_stats?.recovery ?? '-'}</span></div>
+                  <div><span>守備意識</span> <span>{selectedYearStat?.sub_stats?.defenseAwareness ?? '-'}</span></div>
                 </div>
               </div>
 
               <div className={styles.attrCol}>
                 <div className={styles.attrMain}>
-                  <span>{currentStats[2]}</span> <span>ディフェンス</span>
+                  <span>{currentStats[2]}</span> <span>テクニック</span>
                 </div>
                 <div className={styles.attrSub}>
-                  <div><span>ブロック</span> <span>{selectedYearStat?.sub_stats?.blocking ?? '-'}</span></div>
-                  <div><span>インターセプト</span> <span>{selectedYearStat?.sub_stats?.intercepting ?? '-'}</span></div>
-                  <div><span>クリア</span> <span>{selectedYearStat?.sub_stats?.clearing ?? '-'}</span></div>
-                  <div><span>スティール</span> <span>{selectedYearStat?.sub_stats?.stealing ?? '-'}</span></div>
+                  <div><span>パス</span> <span>{selectedYearStat?.sub_stats?.passing ?? '-'}</span></div>
+                  <div><span>ドリブル</span> <span>{selectedYearStat?.sub_stats?.dribbling ?? '-'}</span></div>
+                  <div><span>キープ力</span> <span>{selectedYearStat?.sub_stats?.keeping ?? '-'}</span></div>
                 </div>
 
                 <div className={styles.attrMain} style={{marginTop: '1rem'}}>
-                  <span>{currentStats[3]}</span> <span>スピード</span>
+                  <span>{currentStats[3]}</span> <span>フィジカル</span>
+                </div>
+                <div className={styles.attrSub}>
+                  <div><span>スタミナ</span> <span>{selectedYearStat?.sub_stats?.staminaWorkRate ?? '-'}</span></div>
+                  <div><span>フィジカル</span> <span>75</span></div>
+                </div>
+              </div>
+
+              <div className={styles.attrCol}>
+                <div className={styles.attrMain}>
+                  <span>{currentStats[4]}</span> <span>スピード</span>
                 </div>
                 <div className={styles.attrSub}>
                   <div><span>加速度</span> <span>{selectedYearStat?.sub_stats?.acceleration ?? 75}</span></div>
                   <div><span>スプリント力</span> <span>{selectedYearStat?.sub_stats?.sprintSpeed ?? 75}</span></div>
                 </div>
-              </div>
-
-              <div className={styles.attrCol}>
-                <div className={styles.attrMain}>
-                  <span>{currentStats[4]}</span> <span>スタミナ</span>
-                </div>
-                <div className={styles.attrSub}>
-                  <div><span>運動量</span> <span>{selectedYearStat?.sub_stats?.staminaWorkRate ?? '-'}</span></div>
-                </div>
 
                 <div className={styles.attrMain} style={{marginTop: '1rem'}}>
-                  <span>{currentStats[5]}</span> <span>キーパー力</span>
+                  <span>{currentStats[5]}</span> <span>キーパー</span>
                 </div>
                 <div className={styles.attrSub}>
-                  <div><span>セーブ</span> <span>{selectedYearStat?.sub_stats?.saving ?? '0'}</span></div>
-                  <div><span>キャッチ</span> <span>{selectedYearStat?.sub_stats?.catching ?? '0'}</span></div>
-                  <div><span>キーパー</span> <span>{selectedYearStat?.sub_stats?.gkPositioning ?? '0'}</span></div>
+                  <div><span>セーブ</span> <span>{selectedYearStat?.sub_stats?.saving ?? '-'}</span></div>
+                  <div><span>キャッチ</span> <span>{selectedYearStat?.sub_stats?.catching ?? '-'}</span></div>
+                  <div><span>阻止力</span> <span>{selectedYearStat?.sub_stats?.gkPositioning ?? '-'}</span></div>
                 </div>
               </div>
             </div>

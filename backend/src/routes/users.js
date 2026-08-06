@@ -73,6 +73,21 @@ router.get('/:id', async (req, res) => {
       GROUP BY EXTRACT(YEAR FROM m.date::date)
     `, [req.params.id]);
 
+    const yearlyGkMatchesResult = await db.query(`
+      SELECT 
+        EXTRACT(YEAR FROM m.date::date) as year,
+        COUNT(DISTINCT me.match_id) as gk_matches_played
+      FROM match_events me
+      JOIN matches m ON me.match_id = m.match_id
+      WHERE me.user_id = $1 AND me.event_type IN ('save', 'catch', 'concede')
+      GROUP BY EXTRACT(YEAR FROM m.date::date)
+    `, [req.params.id]);
+
+    const gkMatchesByYear = {};
+    for (const row of yearlyGkMatchesResult.rows) {
+      gkMatchesByYear[row.year] = parseInt(row.gk_matches_played, 10);
+    }
+
     const yearlyEventsResult = await db.query(`
       SELECT 
         EXTRACT(YEAR FROM m.date::date) as year,
@@ -157,56 +172,63 @@ router.get('/:id', async (req, res) => {
       const matchesPlayed = parseInt(row.matches_played, 10);
       const minutesPlayed = parseInt(row.minutes_played, 10);
       
-      // Calculate score mapping to 0-99
+      const isFullTimeGK = user.position === 'GK' || user.position === 'ゴレイロ';
+      const gkMatches = isFullTimeGK ? matchesPlayed : (gkMatchesByYear[row.year] || (saves + catches + concede > 0 ? 1 : 0));
+      const fieldMatches = Math.max(1, matchesPlayed - (isFullTimeGK ? 0 : gkMatches));
+
+      // Calculate score mapping to 40-99
       const calcStat = (value, targetValue) => {
-        if (value <= 0) return 0;
+        if (value <= 0) return 40;
         const ratio = value / targetValue;
-        return Math.min(99, Math.max(0, Math.round(99 * ratio)));
+        return Math.min(99, Math.max(40, Math.round(100 * ratio)));
       };
 
       // === ① オフェンス (Offense) ===
-      const positioning = calcStat(matchesPlayed > 0 ? received_passes / matchesPlayed : 0, 5.0); // Target: 5 received passes per match
+      const positioning = calcStat(received_passes / fieldMatches, 20.0); // Target: 20 received passes per match
       const totalShotsForAcc = goals + shots;
       const shotAccuracy = totalShotsForAcc > 0 ? (goals / totalShotsForAcc) : 0;
-      const finishing = totalShotsForAcc > 0 ? calcStat(shotAccuracy, 0.5) : 0; // Target: 50% accuracy
-      const shootingFreq = calcStat(matchesPlayed > 0 ? totalShotsForAcc / matchesPlayed : 0, 3.0); // Target: 3 shots per match
+      const finishing = totalShotsForAcc > 0 ? calcStat(shotAccuracy, 0.4) : 40; // Target: 40% accuracy
+      const shootingFreq = calcStat(totalShotsForAcc / fieldMatches, 4.0); // Target: 4 shots per match
       const offense = Math.round((positioning + finishing + shootingFreq) / 3);
 
       // === ② テクニック (Technique) ===
       const passSuccessRate = (passes + lost) > 0 ? (passes / (passes + lost)) : 0;
-      const passing = (passes + lost) > 0 ? calcStat(passSuccessRate, 0.8) : 0; // Target: 80% pass accuracy
-      const ballControlRatio = passes > 0 ? (passes / (passes + lost + 1)) : 0; 
-      const ballControl = calcStat(ballControlRatio, 0.85); // High passing with low lost ball
-      const vision = calcStat(matchesPlayed > 0 ? assists / matchesPlayed : 0, 0.5); // Target: 0.5 assists per match
-      const technique = Math.round((passing + ballControl + vision) / 3);
+      const passing = (passes + lost) > 0 ? calcStat(passSuccessRate, 0.85) : 40; // Target: 85% pass accuracy
+      const dribbling = 75; // Fixed value
+      const keepingRatio = received_passes > 0 ? (received_passes / (received_passes + lost)) : 0;
+      const keeping = calcStat(keepingRatio, 0.9); // Target: 90%
+      const vision = calcStat(assists / fieldMatches, 1.0); // Target: 1 assist per match (Key Passes)
+      const technique = Math.round((passing + dribbling + keeping + vision) / 4);
 
       // === ③ ディフェンス (Defense) ===
-      const blocking = calcStat(matchesPlayed > 0 ? block / matchesPlayed : 0, 1.0); // Target: 1 block per match
-      const intercepting = calcStat(matchesPlayed > 0 ? pass_cut / matchesPlayed : 0, 1.5); // Target: 1.5 pass cuts
-      const clearing = calcStat(matchesPlayed > 0 ? defense / matchesPlayed : 0, 1.0); // Target: 1 clear (defense)
-      const stealing = calcStat(matchesPlayed > 0 ? steal / matchesPlayed : 0, 1.5); // Target: 1.5 steals
-      const foulPenalty = fouls > 0 ? Math.min(20, fouls * 2) : 0; // Penalty for fouls
-      const defenseTotal = Math.max(0, Math.round((blocking + intercepting + clearing + stealing) / 4) - foulPenalty);
+      const blocking = calcStat(block / fieldMatches, 1.0); // Target: 1 block per match
+      const intercepting = calcStat(pass_cut / fieldMatches, 2.0); // Target: 2 pass cuts
+      const clearing = calcStat(defense / fieldMatches, 2.0); // Target: 2 clears (defense)
+      const stealing = calcStat(steal / fieldMatches, 2.0); // Target: 2 steals
+      const recovery = yEvents.recovery || 0;
+      const recoveryScore = calcStat(recovery / fieldMatches, 3.0); // Target: 3 recoveries
+      
+      const defenseAwareness = 75; // Fixed value
+      const defenseTotal = Math.round((blocking + intercepting + clearing + stealing + recoveryScore + defenseAwareness) / 6);
 
       // === ④ スピード (Speed) ===
-      const acceleration = 75; // Temporary fixed value
-      const sprintSpeed = 75;  // Temporary fixed value
-      const speed = Math.round((acceleration + sprintSpeed) / 2);
+      const acceleration = 75; // Fixed value
+      const sprintSpeed = 75;  // Fixed value
+      const speed = 75; // Overall fixed
 
       // === ⑤ スタミナ (Stamina) ===
-      const avgMinutes = matchesPlayed > 0 ? minutesPlayed / matchesPlayed : 0;
-      const staminaWorkRate = calcStat(avgMinutes, 20.0); // Target: 20 mins per match
-      const stamina = staminaWorkRate; // Only one sub-stat currently
+      const avgMinutes = minutesPlayed / fieldMatches;
+      const staminaWorkRate = calcStat(avgMinutes, 10.0); // Target: 10 mins per match
+      const stamina = staminaWorkRate; 
 
       // === ⑥ キーパー力 (Goalkeeping) ===
-      const isGK = saves > 0 || catches > 0 || user.position === 'GK' || user.position === 'ゴレイロ';
-      const saving = isGK ? calcStat(matchesPlayed > 0 ? saves / matchesPlayed : 0, 3.0) : 0; // Target: 3 saves per match
-      const catching = isGK ? calcStat(matchesPlayed > 0 ? catches / matchesPlayed : 0, 2.0) : 0; // Target: 2 catches per match
-      // For GK overall, use save percentage
+      const validGkMatches = Math.max(1, gkMatches);
+      const saving = isGK ? calcStat(saves / validGkMatches, 3.0) : 40; // Target: 3 saves per match
+      const catchingScore = isGK ? calcStat(catches / validGkMatches, 2.0) : 40; // Target: 2 catches per match
       const totalFaced = saves + catches + concede;
       const savePercentage = totalFaced > 0 ? (saves + catches) / totalFaced : (isGK ? 0.5 : 0);
-      const gkPositioning = isGK ? calcStat(savePercentage, 0.75) : 0; // Target: 75% save rate
-      const goalkeeping = isGK ? Math.round((saving + catching + gkPositioning) / 3) : 0;
+      const gkPositioning = isGK ? calcStat(savePercentage, 0.75) : 40; // Target: 75% save rate
+      const goalkeeping = isGK ? Math.round((saving + catchingScore + gkPositioning) / 3) : 40;
 
       matchStatsByYear[row.year] = {
         matches_played: matchesPlayed,
@@ -220,11 +242,11 @@ router.get('/:id', async (req, res) => {
         total_shots: shots,
         sub_stats: {
           positioning, finishing, shooting: shootingFreq,
-          passing, ballControl, vision,
-          blocking, intercepting, clearing, stealing,
+          passing, dribbling, keeping, vision,
+          blocking, intercepting, clearing, stealing, recovery: recoveryScore, defenseAwareness,
           acceleration, sprintSpeed,
           staminaWorkRate,
-          saving, catching, gkPositioning
+          saving, catching: catchingScore, gkPositioning
         },
         calculated_offense: offense,
         calculated_technique: technique,
@@ -266,7 +288,8 @@ router.get('/:id', async (req, res) => {
       const ms = matchStatsByYear[year] || { 
         matches_played: 0, goals: 0, assists: 0, saves: 0, minutes_played: 0,
         total_defense: 0, total_passes: 0, total_lost: 0, total_shots: 0,
-        calculated_technique: 50, calculated_offense: 50, calculated_defense: 50, calculated_kick: 50, calculated_stamina: 50
+        sub_stats: {},
+        calculated_technique: 40, calculated_offense: 40, calculated_defense: 40, calculated_speed: 75, calculated_stamina: 40, calculated_goalkeeping: 40
       };
       const att = attendanceByYear[year] || 0;
       const totalEv = totalEventsByYear[year] || 0;
