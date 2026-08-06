@@ -576,7 +576,10 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
           <Title text="シュートの結果は？" />
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
             <button data-key="1" className={styles.saveBtn} onClick={() => { updateData({ res: 'goal' }); nextStep(data.shooter ? 12 : 11); }}>得点 [1]</button>
-            <button data-key="2" className={styles.saveBtn} onClick={() => { updateData({ res: 'shot' }); nextStep(data.shooter ? 14 : 11); }}>キャッチされた [2]</button>
+            <button data-key="2" className={styles.saveBtn} onClick={() => { 
+              if (data.shooter) finish([{ event_type: 'shot', user_id: data.shooter }, { event_type: 'recovery', team: 'opponent' }]);
+              else { updateData({ res: 'shot' }); nextStep(11); }
+            }}>キャッチされた [2]</button>
             <button data-key="3" className={styles.saveBtn} onClick={() => { 
               if (data.shooter) finish([{ event_type: 'shot_off', user_id: data.shooter }, { event_type: 'goal_kick', team: 'opponent' }]);
               else { updateData({ res: 'shot_off' }); nextStep(11); }
@@ -589,7 +592,8 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
       if (step === 11) return <><Title text="誰が打ったか？" /><PlayerGrid onSelect={(id) => { 
         if (data.res === 'goal') { updateData({ shooter: id }); nextStep(12); }
         else if (data.res === 'saved' || data.res === 'block') { updateData({ shooter: id }); nextStep(13); }
-        else { finish([{ event_type: 'shot_off', user_id: id }, { event_type: 'goal_kick', team: 'opponent' }]); }
+        else if (data.res === 'shot_off') { finish([{ event_type: 'shot_off', user_id: id }, { event_type: 'goal_kick', team: 'opponent' }]); }
+        else if (data.res === 'shot') { finish([{ event_type: 'shot', user_id: id }, { event_type: 'recovery', team: 'opponent' }]); }
       }} /></>;
       if (step === 12) return <><Title text="アシストは？" /><PlayerGrid allowNone onSelect={(id) => finish({ event_type: 'goal', user_id: data.shooter, target_user_id: id })} /></>;
       if (step === 13) return (
