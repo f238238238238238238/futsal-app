@@ -90,6 +90,10 @@ export default function VideoAnalysisPage() {
         if (parsed.gkId) setGkId(parsed.gkId);
         if (parsed.positions) setPositions(parsed.positions);
       }
+      const savedEvents = localStorage.getItem('futsal_video_editor_events');
+      if (savedEvents) {
+        setEvents(JSON.parse(savedEvents));
+      }
     } catch (e) {}
     setSetupLoaded(true);
   }, []);
@@ -104,6 +108,12 @@ export default function VideoAnalysisPage() {
       }));
     }
   }, [attendees, starters, gkId, positions, setupLoaded]);
+
+  useEffect(() => {
+    if (setupLoaded) {
+      localStorage.setItem('futsal_video_editor_events', JSON.stringify(events));
+    }
+  }, [events, setupLoaded]);
 
   useEffect(() => {
     getPlayers().then(p => setPlayers(p.users || p || [])).catch(console.error);
@@ -353,6 +363,7 @@ export default function VideoAnalysisPage() {
         events: events
       };
       await createMatch(payload);
+      localStorage.removeItem('futsal_video_editor_events'); // Clear saved events on success
       alert('保存しました');
       router.push('/admin/matches');
     } catch (err) {
@@ -525,15 +536,15 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
   };
 
   const PlayerGrid = ({ onSelect, allowNone, players = activePlayers }) => (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '1rem' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: players.length <= 5 ? 'repeat(5, 1fr)' : 'repeat(4, 1fr)', gap: '8px', marginTop: '1rem' }}>
       {players.map((p, index) => (
-        <button key={p.user_id} data-key={index + 1 < 9 ? String(index + 1) : undefined} onClick={() => onSelect(p.user_id)} className={styles.saveBtn} style={{ position: 'relative', background: '#333', border: '1px solid #555', padding: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
-          {index + 1 < 9 && <span style={{ position: 'absolute', top: 2, left: 5, fontSize: '0.7rem', color: '#aaa' }}>[{index + 1}]</span>}
-          {p.photo_url ? <img src={getImageUrl(p.photo_url)} alt={p.name} style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} /> : <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#555', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem' }}>{p.jersey_number || '-'}</div>}
-          <span style={{ fontSize: '0.8rem' }}>{p.name}</span>
+        <button key={p.user_id} data-key={index + 1 < 9 ? String(index + 1) : undefined} onClick={() => onSelect(p.user_id)} className={styles.saveBtn} style={{ position: 'relative', background: '#333', border: '1px solid #555', padding: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+          {index + 1 < 9 && <span style={{ position: 'absolute', top: 2, left: 5, fontSize: '0.8rem', color: '#aaa', fontWeight: 'bold' }}>[{index + 1}]</span>}
+          {p.photo_url ? <img src={getImageUrl(p.photo_url)} alt={p.name} style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover' }} /> : <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#555', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>{p.jersey_number || '-'}</div>}
+          <span style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>{p.name}</span>
         </button>
       ))}
-      {allowNone && <button data-key="9" onClick={() => onSelect(null)} className={styles.deleteBtn} style={{ position: 'relative' }}><span style={{ position: 'absolute', top: 2, left: 5, fontSize: '0.7rem', color: '#aaa' }}>[9]</span>なし</button>}
+      {allowNone && <button data-key="9" onClick={() => onSelect(null)} className={styles.deleteBtn} style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ position: 'absolute', top: 2, left: 5, fontSize: '0.8rem', color: '#aaa', fontWeight: 'bold' }}>[9]</span>なし</button>}
     </div>
   );
 
@@ -716,7 +727,7 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
           <div style={{ display: 'grid', gap: '8px' }}>
             <button data-key="1" className={styles.saveBtn} onClick={() => { updateData({ action: 'pass_cut' }); nextStep(22); }}>インターセプトした [1]</button>
             <button data-key="2" className={styles.saveBtn} onClick={() => { updateData({ action: 'clear' }); nextStep(23); }}>クリアした [2]</button>
-            <button data-key="3" className={styles.deleteBtn} onClick={() => finish({ event_type: 'opponent_pass_fail' })}>相手の自滅 [3]</button>
+            <button data-key="3" className={styles.deleteBtn} onClick={() => nextStep(28)}>相手の自滅 [3]</button>
             <button data-key="4" className={styles.saveBtn} onClick={() => { updateData({ out_type: 'side_out' }); nextStep(27); }}>サイドアウト [4]</button>
             <button data-key="5" className={styles.saveBtn} onClick={() => { updateData({ out_type: 'goal_kick' }); nextStep(27); }}>ゴールキック [5]</button>
           </div>
@@ -747,7 +758,23 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
         </>
       );
       if (step === 27) return <><Title text="誰が蹴る？" /><PlayerGrid onSelect={(id) => finish([{ event_type: 'opponent_pass_fail' }, { event_type: data.out_type, team: 'own', user_id: id }])} /></>;
+      
+      // Opponent pass fail (self-destruction) -> what happened to ball?
+      if (step === 28) return (
+        <>
+          <Title text="ボールはどうなった？" />
+          <div style={{ display: 'grid', gap: '8px' }}>
+            <button data-key="1" className={styles.saveBtn} onClick={() => nextStep(30)}>自チームが拾った [1]</button>
+            <button data-key="2" className={styles.deleteBtn} onClick={() => finish([{ event_type: 'opponent_pass_fail' }, { event_type: 'recovery', team: 'opponent' }])}>相手が拾った [2]</button>
+            <button data-key="3" className={styles.saveBtn} onClick={() => { updateData({ out_type: 'side_out' }); nextStep(31); }}>サイドアウト（マイボール） [3]</button>
+            <button data-key="4" className={styles.saveBtn} onClick={() => { updateData({ out_type: 'corner_kick' }); nextStep(31); }}>コーナーキック（マイボール） [4]</button>
+            <button data-key="5" className={styles.deleteBtn} onClick={() => finish([{ event_type: 'opponent_pass_fail' }, { event_type: 'side_out', team: 'opponent' }])}>サイドアウト（相手ボール） [5]</button>
+          </div>
+        </>
+      );
       if (step === 29) return <><Title text="誰が蹴る？" /><PlayerGrid onSelect={(id) => finish([{ event_type: 'clear', user_id: data.clearer }, { event_type: data.out_type, team: 'own', user_id: id }])} /></>;
+      if (step === 30) return <><Title text="誰が拾った？" /><PlayerGrid onSelect={(id) => finish([{ event_type: 'opponent_pass_fail' }, { event_type: 'recovery', user_id: id }])} /></>;
+      if (step === 31) return <><Title text="誰が蹴る？" /><PlayerGrid onSelect={(id) => finish([{ event_type: 'opponent_pass_fail' }, { event_type: data.out_type, team: 'own', user_id: id }])} /></>;
     }
 
     // --- DEFENSE ---
