@@ -7,6 +7,44 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getPlayers, createMatch, getImageUrl } from '@/lib/api';
 import styles from './editor.module.css';
 
+const EVENT_DISPLAY_NAMES = {
+  'kickoff': 'キックオフ',
+  'shot': 'シュート',
+  'goal': 'ゴール',
+  'saved': 'セーブされた',
+  'shot_off': '枠外',
+  'block': 'ブロック',
+  'pass': 'パス',
+  'pass_miss': 'パスミス',
+  'pass_cut': 'インターセプト',
+  'clear': 'クリア',
+  'steal': 'スティール',
+  'steal_miss': 'スティール失敗',
+  'recovery': 'ボール回収',
+  'lost_ball': 'ロスト',
+  'side_out': 'キックイン',
+  'corner_kick': 'コーナーキック',
+  'goal_kick': 'ゴールクリアランス',
+  'foul': 'ファール',
+  'foul_opponent': '相手のファール',
+  'sub_in': 'IN',
+  'sub_out': 'OUT',
+  'defense': 'ディフェンス',
+  'concede': '失点',
+  'catch': 'キャッチ',
+  'save': 'セーブ',
+  'opponent_goal': '相手のゴール',
+  'opponent_shot_off': '相手のシュート枠外',
+  'opponent_pass': '相手のパス',
+  'opponent_pass_fail': '相手のパスミス',
+};
+
+const displayEventType = (ev) => {
+  const name = EVENT_DISPLAY_NAMES[ev.event_type] || ev.event_type;
+  if (ev.team === 'opponent') return `[相手] ${name}`;
+  return name;
+};
+
 export default function VideoAnalysisPage() {
   const router = useRouter();
   const { isAdmin } = useAuth();
@@ -408,7 +446,7 @@ export default function VideoAnalysisPage() {
                   <div key={i} style={{ fontSize: '0.85rem', padding: '6px', borderBottom: '1px solid #333', display: 'flex', justifyContent: 'space-between' }}>
                     <span>
                       [{Math.floor(ev.minute / 60)}:{(ev.minute % 60).toString().padStart(2, '0')}] 
-                      <span style={{ color: '#74c0fc', marginLeft: '5px' }}>{ev.event_type}</span>
+                      <span style={{ color: '#74c0fc', marginLeft: '5px' }}>{displayEventType(ev)}</span>
                       {ev.user_id && <span style={{ marginLeft: '5px' }}>({players.find(p=>p.user_id===ev.user_id)?.name})</span>}
                     </span>
                     <button style={{ color: '#ff6b6b', background: 'none', border: 'none', cursor: 'pointer' }} onClick={() => {
