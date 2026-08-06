@@ -476,13 +476,13 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
   const PlayerGrid = ({ onSelect, allowNone, players = activePlayers }) => (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '1rem' }}>
       {players.map((p, index) => (
-        <button key={p.user_id} data-key={index + 1 < 10 ? String(index + 1) : undefined} onClick={() => onSelect(p.user_id)} className={styles.saveBtn} style={{ position: 'relative', background: '#333', border: '1px solid #555', padding: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
-          {index + 1 < 10 && <span style={{ position: 'absolute', top: 2, left: 5, fontSize: '0.7rem', color: '#aaa' }}>[{index + 1}]</span>}
+        <button key={p.user_id} data-key={index + 1 < 9 ? String(index + 1) : undefined} onClick={() => onSelect(p.user_id)} className={styles.saveBtn} style={{ position: 'relative', background: '#333', border: '1px solid #555', padding: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
+          {index + 1 < 9 && <span style={{ position: 'absolute', top: 2, left: 5, fontSize: '0.7rem', color: '#aaa' }}>[{index + 1}]</span>}
           {p.photo_url ? <img src={getImageUrl(p.photo_url)} alt={p.name} style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} /> : <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#555', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem' }}>{p.jersey_number || '-'}</div>}
           <span style={{ fontSize: '0.8rem' }}>{p.name}</span>
         </button>
       ))}
-      {allowNone && <button data-key="0" onClick={() => onSelect(null)} className={styles.deleteBtn} style={{ position: 'relative' }}><span style={{ position: 'absolute', top: 2, left: 5, fontSize: '0.7rem', color: '#aaa' }}>[0]</span>なし</button>}
+      {allowNone && <button data-key="9" onClick={() => onSelect(null)} className={styles.deleteBtn} style={{ position: 'relative' }}><span style={{ position: 'absolute', top: 2, left: 5, fontSize: '0.7rem', color: '#aaa' }}>[9]</span>なし</button>}
     </div>
   );
 
@@ -806,7 +806,7 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
         <>
           <Title text="誰のファール？" />
           <PlayerGrid onSelect={(id) => finish({ event_type: 'foul', user_id: id })} />
-          <button data-key="0" className={styles.deleteBtn} style={{ marginTop: '1rem', width: '100%', padding: '1rem', position: 'relative' }} onClick={() => finish({ event_type: 'foul_opponent' })}><span style={{position:'absolute', top: 5, left: 5, fontSize: '0.8rem'}}>[0]</span>相手のファール</button>
+          <button data-key="9" className={styles.deleteBtn} style={{ marginTop: '1rem', width: '100%', padding: '1rem', position: 'relative' }} onClick={() => finish({ event_type: 'foul_opponent' })}><span style={{position:'absolute', top: 5, left: 5, fontSize: '0.8rem'}}>[9]</span>相手のファール</button>
         </>
       );
     }
@@ -837,7 +837,7 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
       <div style={{ background: '#222', padding: '2rem', borderRadius: '12px', minWidth: '400px', maxWidth: '600px', width: '100%', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
         {renderContent()}
         <div style={{ marginTop: '2rem', textAlign: 'center' }}>
-          <button className={styles.deleteBtn} style={{ background: 'transparent', border: '1px solid #ff6b6b' }} onClick={resume}>キャンセル</button>
+          <button data-key="0" className={styles.deleteBtn} style={{ background: 'transparent', border: '1px solid #ff6b6b' }} onClick={resume}>キャンセル [0]</button>
         </div>
       </div>
     </div>
