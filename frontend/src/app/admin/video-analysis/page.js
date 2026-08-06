@@ -37,6 +37,8 @@ const EVENT_DISPLAY_NAMES = {
   'opponent_shot_off': '相手のシュート枠外',
   'opponent_pass': '相手のパス',
   'opponent_pass_fail': '相手のパスミス',
+  'opponent_steal': '相手のスティール',
+  'opponent_clear': '相手のクリア',
 };
 
 const displayEventType = (ev) => {
@@ -176,6 +178,9 @@ export default function VideoAnalysisPage() {
         case 'catch':
           possessor = ev.user_id || 'opponent';
           break;
+        case 'opponent_steal':
+          possessor = 'opponent';
+          break;
         case 'lost_ball':
         case 'pass_miss':
         case 'goal':
@@ -186,6 +191,7 @@ export default function VideoAnalysisPage() {
         case 'foul':
         case 'foul_opponent':
         case 'clear':
+        case 'opponent_clear':
         case 'defense':
           possessor = null; 
           break;
@@ -249,6 +255,13 @@ export default function VideoAnalysisPage() {
       } else if (possessor && possessor !== 'opponent') {
         initialStep = 10;
         initialData.shooter = possessor;
+      }
+    }
+    
+    if (actionType === 'defense') {
+      if (possessor && possessor !== 'opponent') {
+        initialStep = 50; // Opponent defense (we have the ball)
+        initialData.victim = possessor;
       }
     }
     
@@ -785,6 +798,33 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
         </>
       );
       if (step === 23) return <><Title text="誰が蹴る？" /><PlayerGrid onSelect={(id) => finish([{ event_type: 'clear', user_id: data.actor }, { event_type: data.out_type, team: 'own', user_id: id }])} /></>;
+      
+      // -- Opponent Defense flow (when our team has ball)
+      if (step === 50) return (
+        <>
+          <Title text="相手にどうディフェンスされた？" />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+            <button data-key="1" className={styles.deleteBtn} onClick={() => finish({ event_type: 'opponent_steal', user_id: data.victim })}>スティールされた [1]</button>
+            <button data-key="2" className={styles.saveBtn} onClick={() => nextStep(60)}>クリアされた [2]</button>
+          </div>
+        </>
+      );
+      
+      // Clear by opponent
+      if (step === 60) return (
+        <>
+          <Title text="相手にクリアされたボールはどうなった？" />
+          <div style={{ display: 'grid', gap: '8px' }}>
+            <button data-key="1" className={styles.saveBtn} onClick={() => nextStep(61)}>自チームが拾った [1]</button>
+            <button data-key="2" className={styles.deleteBtn} onClick={() => finish([{ event_type: 'opponent_clear', user_id: data.victim }, { event_type: 'recovery', team: 'opponent' }])}>相手が拾った [2]</button>
+            <button data-key="3" className={styles.saveBtn} onClick={() => { updateData({ out_type: 'side_out' }); nextStep(62); }}>サイドアウト（マイボール） [3]</button>
+            <button data-key="4" className={styles.saveBtn} onClick={() => { updateData({ out_type: 'corner_kick' }); nextStep(62); }}>コーナーキック（マイボール） [4]</button>
+            <button data-key="5" className={styles.deleteBtn} onClick={() => finish([{ event_type: 'opponent_clear', user_id: data.victim }, { event_type: 'side_out', team: 'opponent' }])}>サイドアウト（相手ボール） [5]</button>
+          </div>
+        </>
+      );
+      if (step === 61) return <><Title text="誰が拾った？" /><PlayerGrid onSelect={(id) => finish([{ event_type: 'opponent_clear', user_id: data.victim }, { event_type: 'recovery', user_id: id }])} /></>;
+      if (step === 62) return <><Title text="誰が蹴る？" /><PlayerGrid onSelect={(id) => finish([{ event_type: 'opponent_clear', user_id: data.victim }, { event_type: data.out_type, team: 'own', user_id: id }])} /></>;
     }
 
     // --- BALL OUT ---
