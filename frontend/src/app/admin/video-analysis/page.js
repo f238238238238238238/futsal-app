@@ -610,7 +610,10 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
         <>
           <Title text="どっちのボールになった？" />
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            <button data-key="1" className={styles.saveBtn} onClick={() => nextStep(17)}>自チームのボール [1]</button>
+            <button data-key="1" className={styles.saveBtn} onClick={() => {
+              if (data.out_type === 'goal_kick') finish([{ event_type: data.res === 'block' ? 'shot_off' : 'shot', user_id: data.shooter }, { event_type: 'goal_kick', team: 'own', user_id: gkId }]);
+              else nextStep(17);
+            }}>自チームのボール [1]</button>
             <button data-key="2" className={styles.deleteBtn} onClick={() => finish([{ event_type: data.res === 'block' ? 'shot_off' : 'shot', user_id: data.shooter }, { event_type: data.out_type, team: 'opponent' }])}>相手チームのボール [2]</button>
           </div>
         </>
@@ -626,7 +629,7 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
             <button data-key="2" className={styles.saveBtn} onClick={() => finish({ event_type: 'catch', user_id: gkId })}>自チームがキャッチ [2]</button>
             <button data-key="3" className={styles.saveBtn} onClick={() => { updateData({ res: 'save' }); nextStep(21); }}>自チームのセーブ [3]</button>
             <button data-key="4" className={styles.saveBtn} onClick={() => { updateData({ res: 'block' }); nextStep(22); }}>自チームのブロック [4]</button>
-            <button data-key="5" className={styles.saveBtn} onClick={() => nextStep(30)}>枠外 [5]</button>
+            <button data-key="5" className={styles.saveBtn} onClick={() => finish([{ event_type: 'opponent_shot_off' }, { event_type: 'goal_kick', team: 'own', user_id: gkId }])}>枠外 [5]</button>
           </div>
         </>
       );
@@ -648,7 +651,10 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
         <>
           <Title text="どっちのボールになった？" />
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            <button data-key="1" className={styles.saveBtn} onClick={() => nextStep(27)}>自チームのボール [1]</button>
+            <button data-key="1" className={styles.saveBtn} onClick={() => {
+              if (data.out_type === 'goal_kick') finish([{ event_type: data.res === 'block' ? 'block' : 'save', user_id: data.res === 'block' ? data.blocker : gkId }, { event_type: 'goal_kick', team: 'own', user_id: gkId }]);
+              else nextStep(27);
+            }}>自チームのボール [1]</button>
             <button data-key="2" className={styles.deleteBtn} onClick={() => finish([{ event_type: data.res === 'block' ? 'block' : 'save', user_id: data.res === 'block' ? data.blocker : gkId }, { event_type: data.out_type, team: 'opponent' }])}>相手チームのボール [2]</button>
           </div>
         </>
@@ -667,7 +673,7 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
         </>
       );
       if (step === 26) return <><Title text="誰が拾った？" /><PlayerGrid onSelect={(id) => finish([{ event_type: 'block', user_id: data.blocker }, { event_type: 'recovery', user_id: id }])} /></>;
-      if (step === 30) return <><Title text="誰がゴールクリアランス(GK)する？" /><PlayerGrid onSelect={(id) => finish([{ event_type: 'opponent_shot_off' }, { event_type: 'goal_kick', team: 'own', user_id: id }])} /></>;
+      // step 30 intentionally removed
     }
 
     // --- PASS ---
@@ -712,7 +718,10 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
         <>
           <Title text="どっちのボールになった？" />
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            <button data-key="1" className={styles.saveBtn} onClick={() => nextStep(8)}>自チームのボール [1]</button>
+            <button data-key="1" className={styles.saveBtn} onClick={() => {
+              if (data.out_type === 'goal_kick') finish([{ event_type: 'pass_miss', user_id: data.passer }, { event_type: 'goal_kick', team: 'own', user_id: gkId }]);
+              else nextStep(8);
+            }}>自チームのボール [1]</button>
             <button data-key="2" className={styles.deleteBtn} onClick={() => finish([{ event_type: 'pass_miss', user_id: data.passer }, { event_type: data.out_type, team: 'opponent' }])}>相手チームのボール [2]</button>
           </div>
         </>
@@ -760,7 +769,10 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
         <>
           <Title text="どっちのボールになった？" />
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            <button data-key="1" className={styles.saveBtn} onClick={() => nextStep(29)}>自チームのボール [1]</button>
+            <button data-key="1" className={styles.saveBtn} onClick={() => {
+              if (data.out_type === 'goal_kick') finish([{ event_type: 'clear', user_id: data.clearer }, { event_type: 'goal_kick', team: 'own', user_id: gkId }]);
+              else nextStep(29);
+            }}>自チームのボール [1]</button>
             <button data-key="2" className={styles.deleteBtn} onClick={() => finish([{ event_type: 'clear', user_id: data.clearer }, { event_type: data.out_type, team: 'opponent' }])}>相手チームのボール [2]</button>
           </div>
         </>
@@ -827,7 +839,10 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
         <>
           <Title text="どっちのボールになった？" />
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            <button data-key="1" className={styles.saveBtn} onClick={() => nextStep(23)}>自チームのボール [1]</button>
+            <button data-key="1" className={styles.saveBtn} onClick={() => {
+              if (data.out_type === 'goal_kick') finish([{ event_type: 'clear', user_id: data.actor }, { event_type: 'goal_kick', team: 'own', user_id: gkId }]);
+              else nextStep(23);
+            }}>自チームのボール [1]</button>
             <button data-key="2" className={styles.deleteBtn} onClick={() => finish([{ event_type: 'clear', user_id: data.actor }, { event_type: data.out_type, team: 'opponent' }])}>相手チームのボール [2]</button>
           </div>
         </>
@@ -878,7 +893,10 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
         <>
           <Title text="どっちのボールになった？" />
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            <button data-key="1" className={styles.saveBtn} onClick={() => nextStep(3)}>自チームのボール [1]</button>
+            <button data-key="1" className={styles.saveBtn} onClick={() => {
+              if (data.out_type === 'goal_kick') finish({ event_type: 'goal_kick', team: 'own', user_id: gkId });
+              else nextStep(3);
+            }}>自チームのボール [1]</button>
             <button data-key="2" className={styles.deleteBtn} onClick={() => finish({ event_type: data.out_type, team: 'opponent' })}>相手チームのボール [2]</button>
           </div>
         </>
