@@ -206,6 +206,7 @@ export default function VideoAnalysisPage() {
           possessor = ev.user_id || 'opponent';
           break;
         case 'opponent_steal':
+        case 'intercept':
           possessor = 'opponent';
           break;
         case 'lost_ball':
