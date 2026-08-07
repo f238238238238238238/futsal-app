@@ -152,11 +152,12 @@ export default function VideoAnalysisPage() {
             if (videoRef.current.paused) videoRef.current.play();
             else videoRef.current.pause();
           }
-        } else if (key === '1') { e.preventDefault(); pauseForAction('shot'); }
-        else if (key === '2') { e.preventDefault(); pauseForAction('pass'); }
-        else if (key === '3') { e.preventDefault(); pauseForAction('lost'); }
-        else if (key === '4') { e.preventDefault(); pauseForAction('foul'); }
-        else if (key === '5') { e.preventDefault(); pauseForAction('sub'); }
+        } else if (key === '1') { e.preventDefault(); pauseForAction('kickoff'); }
+        else if (key === '2') { e.preventDefault(); pauseForAction('shot'); }
+        else if (key === '3') { e.preventDefault(); pauseForAction('pass'); }
+        else if (key === '4') { e.preventDefault(); pauseForAction('lost'); }
+        else if (key === '5') { e.preventDefault(); pauseForAction('foul'); }
+        else if (key === '6') { e.preventDefault(); pauseForAction('sub'); }
       } else if (pendingAction) {
         if (['1','2','3','4','5','6','7','8','9','0'].includes(key)) {
           e.preventDefault();
@@ -472,11 +473,12 @@ export default function VideoAnalysisPage() {
                 </div>
                 <h3 style={{ marginBottom: '10px' }}>アクション</h3>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '1.5rem' }}>
-                  <button className={styles.actionBtn} onClick={() => pauseForAction('shot')}>🥅 シュート [1]</button>
-                  <button className={styles.actionBtn} onClick={() => pauseForAction('pass')}>👟 パス [2]</button>
-                  <button className={styles.actionBtn} onClick={() => pauseForAction('lost')}>🛡️ ロスト [3]</button>
-                  <button className={styles.actionBtn} onClick={() => pauseForAction('foul')}>⚠️ ファール [4]</button>
-                  <button className={styles.actionBtn} onClick={() => pauseForAction('sub')}>🔄 交代 [5]</button>
+                  <button className={styles.actionBtn} onClick={() => pauseForAction('kickoff')}>⚽ キックオフ [1]</button>
+                  <button className={styles.actionBtn} onClick={() => pauseForAction('shot')}>🥅 シュート [2]</button>
+                  <button className={styles.actionBtn} onClick={() => pauseForAction('pass')}>👟 パス [3]</button>
+                  <button className={styles.actionBtn} onClick={() => pauseForAction('lost')}>🛡️ ロスト [4]</button>
+                  <button className={styles.actionBtn} onClick={() => pauseForAction('foul')}>⚠️ ファール [5]</button>
+                  <button className={styles.actionBtn} onClick={() => pauseForAction('sub')}>🔄 交代 [6]</button>
                 </div>
                 
                 <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'center' }}>
@@ -611,6 +613,11 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
   const renderContent = () => {
     const { type, step, data } = action;
 
+    // --- KICKOFF ---
+    if (type === 'kickoff') {
+      if (step === 1) return <><Title text="誰が蹴ったか？" /><PlayerGrid onSelect={(id) => { updateData({ kicker: id }); nextStep(2); }} /></>;
+      if (step === 2) return <><Title text="誰が受けたか？" /><PlayerGrid onSelect={(id) => finish({ event_type: 'kickoff', user_id: data.kicker, target_user_id: id })} /></>;
+    }
 
     // --- SHOT ---
     if (type === 'shot') {
