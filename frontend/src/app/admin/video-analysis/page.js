@@ -615,8 +615,17 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
 
     // --- KICKOFF ---
     if (type === 'kickoff') {
-      if (step === 1) return <><Title text="誰が蹴ったか？" /><PlayerGrid onSelect={(id) => { updateData({ kicker: id }); nextStep(2); }} /></>;
-      if (step === 2) return <><Title text="誰が受けたか？" /><PlayerGrid onSelect={(id) => finish({ event_type: 'kickoff', user_id: data.kicker, target_user_id: id })} /></>;
+      if (step === 1) return (
+        <>
+          <Title text="どちらのキックオフ？" />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <button data-key="1" className={styles.saveBtn} style={{ padding: '2rem', position: 'relative' }} onClick={() => nextStep(10)}><span style={{position:'absolute', top: 5, left: 5, fontSize: '0.8rem'}}>[1]</span>自チーム</button>
+            <button data-key="2" className={styles.deleteBtn} style={{ padding: '2rem', position: 'relative' }} onClick={() => finish({ event_type: 'kickoff', team: 'opponent' })}><span style={{position:'absolute', top: 5, left: 5, fontSize: '0.8rem'}}>[2]</span>相手チーム</button>
+          </div>
+        </>
+      );
+      if (step === 10) return <><Title text="誰が蹴ったか？" /><PlayerGrid onSelect={(id) => { updateData({ kicker: id }); nextStep(11); }} /></>;
+      if (step === 11) return <><Title text="誰が受けたか？" /><PlayerGrid onSelect={(id) => finish({ event_type: 'kickoff', user_id: data.kicker, target_user_id: id })} /></>;
     }
 
     // --- SHOT ---
