@@ -122,6 +122,77 @@ router.get('/:id', async (req, res) => {
       targetEventsByYear[row.year][row.event_type] = parseInt(row.event_count, 10);
     }
 
+    // Calculate Possession Seconds for the user
+    const userMatchesResult = await db.query(`
+      SELECT m.match_id, EXTRACT(YEAR FROM m.date::date) as year
+      FROM match_stats ms
+      JOIN matches m ON ms.match_id = m.match_id
+      WHERE ms.user_id = $1
+    `, [req.params.id]);
+
+    const possessionByYear = {};
+    for (const matchRow of userMatchesResult.rows) {
+      const matchId = matchRow.match_id;
+      const year = matchRow.year;
+      if (!possessionByYear[year]) possessionByYear[year] = 0;
+
+      const eventsRes = await db.query(`
+        SELECT event_type, user_id, target_user_id, minute
+        FROM match_events
+        WHERE match_id = $1
+        ORDER BY minute ASC
+      `, [matchId]);
+
+      let currentPossessorId = null;
+      let possessionStartTime = 0;
+
+      for (const ev of eventsRes.rows) {
+        if (currentPossessorId === req.params.id && ev.minute >= possessionStartTime) {
+          possessionByYear[year] += (ev.minute - possessionStartTime);
+        }
+        possessionStartTime = ev.minute;
+
+        switch (ev.event_type) {
+          case 'pass':
+            currentPossessorId = ev.target_user_id || 'opponent';
+            break;
+          case 'kickoff':
+            currentPossessorId = ev.target_user_id || ev.user_id || 'opponent';
+            break;
+          case 'pass_cut':
+          case 'steal':
+          case 'recovery':
+          case 'catch':
+          case 'free_kick':
+          case 'pk':
+          case 'side_out':
+          case 'goal_kick':
+          case 'corner_kick':
+          case 'clear':
+          case 'opponent_clear':
+            currentPossessorId = ev.user_id || 'opponent';
+            break;
+          case 'lost_ball':
+          case 'pass_miss':
+          case 'trap_miss':
+          case 'goal':
+          case 'opponent_goal':
+          case 'shot':
+          case 'shot_off':
+          case 'concede':
+          case 'opponent_shot_off':
+          case 'foul':
+          case 'foul_opponent':
+          case 'opponent_pass_fail':
+            currentPossessorId = null;
+            break;
+          default:
+            break;
+        }
+      }
+    }
+
+
     // Get yearly event attendances
     const yearlyAttendanceResult = await db.query(`
       SELECT 
@@ -155,9 +226,9 @@ router.get('/:id', async (req, res) => {
       const yEvents = eventsByYear[row.year] || {};
       const tEvents = targetEventsByYear[row.year] || {};
       const passes = yEvents.pass || 0;
-      const lost = yEvents.lost_ball || 0;
+      const lost = (yEvents.lost_ball || 0) + (yEvents.pass_miss || 0) + (yEvents.trap_miss || 0);
       const shots = (yEvents.shot || 0) + (yEvents.shot_off || 0);
-      const defense = yEvents.defense || 0;
+      const defense = (yEvents.defense || 0) + (yEvents.clear || 0);
       const steal = yEvents.steal || 0;
       const block = yEvents.block || 0;
       const pass_cut = yEvents.pass_cut || 0;
@@ -195,8 +266,14 @@ router.get('/:id', async (req, res) => {
       const passSuccessRate = (passes + lost) > 0 ? (passes / (passes + lost)) : 0;
       const passing = (passes + lost) > 0 ? calcStat(passSuccessRate, 0.85) : 40; // Target: 85% pass accuracy
       const dribbling = 75; // Fixed value
+      
       const keepingRatio = received_passes > 0 ? (received_passes / (received_passes + lost)) : 0;
-      const keeping = calcStat(keepingRatio, 0.9); // Target: 90%
+      const keepingRatioScore = calcStat(keepingRatio, 0.9); // Target: 90%
+      const possessionSecs = possessionByYear[row.year] || 0;
+      const possessionPerMatch = possessionSecs / fieldMatches;
+      const possessionScore = calcStat(possessionPerMatch, 20.0); // Target: 20s possession per match
+      const keeping = Math.round((keepingRatioScore + possessionScore) / 2);
+
       const vision = calcStat(assists / fieldMatches, 1.0); // Target: 1 assist per match (Key Passes)
       const technique = Math.round((passing + dribbling + keeping + vision) / 4);
 

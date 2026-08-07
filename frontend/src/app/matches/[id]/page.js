@@ -408,50 +408,71 @@ export default function MatchDetailPage() {
 
       if (team === 'red') {
         if (ev.event_type === 'pass') redStats.passes++;
-        if (ev.event_type === 'lost_ball' || ev.event_type === 'pass_miss') redStats.lost++;
+        if (ev.event_type === 'lost_ball' || ev.event_type === 'pass_miss' || ev.event_type === 'trap_miss') redStats.lost++;
         if (ev.event_type === 'goal') { redStats.goals++; redStats.shots++; }
-        if (ev.event_type === 'shot') redStats.shots++;
-        if (ev.event_type === 'save' || ev.event_type === 'catch') {
-          redStats.saves++;
-          blueStats.shots++; // 私たちのセーブ・キャッチ＝相手のシュート
+        if (ev.event_type === 'shot' || ev.event_type === 'shot_off') redStats.shots++;
+        if (ev.event_type === 'save' || ev.event_type === 'catch' || ev.event_type === 'block') {
+          if (ev.event_type === 'save' || ev.event_type === 'catch') redStats.saves++;
+          blueStats.shots++; // 私たちのセーブ・キャッチ・ブロック＝相手のシュート
         }
         if (ev.event_type === 'foul') redStats.fouls++;
         if (ev.event_type === 'corner_kick') redStats.corners++;
       } else if (team === 'blue') {
         if (ev.event_type === 'pass' || ev.event_type === 'opponent_pass') blueStats.passes++;
-        if (ev.event_type === 'lost_ball' || ev.event_type === 'opponent_pass_fail' || ev.event_type === 'pass_miss') blueStats.lost++;
+        if (ev.event_type === 'lost_ball' || ev.event_type === 'opponent_pass_fail' || ev.event_type === 'pass_miss' || ev.event_type === 'trap_miss') blueStats.lost++;
         if (ev.event_type === 'goal' || ev.event_type === 'opponent_goal') { blueStats.goals++; blueStats.shots++; }
-        if (ev.event_type === 'shot') blueStats.shots++;
-        if (ev.event_type === 'save' || ev.event_type === 'catch') blueStats.saves++;
+        if (ev.event_type === 'shot' || ev.event_type === 'shot_off' || ev.event_type === 'opponent_shot_off') blueStats.shots++;
+        if (ev.event_type === 'save' || ev.event_type === 'catch') {
+          blueStats.saves++;
+          redStats.shots++; // 相手のセーブ・キャッチ＝私たちのシュート
+        }
+        if (ev.event_type === 'block' || ev.event_type === 'opponent_block') {
+          redStats.shots++; // 相手のブロック＝私たちのシュート
+        }
         if (ev.event_type === 'foul' || ev.event_type === 'foul_opponent') blueStats.fouls++;
         if (ev.event_type === 'corner_kick') blueStats.corners++;
       }
       
       // Override for opponent-specific events in external matches
       if (ev.event_type === 'concede') { blueStats.goals++; blueStats.shots++; }
-      if (ev.event_type === 'opponent_shot') blueStats.shots++;
+      if (ev.event_type === 'opponent_shot' || ev.event_type === 'opponent_shot_off') blueStats.shots++;
       if (ev.event_type === 'foul_opponent') blueStats.fouls++;
       
       switch(ev.event_type) {
          case 'pass':
-         case 'kickoff':
            currentPossessorId = ev.target_user_id || 'opponent';
+           currentTeam = getTeamForUser(currentPossessorId);
+           break;
+         case 'kickoff':
+           currentPossessorId = ev.target_user_id || ev.user_id || 'opponent';
            currentTeam = getTeamForUser(currentPossessorId);
            break;
          case 'pass_cut':
          case 'steal':
          case 'recovery':
          case 'catch':
+         case 'free_kick':
+         case 'pk':
+         case 'side_out':
+         case 'goal_kick':
+         case 'corner_kick':
+         case 'clear':
+         case 'opponent_clear':
            currentPossessorId = ev.user_id || 'opponent';
            currentTeam = getTeamForUser(currentPossessorId);
            break;
          case 'lost_ball':
          case 'pass_miss':
+         case 'trap_miss':
          case 'goal':
          case 'opponent_goal':
          case 'shot':
          case 'shot_off':
          case 'concede':
+         case 'opponent_shot_off':
+         case 'foul':
+         case 'foul_opponent':
+         case 'opponent_pass_fail':
            currentPossessorId = null;
            currentTeam = null;
            break;
@@ -544,6 +565,7 @@ export default function MatchDetailPage() {
       case 'steal': return `🛡️ ${name} がボール奪取！`;
       case 'pass_cut': return `🛡️ ${name} がパスカット！`;
       case 'block': return `🛡️ ${name} がブロック！`;
+      case 'opponent_block': return `🛡️ 相手がブロック！`;
       case 'sub_in': return `🔼 ${name} がピッチに入りました`;
       case 'sub_out': return `🔽 ${name} がベンチに下がりました`;
       case 'substitution': return `🔄 ${ev.target_user_name || '選手'} に代わって ${name} がピッチに入りました`;
@@ -563,6 +585,7 @@ export default function MatchDetailPage() {
         return `🔁 ${name} がパスを繋ぎました`;
       case 'dribble': return `🏃‍♂️ ${name} がドリブルで仕掛けました！`;
       case 'lost_ball': return `💥 ${name} がボールをロスト`;
+      case 'trap_miss': return `💥 ${name} がトラップミス！`;
       case 'pass_miss': return `💥 ${name} がパスミス！`;
       case 'opponent_pass': return `🔁 相手チームがパスを繋ぎました`;
       case 'opponent_pass_fail': return `💥 相手チームがボールをロストしました`;
