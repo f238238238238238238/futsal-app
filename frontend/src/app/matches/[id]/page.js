@@ -792,7 +792,25 @@ export default function MatchDetailPage() {
                       const pEvents = match.events ? match.events.filter(e => e.user_id === s.user_id || e.user_id === String(s.user_id)) : [];
                       
                       const goals = s.goals > 0 ? s.goals : pEvents.filter(e => e.event_type === 'goal').length;
-                      const assists = s.assists > 0 ? s.assists : pEvents.filter(e => e.event_type === 'assist').length;
+                      let autoAssists = 0;
+                      if (match.events) {
+                        match.events.forEach((ev, i) => {
+                          if (ev.event_type === 'goal') {
+                            for (let j = i - 1; j >= 0; j--) {
+                              const prevEv = match.events[j];
+                              if (['steal', 'opponent_pass', 'intercept', 'clear', 'opponent_block', 'lost_ball', 'pass_miss', 'trap_miss'].includes(prevEv.event_type)) break;
+                              if (prevEv.team === 'opponent') break;
+                              if ((prevEv.event_type === 'pass' || prevEv.event_type === 'kickoff') && (String(prevEv.target_user_id) === String(ev.user_id))) {
+                                if (String(prevEv.user_id) === String(s.user_id)) {
+                                  autoAssists++;
+                                }
+                                break;
+                              }
+                            }
+                          }
+                        });
+                      }
+                      const assists = s.assists > 0 ? s.assists : autoAssists;
                       
                       const passes = pEvents.filter(e => e.event_type === 'pass').length;
                       const shots = pEvents.filter(e => e.event_type === 'shot' || e.event_type === 'shot_off' || e.event_type === 'goal').length;

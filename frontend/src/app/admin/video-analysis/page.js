@@ -365,12 +365,33 @@ export default function VideoAnalysisPage() {
         statsMap[uid] = { goals: 0, assists: 0, saves: 0 };
       });
       
-      events.forEach(ev => {
-        if (ev.event_type === 'goal' && statsMap[ev.user_id]) statsMap[ev.user_id].goals++;
-        if (ev.event_type === 'goal' && ev.target_user_id && statsMap[ev.target_user_id]) statsMap[ev.target_user_id].assists++;
-        if (ev.event_type === 'pass' && ev.is_key_pass && statsMap[ev.user_id]) statsMap[ev.user_id].assists++;
+      events.forEach((ev, i) => {
+        if (ev.event_type === 'goal') {
+          if (statsMap[ev.user_id]) statsMap[ev.user_id].goals++;
+          
+          // Auto-detect assist
+          let assistFound = false;
+          for (let j = i - 1; j >= 0; j--) {
+            const prevEv = events[j];
+            // Break chain if opponent touches or possession is lost
+            if (['steal', 'opponent_pass', 'intercept', 'clear', 'opponent_block', 'lost_ball', 'pass_miss', 'trap_miss'].includes(prevEv.event_type)) {
+               break;
+            }
+            if (prevEv.team === 'opponent') {
+               break;
+            }
+            // If the previous valid event was a pass/kickoff to the goal scorer, grant assist
+            if ((prevEv.event_type === 'pass' || prevEv.event_type === 'kickoff') && prevEv.target_user_id === ev.user_id) {
+               if (prevEv.user_id && statsMap[prevEv.user_id]) {
+                 statsMap[prevEv.user_id].assists++;
+                 assistFound = true;
+               }
+               break;
+            }
+          }
+        }
         if (ev.event_type === 'save' && statsMap[ev.user_id]) statsMap[ev.user_id].saves++;
-        if (ev.event_type === 'catch' && statsMap[ev.user_id]) statsMap[ev.user_id].saves++; // Count catches as saves for stat box? Yes
+        if (ev.event_type === 'catch' && statsMap[ev.user_id]) statsMap[ev.user_id].saves++;
       });
 
       const payload = {
@@ -653,7 +674,10 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
         <>
           <Title text="シュートの結果は？" />
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            <button data-key="1" className={styles.saveBtn} onClick={() => { updateData({ res: 'goal' }); nextStep(data.shooter ? 12 : 11); }}>得点 [1]</button>
+            <button data-key="1" className={styles.saveBtn} onClick={() => { 
+              if (data.shooter) finish({ event_type: 'goal', user_id: data.shooter }); 
+              else { updateData({ res: 'goal' }); nextStep(11); } 
+            }}>得点 [1]</button>
             <button data-key="2" className={styles.saveBtn} onClick={() => { 
               if (data.shooter) finish([{ event_type: 'shot', user_id: data.shooter }, { event_type: 'catch', team: 'opponent' }, { event_type: 'goal_kick', team: 'opponent' }]);
               else { updateData({ res: 'catch' }); nextStep(11); }
@@ -668,12 +692,11 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
         </>
       );
       if (step === 11) return <><Title text="誰が打ったか？" /><PlayerGrid onSelect={(id) => { 
-        if (data.res === 'goal') { updateData({ shooter: id }); nextStep(12); }
+        if (data.res === 'goal') { finish({ event_type: 'goal', user_id: id }); }
         else if (data.res === 'saved' || data.res === 'block') { updateData({ shooter: id }); nextStep(13); }
         else if (data.res === 'shot_off') { finish([{ event_type: 'shot_off', user_id: id }, { event_type: 'goal_kick', team: 'opponent' }]); }
         else if (data.res === 'catch') { finish([{ event_type: 'shot', user_id: id }, { event_type: 'catch', team: 'opponent' }, { event_type: 'goal_kick', team: 'opponent' }]); }
       }} /></>;
-      if (step === 12) return <><Title text="アシストは？" /><PlayerGrid allowNone onSelect={(id) => finish({ event_type: 'goal', user_id: data.shooter, target_user_id: id })} /></>;
       if (step === 13) return (
         <>
           <Title text="こぼれ球はどうなった？" />
@@ -786,16 +809,7 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
           </div>
         </>
       );
-      if (step === 103) return <><Title text="誰が受けた？" /><PlayerGrid onSelect={(id) => { updateData({ target_user_id: id }); nextStep(131); }} /></>;
-      if (step === 131) return (
-        <>
-          <Title text="これはゴールに直結するキーパス（アシスト）でしたか？" />
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            <button data-key="1" className={styles.saveBtn} onClick={() => finish({ event_type: 'pass', user_id: data.passer, target_user_id: data.target_user_id, is_key_pass: true })}>はい（アシスト） [1]</button>
-            <button data-key="2" className={styles.saveBtn} onClick={() => finish({ event_type: 'pass', user_id: data.passer, target_user_id: data.target_user_id })}>いいえ（通常のパス） [2]</button>
-          </div>
-        </>
-      );
+      if (step === 103) return <><Title text="誰が受けた？" /><PlayerGrid onSelect={(id) => finish({ event_type: 'pass', user_id: data.passer, target_user_id: id })} /></>;
       if (step === 104) return (
         <>
           <Title text="ミスの原因は？" />
