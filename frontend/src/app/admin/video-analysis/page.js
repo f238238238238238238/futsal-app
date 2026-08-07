@@ -917,6 +917,7 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
         </>
       );
       if (step === 127) return <><Title text="誰が蹴る？" /><PlayerGrid onSelect={(id) => finish([{ event_type: 'opponent_pass_fail' }, { event_type: 'clear', user_id: data.clearer }, { event_type: data.out_type, team: 'own', user_id: id }])} /></>;
+      if (step === 128) return <><Title text="誰が蹴る？" /><PlayerGrid onSelect={(id) => finish([{ event_type: 'opponent_pass_fail' }, { event_type: data.out_type, team: 'own', user_id: id }])} /></>;
     }
 
     // --- LOST (formerly DEFENSE) ---
