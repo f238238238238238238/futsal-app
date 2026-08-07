@@ -267,11 +267,20 @@ export default function VideoAnalysisPage() {
     let initialStep = 1;
     let initialData = { minute: t };
     
+    if (actionType === 'lost') {
+      if (possessor === 'opponent') {
+        initialStep = 1; // Opponent possession lost -> ask who tackled
+      } else if (possessor && possessor !== 'opponent') {
+        initialStep = 10;
+        initialData.actor = possessor;
+      }
+    }
+    
     if (actionType === 'pass') {
       if (possessor === 'opponent') {
-        initialStep = 20; // Opponent pass
+        initialStep = 1;
       } else if (possessor && possessor !== 'opponent') {
-        initialStep = 2; // Own pass
+        initialStep = 102;
         initialData.passer = possessor;
       }
     }
@@ -937,8 +946,14 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
         if (step === 204) return <><Title text="誰が蹴る？" /><PlayerGrid onSelect={(id) => finish([{ event_type: 'steal', user_id: data.actor }, { event_type: data.out_type, team: 'own', user_id: id }])} /></>;
       } else {
         // Our possession - direct lost
-        finish([{ event_type: 'lost_ball', team: 'own' }, { event_type: 'recovery', team: 'opponent' }]);
-        return null;
+        if (step === 10) return (
+          <>
+            <Title text="ロストとして記録しますか？" />
+            <div style={{ textAlign: 'center' }}>
+              <button data-key="1" className={styles.saveBtn} onClick={() => finish([{ event_type: 'lost_ball', team: 'own' }, { event_type: 'recovery', team: 'opponent' }])}>はい（相手ボールへ） [1]</button>
+            </div>
+          </>
+        );
       }
     }
 
