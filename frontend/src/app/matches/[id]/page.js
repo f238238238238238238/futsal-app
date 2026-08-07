@@ -407,7 +407,7 @@ export default function MatchDetailPage() {
       }
 
       if (team === 'red') {
-        if (ev.event_type === 'pass') redStats.passes++;
+        if (ev.event_type === 'pass' || ev.event_type === 'side_out' || ev.event_type === 'corner_kick' || ev.event_type === 'goal_kick') redStats.passes++;
         if (ev.event_type === 'lost_ball' || ev.event_type === 'pass_miss' || ev.event_type === 'trap_miss') redStats.lost++;
         if (ev.event_type === 'goal') { redStats.goals++; redStats.shots++; }
         if (ev.event_type === 'shot' || ev.event_type === 'shot_off') redStats.shots++;
@@ -418,7 +418,7 @@ export default function MatchDetailPage() {
         if (ev.event_type === 'foul') redStats.fouls++;
         if (ev.event_type === 'corner_kick') redStats.corners++;
       } else if (team === 'blue') {
-        if (ev.event_type === 'pass' || ev.event_type === 'opponent_pass') blueStats.passes++;
+        if (ev.event_type === 'pass' || ev.event_type === 'opponent_pass' || ev.event_type === 'side_out' || ev.event_type === 'corner_kick' || ev.event_type === 'goal_kick') blueStats.passes++;
         if (ev.event_type === 'lost_ball' || ev.event_type === 'opponent_pass_fail' || ev.event_type === 'pass_miss' || ev.event_type === 'trap_miss') blueStats.lost++;
         if (ev.event_type === 'goal' || ev.event_type === 'opponent_goal') { blueStats.goals++; blueStats.shots++; }
         if (ev.event_type === 'shot' || ev.event_type === 'shot_off' || ev.event_type === 'opponent_shot_off') blueStats.shots++;
@@ -812,7 +812,7 @@ export default function MatchDetailPage() {
                       }
                       const assists = s.assists > 0 ? s.assists : autoAssists;
                       
-                      const passes = pEvents.filter(e => e.event_type === 'pass').length;
+                      const passes = pEvents.filter(e => e.event_type === 'pass' || e.event_type === 'side_out' || e.event_type === 'corner_kick' || e.event_type === 'goal_kick').length;
                       const shots = pEvents.filter(e => e.event_type === 'shot' || e.event_type === 'shot_off' || e.event_type === 'goal').length;
                       const blocks = pEvents.filter(e => e.event_type === 'block').length;
                       const steals = pEvents.filter(e => e.event_type === 'steal' || e.event_type === 'pass_cut').length;

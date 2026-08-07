@@ -837,6 +837,9 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
           <div style={{ display: 'grid', gap: '8px' }}>
             <button data-key="1" className={styles.deleteBtn} onClick={() => finish([...missEvents, { event_type: 'intercept', team: 'opponent' }])}>インターセプトされた [1]</button>
             <button data-key="2" className={styles.saveBtn} onClick={() => { updateData({ action: 'clear' }); nextStep(105); }}>クリアされた [2]</button>
+            <button data-key="3" className={styles.saveBtn} onClick={() => finish([...missEvents, { event_type: 'side_out', team: 'opponent' }])}>そのままサイドアウトになった [3]</button>
+            <button data-key="4" className={styles.saveBtn} onClick={() => finish([...missEvents, { event_type: 'corner_kick', team: 'opponent' }])}>そのままコーナーキックになった [4]</button>
+            <button data-key="5" className={styles.saveBtn} onClick={() => finish([...missEvents, { event_type: 'goal_kick', team: 'opponent' }])}>そのままゴールスロー(GK)になった [5]</button>
           </div>
         </>
       );
@@ -877,6 +880,9 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
           <div style={{ display: 'grid', gap: '8px' }}>
             <button data-key="1" className={styles.saveBtn} onClick={() => { updateData({ action: 'pass_cut' }); nextStep(122); }}>インターセプトした [1]</button>
             <button data-key="2" className={styles.saveBtn} onClick={() => { updateData({ action: 'clear' }); nextStep(123); }}>クリアした [2]</button>
+            <button data-key="3" className={styles.saveBtn} onClick={() => { updateData({ out_type: 'side_out' }); nextStep(128); }}>そのままサイドアウトになった [3]</button>
+            <button data-key="4" className={styles.saveBtn} onClick={() => { updateData({ out_type: 'corner_kick' }); nextStep(128); }}>そのままコーナーキックになった [4]</button>
+            <button data-key="5" className={styles.saveBtn} onClick={() => finish([{ event_type: 'opponent_pass_fail' }, { event_type: 'goal_kick', team: 'own', user_id: gkId }])}>そのままゴールスロー(GK)になった [5]</button>
           </div>
         </>
       );
