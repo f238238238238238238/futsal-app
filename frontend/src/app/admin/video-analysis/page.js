@@ -272,7 +272,7 @@ export default function VideoAnalysisPage() {
       if (possessor === 'opponent') {
         initialStep = 1; // Opponent possession lost -> ask who tackled
       } else if (possessor && possessor !== 'opponent') {
-        initialStep = 10;
+        initialStep = 1;
         initialData.actor = possessor;
       }
     }
