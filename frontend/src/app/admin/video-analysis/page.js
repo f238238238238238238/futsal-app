@@ -621,8 +621,11 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
   const nextStep = (nextStepNum) => setAction(prev => ({ ...prev, step: nextStepNum }));
   
   const finish = (eventsToAdd) => {
-    if (Array.isArray(eventsToAdd)) eventsToAdd.forEach(addEvent);
-    else addEvent(eventsToAdd);
+    let finalEvents = Array.isArray(eventsToAdd) ? [...eventsToAdd] : [eventsToAdd];
+    if (action.data?.helper) {
+      finalEvents.push({ event_type: 'steal', user_id: action.data.helper });
+    }
+    finalEvents.forEach(addEvent);
     resume();
   };
 
@@ -887,8 +890,23 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
           </div>
         </>
       );
-      if (step === 122) return <><Title text="誰が奪った？" /><PlayerGrid onSelect={(id) => finish([{ event_type: 'opponent_pass_fail' }, { event_type: 'pass_cut', user_id: id }])} /></>;
-      if (step === 123) return <><Title text="誰がクリアした？" /><PlayerGrid onSelect={(id) => { updateData({ clearer: id }); nextStep(124); }} /></>;
+      if (step === 122) return <><Title text="誰が奪った？" /><PlayerGrid onSelect={(id) => { updateData({ actor: id }); nextStep(1225); }} /></>;
+      if (step === 123) return <><Title text="誰がクリアした？" /><PlayerGrid onSelect={(id) => { updateData({ clearer: id }); nextStep(1225); }} /></>;
+      if (step === 1225) return (
+        <>
+          <Title text="協力者（カバー等）はいた？" />
+          <PlayerGrid allowNone onSelect={(id) => { 
+            updateData({ helper: id });
+            // Because updateData is async (setState), we use action.data or just pass the right finish right here
+            // We can rely on data.action since it was set in step 121
+            if (data.action === 'pass_cut') {
+              finish([{ event_type: 'opponent_pass_fail' }, { event_type: 'pass_cut', user_id: data.actor }]); // helper will be added in finish()
+            } else {
+              nextStep(124);
+            }
+          }} />
+        </>
+      );
       if (step === 124) return (
         <>
           <Title text="クリアされたボールはどうなった？" />
@@ -934,8 +952,9 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
             </div>
           </>
         );
-        if (step === 201) return <><Title text="誰がタックルした？" /><PlayerGrid onSelect={(id) => { updateData({ actor: id }); nextStep(202); }} /></>;
-        if (step === 210) return <><Title text="誰がクリアした？" /><PlayerGrid onSelect={(id) => { updateData({ actor: id }); nextStep(202); }} /></>;
+        if (step === 201) return <><Title text="誰がタックルした？" /><PlayerGrid onSelect={(id) => { updateData({ actor: id }); nextStep(2015); }} /></>;
+        if (step === 210) return <><Title text="誰がクリアした？" /><PlayerGrid onSelect={(id) => { updateData({ actor: id }); nextStep(2015); }} /></>;
+        if (step === 2015) return <><Title text="協力者（カバー等）はいた？" /><PlayerGrid allowNone onSelect={(id) => { updateData({ helper: id }); nextStep(202); }} /></>;
         
         if (step === 202) return (
           <>
