@@ -47,6 +47,14 @@ export default function MatchDetailPage() {
     getMatch(id)
       .then(res => {
         const m = res.match || res;
+        
+        if ((!m.duration_seconds || m.duration_seconds === 2400) && m.events && m.events.length > 0) {
+           const maxEventMin = Math.max(...m.events.map(e => e.minute));
+           if (maxEventMin < 2300) {
+             m.duration_seconds = Math.max(600, Math.ceil(maxEventMin / 60) * 60);
+           }
+        }
+        
         setMatch(m);
         setMinute(m.duration_seconds || 2400);
         if (m.events && m.events.length > 0) {
@@ -493,7 +501,7 @@ export default function MatchDetailPage() {
       totalDefenseSeconds += (minute - defenseStartTime);
     }
 
-    if (match.match_mode !== 'intra') {
+    if (match.match_mode !== 'intra' && totalDefenseSeconds > 0) {
       const opponentEstimatedPasses = Math.max(0, Math.floor(totalDefenseSeconds / 4));
       const opponentTotalPasses = Math.max(opponentEstimatedPasses, opponentPassFails);
       const opponentSuccessfulPasses = opponentTotalPasses - opponentPassFails;
@@ -825,7 +833,7 @@ export default function MatchDetailPage() {
 
                       return (
                         <tr key={s.user_id} style={{ borderBottom: '1px solid #333' }}>
-                          <td style={{ padding: '8px' }}>{s.name}</td>
+                          <td style={{ padding: '8px' }}>{s.user_name}</td>
                           <td style={{ padding: '8px', fontWeight: goals > 0 ? 'bold' : 'normal', color: goals > 0 ? 'var(--color-primary-400)' : '#aaa' }}>{goals}</td>
                           <td style={{ padding: '8px', color: assists > 0 ? '#fff' : '#aaa' }}>{assists}</td>
                           <td style={{ padding: '8px', color: passes > 0 ? '#fff' : '#aaa' }}>{passes}</td>
