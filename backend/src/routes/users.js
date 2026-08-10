@@ -300,12 +300,12 @@ router.get('/:id', async (req, res) => {
 
       // === ⑥ キーパー力 (Goalkeeping) ===
       const validGkMatches = Math.max(1, gkMatches);
-      const saving = isGK ? calcStat(saves / validGkMatches, 3.0) : 40; // Target: 3 saves per match
-      const catchingScore = isGK ? calcStat(catches / validGkMatches, 2.0) : 40; // Target: 2 catches per match
+      const saving = isFullTimeGK ? calcStat(saves / validGkMatches, 3.0) : 40; // Target: 3 saves per match
+      const catchingScore = isFullTimeGK ? calcStat(catches / validGkMatches, 2.0) : 40; // Target: 2 catches per match
       const totalFaced = saves + catches + concede;
-      const savePercentage = totalFaced > 0 ? (saves + catches) / totalFaced : (isGK ? 0.5 : 0);
-      const gkPositioning = isGK ? calcStat(savePercentage, 0.75) : 40; // Target: 75% save rate
-      const goalkeeping = isGK ? Math.round((saving + catchingScore + gkPositioning) / 3) : 40;
+      const savePercentage = totalFaced > 0 ? (saves + catches) / totalFaced : (isFullTimeGK ? 0.5 : 0);
+      const gkPositioning = isFullTimeGK ? calcStat(savePercentage, 0.75) : 40; // Target: 75% save rate
+      const goalkeeping = isFullTimeGK ? Math.round((saving + catchingScore + gkPositioning) / 3) : 40;
 
       matchStatsByYear[row.year] = {
         matches_played: matchesPlayed,
