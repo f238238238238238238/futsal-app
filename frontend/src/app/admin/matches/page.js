@@ -260,6 +260,7 @@ export default function AdminMatchesPage() {
         <div className={styles.modalOverlay} onClick={() => setShowModal(false)}>
           <div className={styles.modal} style={{ maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
             <h2 className={styles.modalTitle}>{editingId ? '試合編集' : '新規試合登録'}</h2>
+            {msg && <div style={{ color: 'white', background: '#e03131', padding: '10px', borderRadius: '4px', marginBottom: '16px' }}>{msg}</div>}
             <form onSubmit={handleSubmit}>
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>

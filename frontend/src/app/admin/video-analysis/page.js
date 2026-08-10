@@ -409,7 +409,13 @@ export default function VideoAnalysisPage() {
           assists: statsMap[uid]?.assists || 0,
           saves: statsMap[uid]?.saves || 0,
         })),
-        events: events
+        events: events.map(ev => {
+          const newEv = { ...ev };
+          if (newEv.user_id === undefined) newEv.user_id = null;
+          if (newEv.target_user_id === undefined) newEv.target_user_id = null;
+          if (newEv.position === undefined) newEv.position = null;
+          return newEv;
+        })
       };
       await createMatch(payload);
       localStorage.removeItem('futsal_video_editor_events'); // Clear saved events on success
@@ -417,7 +423,7 @@ export default function VideoAnalysisPage() {
       router.push('/admin/matches');
     } catch (err) {
       console.error(err);
-      alert('保存エラー');
+      alert('保存エラー: ' + err.message);
     }
   };
 
@@ -620,10 +626,11 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
   const updateData = (updates) => setAction(prev => ({ ...prev, data: { ...prev.data, ...updates } }));
   const nextStep = (nextStepNum) => setAction(prev => ({ ...prev, step: nextStepNum }));
   
-  const finish = (eventsToAdd) => {
+  const finish = (eventsToAdd, overrideHelper = undefined) => {
     let finalEvents = Array.isArray(eventsToAdd) ? [...eventsToAdd] : [eventsToAdd];
-    if (action.data?.helper) {
-      finalEvents.push({ event_type: 'steal', user_id: action.data.helper });
+    const helperId = overrideHelper !== undefined ? overrideHelper : action?.data?.helper;
+    if (helperId) {
+      finalEvents.push({ event_type: 'steal', user_id: helperId });
     }
     finalEvents.forEach(addEvent);
     resume();
@@ -896,12 +903,10 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
         <>
           <Title text="協力者（カバー等）はいた？" />
           <PlayerGrid allowNone onSelect={(id) => { 
-            updateData({ helper: id });
-            // Because updateData is async (setState), we use action.data or just pass the right finish right here
-            // We can rely on data.action since it was set in step 121
             if (data.action === 'pass_cut') {
-              finish([{ event_type: 'opponent_pass_fail' }, { event_type: 'pass_cut', user_id: data.actor }]); // helper will be added in finish()
+              finish([{ event_type: 'opponent_pass_fail' }, { event_type: 'pass_cut', user_id: data.actor }], id);
             } else {
+              updateData({ helper: id });
               nextStep(124);
             }
           }} />

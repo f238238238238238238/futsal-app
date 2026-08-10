@@ -139,7 +139,17 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
       INSERT INTO matches (date, opponent_name, competition_name, our_score, opponent_score, summary_text, mom_user_id, duration_seconds, video_url)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING match_id
-    `, [date, opponent_name, competition_name, our_score, opponent_score, summary_text, mom_user_id || null, matchDur, video_url || null]);
+    `, [
+      date, 
+      opponent_name, 
+      competition_name, 
+      our_score === '' || our_score == null ? 0 : parseInt(our_score, 10), 
+      opponent_score === '' || opponent_score == null ? 0 : parseInt(opponent_score, 10), 
+      summary_text, 
+      mom_user_id || null, 
+      matchDur, 
+      video_url || null
+    ]);
     
     const matchId = matchRes.rows[0].match_id;
 
@@ -161,12 +171,15 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
       events.forEach((ev, i) => {
         const offset = i * 6;
         const isDummy = typeof ev.user_id === 'string' && (ev.user_id.startsWith('dummy_') || ev.user_id === 'opponent');
-        const uid = isDummy ? null : ev.user_id;
+        let uid = isDummy ? null : ev.user_id;
+        if (uid === '') uid = null;
+        else if (uid != null) uid = parseInt(uid, 10);
+        
         const pos = isDummy ? ev.user_id : (ev.position || null);
         
         let targetUid = null;
-        if (ev.target_user_id && ev.target_user_id !== 'opponent') {
-          targetUid = ev.target_user_id;
+        if (ev.target_user_id && ev.target_user_id !== 'opponent' && ev.target_user_id !== '') {
+          targetUid = parseInt(ev.target_user_id, 10);
         }
 
         values.push(`($${offset+1}, $${offset+2}, $${offset+3}, $${offset+4}, $${offset+5}, $${offset+6})`);
@@ -185,7 +198,7 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
       await client.query('ROLLBACK');
     }
     console.error('Create match error:', err);
-    res.status(500).json({ error: 'サーバーエラーが発生しました' });
+    res.status(500).json({ error: 'サーバーエラーが発生しました', details: err.message });
   } finally {
     if (client) {
       client.release();
@@ -213,7 +226,18 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
       UPDATE matches
       SET date = $1, opponent_name = $2, competition_name = $3, our_score = $4, opponent_score = $5, summary_text = $6, mom_user_id = $7, duration_seconds = $8, video_url = $9
       WHERE match_id = $10
-    `, [date, opponent_name, competition_name, our_score, opponent_score, summary_text, mom_user_id || null, matchDur, video_url || null, matchId]);
+    `, [
+      date, 
+      opponent_name, 
+      competition_name, 
+      our_score === '' || our_score == null ? 0 : parseInt(our_score, 10), 
+      opponent_score === '' || opponent_score == null ? 0 : parseInt(opponent_score, 10), 
+      summary_text, 
+      mom_user_id || null, 
+      matchDur, 
+      video_url || null, 
+      matchId
+    ]);
 
     // Update stats: delete old and insert new
     await client.query(`DELETE FROM match_stats WHERE match_id = $1`, [matchId]);
@@ -237,12 +261,15 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
       events.forEach((ev, i) => {
         const offset = i * 6;
         const isDummy = typeof ev.user_id === 'string' && (ev.user_id.startsWith('dummy_') || ev.user_id === 'opponent');
-        const uid = isDummy ? null : ev.user_id;
+        let uid = isDummy ? null : ev.user_id;
+        if (uid === '') uid = null;
+        else if (uid != null) uid = parseInt(uid, 10);
+        
         const pos = isDummy ? ev.user_id : (ev.position || null);
-
+        
         let targetUid = null;
-        if (ev.target_user_id && ev.target_user_id !== 'opponent') {
-          targetUid = ev.target_user_id;
+        if (ev.target_user_id && ev.target_user_id !== 'opponent' && ev.target_user_id !== '') {
+          targetUid = parseInt(ev.target_user_id, 10);
         }
 
         values.push(`($${offset+1}, $${offset+2}, $${offset+3}, $${offset+4}, $${offset+5}, $${offset+6})`);
@@ -261,7 +288,7 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
       await client.query('ROLLBACK');
     }
     console.error('Update match error:', err);
-    res.status(500).json({ error: 'サーバーエラーが発生しました' });
+    res.status(500).json({ error: 'サーバーエラーが発生しました', details: err.message });
   } finally {
     if (client) {
       client.release();

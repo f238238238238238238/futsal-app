@@ -26,7 +26,8 @@ async function request(endpoint, options = {}) {
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({ message: 'An error occurred' }));
-    throw new Error(error.message || `HTTP error ${res.status}`);
+    const errorMsg = error.details || error.error || error.message || `HTTP error ${res.status}`;
+    throw new Error(errorMsg);
   }
 
   return res.json();
