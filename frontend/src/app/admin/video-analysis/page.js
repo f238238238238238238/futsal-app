@@ -630,7 +630,7 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
     let finalEvents = Array.isArray(eventsToAdd) ? [...eventsToAdd] : [eventsToAdd];
     const helperId = overrideHelper !== undefined ? overrideHelper : action?.data?.helper;
     if (helperId) {
-      finalEvents.push({ event_type: 'steal', user_id: helperId });
+      finalEvents.splice(finalEvents.length - 1, 0, { event_type: 'steal', user_id: helperId });
     }
     finalEvents.forEach(addEvent);
     resume();
