@@ -777,78 +777,6 @@ export default function MatchDetailPage() {
               </div>
             </div>
 
-            <div className={styles.sectionBox}>
-              <h2 className={styles.sectionTitle}>個人成績 (イベント集計)</h2>
-              <div style={{ overflowX: 'auto', marginTop: '1rem' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', color: '#eee', textAlign: 'left' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid #444', color: '#aaa' }}>
-                      <th style={{ padding: '8px' }}>選手</th>
-                      <th style={{ padding: '8px' }}>G</th>
-                      <th style={{ padding: '8px' }}>A</th>
-                      <th style={{ padding: '8px' }}>パス</th>
-                      <th style={{ padding: '8px' }}>シュート</th>
-                      <th style={{ padding: '8px' }}>ブロック</th>
-                      <th style={{ padding: '8px' }}>奪取・カット</th>
-                      <th style={{ padding: '8px' }}>セーブ</th>
-                      <th style={{ padding: '8px' }}>キープ(秒)</th>
-                      <th style={{ padding: '8px' }}>評価</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {match?.stats?.map(s => {
-                      const pEvents = match.events ? match.events.filter(e => e.user_id === s.user_id || e.user_id === String(s.user_id)) : [];
-                      
-                      const goals = s.goals > 0 ? s.goals : pEvents.filter(e => e.event_type === 'goal').length;
-                      let autoAssists = 0;
-                      if (match.events) {
-                        match.events.forEach((ev, i) => {
-                          if (ev.event_type === 'goal') {
-                            for (let j = i - 1; j >= 0; j--) {
-                              const prevEv = match.events[j];
-                              if (['steal', 'opponent_pass', 'intercept', 'clear', 'opponent_block', 'lost_ball', 'pass_miss', 'trap_miss'].includes(prevEv.event_type)) break;
-                              if (prevEv.team === 'opponent') break;
-                              if ((prevEv.event_type === 'pass' || prevEv.event_type === 'kickoff') && (String(prevEv.target_user_id) === String(ev.user_id))) {
-                                if (String(prevEv.user_id) === String(s.user_id)) {
-                                  autoAssists++;
-                                }
-                                break;
-                              }
-                            }
-                          }
-                        });
-                      }
-                      const assists = s.assists > 0 ? s.assists : autoAssists;
-                      
-                      const passes = pEvents.filter(e => e.event_type === 'pass' || e.event_type === 'side_out' || e.event_type === 'corner_kick' || e.event_type === 'goal_kick').length;
-                      const shots = pEvents.filter(e => e.event_type === 'shot' || e.event_type === 'shot_off' || e.event_type === 'goal').length;
-                      const blocks = pEvents.filter(e => e.event_type === 'block').length;
-                      const steals = pEvents.filter(e => e.event_type === 'steal' || e.event_type === 'pass_cut').length;
-                      const saves = s.saves > 0 ? s.saves : pEvents.filter(e => e.event_type === 'save' || e.event_type === 'catch').length;
-                      
-                      const lostBalls = pEvents.filter(e => e.event_type === 'lost_ball').length;
-                      const shotsOff = pEvents.filter(e => e.event_type === 'shot_off').length;
-                      const keepTime = teamStats.playerPossession ? (teamStats.playerPossession[s.user_id] || teamStats.playerPossession[String(s.user_id)] || 0) : 0;
-                      const rating = (6.0 + (goals * 1.0) + (assists * 0.5) + (passes * 0.1) + (shots * 0.1) + (blocks * 0.2) + (steals * 0.2) + (saves * 0.3) - (lostBalls * 0.2) - (shotsOff * 0.1)).toFixed(1);
-
-                      return (
-                        <tr key={s.user_id} style={{ borderBottom: '1px solid #333' }}>
-                          <td style={{ padding: '8px' }}>{s.user_name}</td>
-                          <td style={{ padding: '8px', fontWeight: goals > 0 ? 'bold' : 'normal', color: goals > 0 ? 'var(--color-primary-400)' : '#aaa' }}>{goals}</td>
-                          <td style={{ padding: '8px', color: assists > 0 ? '#fff' : '#aaa' }}>{assists}</td>
-                          <td style={{ padding: '8px', color: passes > 0 ? '#fff' : '#aaa' }}>{passes}</td>
-                          <td style={{ padding: '8px', color: shots > 0 ? '#fff' : '#aaa' }}>{shots}</td>
-                          <td style={{ padding: '8px', color: blocks > 0 ? '#fff' : '#aaa' }}>{blocks}</td>
-                          <td style={{ padding: '8px', color: steals > 0 ? '#fff' : '#aaa' }}>{steals}</td>
-                          <td style={{ padding: '8px', color: saves > 0 ? '#fff' : '#aaa' }}>{saves}</td>
-                          <td style={{ padding: '8px', color: keepTime > 0 ? '#fff' : '#aaa' }}>{keepTime}s</td>
-                          <td style={{ padding: '8px', fontWeight: 'bold', color: rating >= 7.0 ? 'var(--color-gold)' : '#fff' }}>{rating}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
             </div>
 
           </div>
@@ -947,6 +875,81 @@ export default function MatchDetailPage() {
             </div>
           </div>
         </div>
+
+        <div className={styles.sectionBox} style={{ marginTop: '2rem' }}>
+          <h2 className={styles.sectionTitle}>個人成績 (イベント集計)</h2>
+          <div style={{ overflowX: 'auto', marginTop: '1rem' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', color: '#eee', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid #444', color: '#aaa', backgroundColor: '#111' }}>
+                  <th style={{ padding: '12px 8px' }}>選手</th>
+                  <th style={{ padding: '12px 8px' }}>G</th>
+                  <th style={{ padding: '12px 8px' }}>A</th>
+                  <th style={{ padding: '12px 8px' }}>パス</th>
+                  <th style={{ padding: '12px 8px' }}>シュート</th>
+                  <th style={{ padding: '12px 8px' }}>ブロック</th>
+                  <th style={{ padding: '12px 8px' }}>奪取・カット</th>
+                  <th style={{ padding: '12px 8px' }}>セーブ</th>
+                  <th style={{ padding: '12px 8px' }}>キープ(秒)</th>
+                  <th style={{ padding: '12px 8px' }}>評価</th>
+                </tr>
+              </thead>
+              <tbody>
+                {match?.stats?.map(s => {
+                  const pEvents = match.events ? match.events.filter(e => e.user_id === s.user_id || e.user_id === String(s.user_id)) : [];
+                  
+                  const goals = s.goals > 0 ? s.goals : pEvents.filter(e => e.event_type === 'goal').length;
+                  let autoAssists = 0;
+                  if (match.events) {
+                    match.events.forEach((ev, i) => {
+                      if (ev.event_type === 'goal') {
+                        for (let j = i - 1; j >= 0; j--) {
+                          const prevEv = match.events[j];
+                          if (['steal', 'opponent_pass', 'intercept', 'clear', 'opponent_block', 'lost_ball', 'pass_miss', 'trap_miss'].includes(prevEv.event_type)) break;
+                          if (prevEv.team === 'opponent') break;
+                          if ((prevEv.event_type === 'pass' || prevEv.event_type === 'kickoff') && (String(prevEv.target_user_id) === String(ev.user_id))) {
+                            if (String(prevEv.user_id) === String(s.user_id)) {
+                              autoAssists++;
+                            }
+                            break;
+                          }
+                        }
+                      }
+                    });
+                  }
+                  const assists = s.assists > 0 ? s.assists : autoAssists;
+                  
+                  const passes = pEvents.filter(e => e.event_type === 'pass' || e.event_type === 'side_out' || e.event_type === 'corner_kick' || e.event_type === 'goal_kick').length;
+                  const shots = pEvents.filter(e => e.event_type === 'shot' || e.event_type === 'shot_off' || e.event_type === 'goal').length;
+                  const blocks = pEvents.filter(e => e.event_type === 'block').length;
+                  const steals = pEvents.filter(e => e.event_type === 'steal' || e.event_type === 'pass_cut').length;
+                  const saves = s.saves > 0 ? s.saves : pEvents.filter(e => e.event_type === 'save' || e.event_type === 'catch').length;
+                  
+                  const lostBalls = pEvents.filter(e => e.event_type === 'lost_ball').length;
+                  const shotsOff = pEvents.filter(e => e.event_type === 'shot_off').length;
+                  const keepTime = teamStats.playerPossession ? (teamStats.playerPossession[s.user_id] || teamStats.playerPossession[String(s.user_id)] || 0) : 0;
+                  const rating = (6.0 + (goals * 1.0) + (assists * 0.5) + (passes * 0.1) + (shots * 0.1) + (blocks * 0.2) + (steals * 0.2) + (saves * 0.3) - (lostBalls * 0.2) - (shotsOff * 0.1)).toFixed(1);
+
+                  return (
+                    <tr key={s.user_id} style={{ borderBottom: '1px solid #333' }}>
+                      <td style={{ padding: '12px 8px', whiteSpace: 'nowrap' }}>{s.user_name}</td>
+                      <td style={{ padding: '12px 8px', fontWeight: goals > 0 ? 'bold' : 'normal', color: goals > 0 ? 'var(--color-primary-400)' : '#aaa' }}>{goals}</td>
+                      <td style={{ padding: '12px 8px', color: assists > 0 ? '#fff' : '#aaa' }}>{assists}</td>
+                      <td style={{ padding: '12px 8px', color: passes > 0 ? '#fff' : '#aaa' }}>{passes}</td>
+                      <td style={{ padding: '12px 8px', color: shots > 0 ? '#fff' : '#aaa' }}>{shots}</td>
+                      <td style={{ padding: '12px 8px', color: blocks > 0 ? '#fff' : '#aaa' }}>{blocks}</td>
+                      <td style={{ padding: '12px 8px', color: steals > 0 ? '#fff' : '#aaa' }}>{steals}</td>
+                      <td style={{ padding: '12px 8px', color: saves > 0 ? '#fff' : '#aaa' }}>{saves}</td>
+                      <td style={{ padding: '12px 8px', color: keepTime > 0 ? '#fff' : '#aaa' }}>{keepTime}s</td>
+                      <td style={{ padding: '12px 8px', fontWeight: 'bold', color: rating >= 7.0 ? 'var(--color-gold)' : '#fff' }}>{rating}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
     </div>
   );
