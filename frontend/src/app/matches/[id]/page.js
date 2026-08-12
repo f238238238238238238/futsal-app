@@ -776,9 +776,6 @@ export default function MatchDetailPage() {
                 ))}
               </div>
             </div>
-
-            </div>
-
           </div>
 
           {/* 中央: フォーメーション図 */}
