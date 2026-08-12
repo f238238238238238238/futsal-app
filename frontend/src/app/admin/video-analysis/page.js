@@ -411,6 +411,7 @@ export default function VideoAnalysisPage() {
           assists: statsMap[uid]?.assists || 0,
           saves: statsMap[uid]?.saves || 0,
         })),
+        duration_seconds: videoRef.current ? Math.floor(videoRef.current.duration) : (events.length > 0 ? Math.max(...events.map(e => e.minute)) + 60 : 2400),
         events: events.map(ev => {
           const newEv = { ...ev };
           if (newEv.user_id === undefined) newEv.user_id = null;

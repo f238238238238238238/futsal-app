@@ -427,7 +427,7 @@ export default function MatchDetailPage() {
         if (ev.event_type === 'corner_kick') redStats.corners++;
       } else if (team === 'blue') {
         if (ev.event_type === 'pass' || ev.event_type === 'opponent_pass' || ev.event_type === 'side_out' || ev.event_type === 'corner_kick' || ev.event_type === 'goal_kick') blueStats.passes++;
-        if (ev.event_type === 'lost_ball' || ev.event_type === 'opponent_pass_fail' || ev.event_type === 'pass_miss' || ev.event_type === 'trap_miss') blueStats.lost++;
+        if (ev.event_type === 'lost_ball' || ev.event_type === 'opponent_pass_fail' || ev.event_type === 'opponent_lost' || ev.event_type === 'opponent_clear' || ev.event_type === 'pass_miss' || ev.event_type === 'trap_miss') blueStats.lost++;
         if (ev.event_type === 'goal' || ev.event_type === 'opponent_goal') { blueStats.goals++; blueStats.shots++; }
         if (ev.event_type === 'shot' || ev.event_type === 'shot_off' || ev.event_type === 'opponent_shot_off') blueStats.shots++;
         if (ev.event_type === 'save' || ev.event_type === 'catch') {
@@ -929,7 +929,7 @@ export default function MatchDetailPage() {
 
                   return (
                     <tr key={s.user_id} style={{ borderBottom: '1px solid #333' }}>
-                      <td style={{ padding: '12px 8px', whiteSpace: 'nowrap' }}>{s.user_name}</td>
+                      <td style={{ padding: '12px 8px', whiteSpace: 'nowrap' }}>{s.user_name || s.name || '不明'}</td>
                       <td style={{ padding: '12px 8px', fontWeight: goals > 0 ? 'bold' : 'normal', color: goals > 0 ? 'var(--color-primary-400)' : '#aaa' }}>{goals}</td>
                       <td style={{ padding: '12px 8px', color: assists > 0 ? '#fff' : '#aaa' }}>{assists}</td>
                       <td style={{ padding: '12px 8px', color: passes > 0 ? '#fff' : '#aaa' }}>{passes}</td>
