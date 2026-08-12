@@ -893,7 +893,7 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
           <Title text="自チームはどう防いだ？" />
           <div style={{ display: 'grid', gap: '8px' }}>
             <button data-key="1" className={styles.saveBtn} onClick={() => { updateData({ action: 'pass_cut' }); nextStep(122); }}>インターセプトした [1]</button>
-            <button data-key="2" className={styles.saveBtn} onClick={() => { updateData({ action: 'clear' }); nextStep(123); }}>クリアした [2]</button>
+            <button data-key="2" className={styles.saveBtn} onClick={() => { updateData({ action: 'clear', clearer: null }); nextStep(124); }}>クリアした [2]</button>
             <button data-key="3" className={styles.saveBtn} onClick={() => { updateData({ out_type: 'side_out' }); nextStep(128); }}>そのままサイドアウトになった [3]</button>
             <button data-key="4" className={styles.saveBtn} onClick={() => { updateData({ out_type: 'corner_kick' }); nextStep(128); }}>そのままコーナーキックになった [4]</button>
             <button data-key="5" className={styles.saveBtn} onClick={() => finish([{ event_type: 'opponent_pass_fail' }, { event_type: 'goal_kick', team: 'own', user_id: gkId }])}>そのままゴールスロー(GK)になった [5]</button>
@@ -956,7 +956,7 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
             <Title text="どうやって失った/防いだ？" />
             <div style={{ display: 'grid', gap: '8px' }}>
               <button data-key="1" className={styles.saveBtn} onClick={() => { updateData({ defense_type: 'tackle' }); nextStep(201); }}>自チームのタックル [1]</button>
-              <button data-key="2" className={styles.saveBtn} onClick={() => { updateData({ defense_type: 'clear' }); nextStep(210); }}>自チームのクリア [2]</button>
+              <button data-key="2" className={styles.saveBtn} onClick={() => { updateData({ defense_type: 'clear', actor: null }); nextStep(202); }}>自チームのクリア [2]</button>
               <button data-key="3" className={styles.deleteBtn} onClick={() => { updateData({ defense_type: 'opponent_lost' }); nextStep(220); }}>相手のミス（トラップミス・ドリブルアウト等） [3]</button>
               <button data-key="4" className={styles.deleteBtn} onClick={() => { updateData({ defense_type: 'opponent_clear' }); nextStep(220); }}>相手のクリア [4]</button>
             </div>
