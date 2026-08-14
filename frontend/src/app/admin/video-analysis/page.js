@@ -228,6 +228,8 @@ export default function VideoAnalysisPage() {
         case 'side_out':
         case 'corner_kick':
         case 'goal_kick':
+        case 'free_kick':
+        case 'pk':
           possessor = ev.team === 'opponent' ? 'opponent' : (ev.user_id || null);
           break;
       }
@@ -1083,37 +1085,15 @@ function EventModal({ action, setAction, addEvent, resume, activePlayers, benchP
     if (type === 'foul') {
       if (step === 1) return (
         <>
-          <Title text="ファールの種類は？" />
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <button data-key="1" className={styles.saveBtn} style={{ flex: 1, padding: '2rem', position: 'relative' }} onClick={() => { updateData({ foul_type: 'fk' }); nextStep(301); }}><span style={{position:'absolute', top: 5, left: 5, fontSize: '0.8rem'}}>[1]</span>フリーキック(FK)</button>
-            <button data-key="2" className={styles.saveBtn} style={{ flex: 1, padding: '2rem', position: 'relative' }} onClick={() => { updateData({ foul_type: 'pk' }); nextStep(301); }}><span style={{position:'absolute', top: 5, left: 5, fontSize: '0.8rem'}}>[2]</span>ペナルティキック(PK)</button>
+          <Title text="どっちのファール？" />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <button data-key="1" className={styles.deleteBtn} style={{ padding: '2rem', position: 'relative' }} onClick={() => nextStep(2)}><span style={{position:'absolute', top: 5, left: 5, fontSize: '0.8rem'}}>[1]</span>自チームのファール</button>
+            <button data-key="2" className={styles.saveBtn} style={{ padding: '2rem', position: 'relative' }} onClick={() => nextStep(3)}><span style={{position:'absolute', top: 5, left: 5, fontSize: '0.8rem'}}>[2]</span>相手のファール</button>
           </div>
         </>
       );
-      if (step === 301) return (
-        <>
-          <Title text="どっちのボールになった？" />
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            <button data-key="1" className={styles.saveBtn} onClick={() => nextStep(302)}>自チームのボール [1]</button>
-            <button data-key="2" className={styles.deleteBtn} onClick={() => {
-              if (currentPossessor === 'opponent') {
-                finish([{ event_type: 'foul', team: 'own' }, { event_type: data.foul_type === 'pk' ? 'pk' : 'free_kick', team: 'opponent' }]);
-              } else {
-                finish([{ event_type: 'foul', team: 'own' }, { event_type: data.foul_type === 'pk' ? 'pk' : 'free_kick', team: 'opponent' }]);
-              }
-            }}>相手チームのボール [2]</button>
-          </div>
-        </>
-      );
-      if (step === 302) return (
-        <>
-          <Title text="誰が蹴る？" />
-          <PlayerGrid onSelect={(id) => {
-            // If it became our ball, it was opponent's foul
-            finish([{ event_type: 'foul_opponent' }, { event_type: data.foul_type === 'pk' ? 'pk' : 'free_kick', team: 'own', user_id: id }]);
-          }} />
-        </>
-      );
+      if (step === 2) return <><Title text="誰がファールした？" /><PlayerGrid allowNone onSelect={(id) => finish([{ event_type: 'foul', user_id: id }, { event_type: 'free_kick', team: 'opponent' }])} /></>;
+      if (step === 3) return <><Title text="自チームは誰から再開する？" /><PlayerGrid onSelect={(id) => finish([{ event_type: 'foul_opponent', team: 'opponent' }, { event_type: 'free_kick', team: 'own', user_id: id }])} /></>;
     }
 
     // --- SUB ---
