@@ -888,6 +888,7 @@ export default function MatchDetailPage() {
               <thead>
                 <tr style={{ borderBottom: '1px solid #444', color: '#aaa', backgroundColor: '#111' }}>
                   <th style={{ padding: '12px 8px' }}>選手</th>
+                  <th style={{ padding: '12px 8px' }}>評価</th>
                   <th style={{ padding: '12px 8px' }}>G</th>
                   <th style={{ padding: '12px 8px' }}>A</th>
                   <th style={{ padding: '12px 8px' }}>パス</th>
@@ -896,7 +897,6 @@ export default function MatchDetailPage() {
                   <th style={{ padding: '12px 8px' }}>奪取・カット</th>
                   <th style={{ padding: '12px 8px' }}>セーブ</th>
                   <th style={{ padding: '12px 8px' }}>キープ(秒)</th>
-                  <th style={{ padding: '12px 8px' }}>評価</th>
                 </tr>
               </thead>
               <tbody>
@@ -938,6 +938,7 @@ export default function MatchDetailPage() {
                   return (
                     <tr key={s.user_id} style={{ borderBottom: '1px solid #333' }}>
                       <td style={{ padding: '12px 8px', whiteSpace: 'nowrap' }}>{s.user_name || s.name || '不明'}</td>
+                      <td style={{ padding: '12px 8px', fontWeight: 'bold', color: rating >= 7.0 ? 'var(--color-gold)' : '#fff' }}>{rating}</td>
                       <td style={{ padding: '12px 8px', fontWeight: goals > 0 ? 'bold' : 'normal', color: goals > 0 ? 'var(--color-primary-400)' : '#aaa' }}>{goals}</td>
                       <td style={{ padding: '12px 8px', color: assists > 0 ? '#fff' : '#aaa' }}>{assists}</td>
                       <td style={{ padding: '12px 8px', color: passes > 0 ? '#fff' : '#aaa' }}>{passes}</td>
@@ -946,7 +947,6 @@ export default function MatchDetailPage() {
                       <td style={{ padding: '12px 8px', color: steals > 0 ? '#fff' : '#aaa' }}>{steals}</td>
                       <td style={{ padding: '12px 8px', color: saves > 0 ? '#fff' : '#aaa' }}>{saves}</td>
                       <td style={{ padding: '12px 8px', color: keepTime > 0 ? '#fff' : '#aaa' }}>{keepTime}s</td>
-                      <td style={{ padding: '12px 8px', fontWeight: 'bold', color: rating >= 7.0 ? 'var(--color-gold)' : '#fff' }}>{rating}</td>
                     </tr>
                   );
                 })}
