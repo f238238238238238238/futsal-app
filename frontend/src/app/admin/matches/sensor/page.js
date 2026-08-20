@@ -1066,13 +1066,13 @@ export default function SensorMatchPage() {
                   onClick={() => handleManualAction('app_shot_on_target')} 
                   disabled={contextMode !== 'attack'}
                   style={{ flex: 1, padding: '20px', background: contextMode === 'attack' ? '#f59f00' : '#495057', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '1.2rem', fontWeight: 'bold', opacity: contextMode === 'attack' ? 1 : 0.5 }}>
-                  🎯 枠内
+                  枠内
                 </button>
                 <button 
                   onClick={() => handleManualAction('app_shot_miss')} 
                   disabled={contextMode !== 'attack'}
                   style={{ flex: 1, padding: '20px', background: contextMode === 'attack' ? '#868e96' : '#495057', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '1.2rem', fontWeight: 'bold', opacity: contextMode === 'attack' ? 1 : 0.5 }}>
-                  ❌ 枠外
+                  枠外
                 </button>
               </div>
               
@@ -1206,7 +1206,7 @@ export default function SensorMatchPage() {
                  const min = Math.floor(e.minute / 60);
                  const sec = String(e.minute % 60).padStart(2, '0');
                  const eventNames = {
-                   app_goal: '⚽ ゴール', app_shot_on_target: '🎯 枠内シュート', app_shot_miss: '❌ ノーゴール', app_opponent_goal: '💀 失点',
+                   app_goal: 'ゴール', app_shot_on_target: '枠内シュート', app_shot_miss: 'ノーゴール', app_opponent_goal: '失点',
                    save: '🧤 セーブ', catch: '👐 キャッチ', context_attack: '⚔️ 攻撃モード開始', context_defense: '🛡️ 守備モード開始',
                    sub_in: '🔄 IN', sub_out: '🔄 OUT'
                  };

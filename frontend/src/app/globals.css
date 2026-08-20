@@ -11,29 +11,32 @@
 }
 
 :root {
-  /* Primary */
+  /* Primary — Bianconeri */
   --color-black: #000000;
   --color-white: #FFFFFF;
+  --color-ink: #050505;
+  --color-paper: #E8E8E8;
+  --color-ash: #8A8A8A;
 
   /* Dark Shades */
-  --color-dark-900: #0a0a0a;
-  --color-dark-800: #121212;
-  --color-dark-700: #1a1a1a;
-  --color-dark-600: #242424;
+  --color-dark-900: #050505;
+  --color-dark-800: #0d0d0d;
+  --color-dark-700: #161616;
+  --color-dark-600: #222222;
   --color-dark-500: #333333;
-  --color-dark-400: #444444;
+  --color-dark-400: #4a4a4a;
 
   /* Light Shades */
-  --color-light-100: #f8f8f8;
+  --color-light-100: #f4f4f4;
   --color-light-200: #e8e8e8;
-  --color-light-300: #d0d0d0;
-  --color-light-400: #a0a0a0;
+  --color-light-300: #c8c8c8;
+  --color-light-400: #8a8a8a;
 
-  /* Accent Gold */
+  /* Accent Gold — used sparingly */
   --color-gold: #C5A059;
   --color-gold-light: #D4B574;
   --color-gold-dark: #A88840;
-  --color-gold-glow: rgba(197, 160, 89, 0.3);
+  --color-gold-glow: rgba(197, 160, 89, 0.18);
 
   /* Semantic */
   --color-success: #22c55e;
@@ -58,11 +61,11 @@
   --space-3xl: 64px;
   --space-4xl: 96px;
 
-  /* Border Radius */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
+  /* Border Radius — sharp club chrome; full kept for avatars */
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
   --radius-full: 9999px;
 
   /* Shadows */
@@ -79,8 +82,8 @@
   --transition-spring: 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
 
   /* Typography */
-  --font-heading: 'Montserrat', sans-serif;
-  --font-body: 'Inter', sans-serif;
+  --font-heading: var(--font-oswald), 'Oswald', sans-serif;
+  --font-body: var(--font-inter), 'Inter', sans-serif;
 
   /* Z-index layers */
   --z-base: 1;
@@ -107,7 +110,7 @@ body {
   font-size: 16px;
   line-height: 1.6;
   color: var(--color-white);
-  background-color: var(--color-dark-900);
+  background-color: var(--color-ink);
   overflow-x: clip;
   width: 100%;
   min-height: 100vh;
@@ -116,9 +119,10 @@ body {
 /* ===== TYPOGRAPHY ===== */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
-  font-weight: 700;
-  line-height: 1.2;
-  letter-spacing: -0.02em;
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 h1 { font-size: clamp(2rem, 5vw, 3.5rem); }
@@ -211,21 +215,74 @@ input:focus, textarea:focus, select:focus {
 }
 
 .sectionTitle::after {
-  content: '';
-  position: absolute;
-  bottom: -8px;
-  left: 0;
-  width: 60px;
-  height: 3px;
-  background: var(--color-gold);
+  content: none;
 }
 
 /* Gold accent line */
 .goldLine {
-  width: 60px;
-  height: 3px;
-  background: linear-gradient(90deg, var(--color-gold), var(--color-gold-light));
+  width: 48px;
+  height: 2px;
+  background: var(--color-gold);
   border: none;
+}
+
+/* Bianconeri stripe mark — club signature */
+.stripeMark {
+  display: inline-block;
+  width: 14px;
+  height: 20px;
+  flex-shrink: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    #ffffff 0 2px,
+    #050505 2px 4px
+  );
+  box-shadow: 0 0 0 1px #ffffff;
+}
+
+.stripeMarkLg {
+  width: 22px;
+  height: 32px;
+  background: repeating-linear-gradient(
+    90deg,
+    #ffffff 0 3px,
+    #050505 3px 6px
+  );
+  box-shadow: 0 0 0 1px #ffffff;
+}
+
+.stripeMarkInk {
+  background: repeating-linear-gradient(
+    90deg,
+    #050505 0 2px,
+    #ffffff 2px 4px
+  );
+  box-shadow: 0 0 0 1px #050505;
+}
+
+.clubHeader {
+  padding: calc(var(--header-height) + 40px) 0 36px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.clubKicker {
+  font-family: var(--font-heading);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--color-ash);
+  margin-bottom: 8px;
+}
+
+.clubTitle {
+  font-family: var(--font-heading);
+  font-size: clamp(2.75rem, 8vw, 5.25rem);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 0.9;
+  color: var(--color-white);
 }
 
 /* ===== BUTTON SYSTEM ===== */
@@ -234,16 +291,17 @@ input:focus, textarea:focus, select:focus {
   align-items: center;
   justify-content: center;
   gap: var(--space-sm);
-  padding: 12px 28px;
+  padding: 14px 28px;
   font-family: var(--font-heading);
-  font-weight: 700;
-  font-size: 0.875rem;
+  font-weight: 600;
+  font-size: 0.8rem;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  border-radius: var(--radius-sm);
-  transition: all var(--transition-base);
+  letter-spacing: 0.18em;
+  border-radius: 0;
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
   white-space: nowrap;
   min-height: 48px;
+  position: relative;
 }
 
 .btnPrimary {
@@ -254,47 +312,44 @@ input:focus, textarea:focus, select:focus {
 .btnPrimary:hover {
   background: var(--color-gold);
   color: var(--color-black);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-gold);
 }
 
 .btnSecondary {
   background: transparent;
   color: var(--color-white);
-  border: 2px solid var(--color-white);
+  border: 1px solid var(--color-white);
 }
 
 .btnSecondary:hover {
   background: var(--color-white);
   color: var(--color-black);
-  transform: translateY(-2px);
 }
 
 .btnGold {
-  background: linear-gradient(135deg, var(--color-gold), var(--color-gold-light));
+  background: var(--color-gold);
   color: var(--color-black);
 }
 
 .btnGold:hover {
-  background: linear-gradient(135deg, var(--color-gold-light), var(--color-gold));
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-gold);
+  background: var(--color-gold-light);
 }
 
 .btnDanger {
   background: var(--color-danger);
   color: var(--color-white);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
 .btnDanger:hover {
   background: var(--color-danger-dark);
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(239, 68, 68, 0.4);
 }
 
 .btnSmall {
-  padding: 8px 16px;
+  padding: 10px 20px;
   font-size: 0.75rem;
-  min-height: 36px;
+  min-height: 40px;
 }
 
 .btnLarge {
@@ -636,4 +691,23 @@ input:focus, textarea:focus, select:focus {
   background: rgba(239, 68, 68, 0.15);
   color: #f87171;
   border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

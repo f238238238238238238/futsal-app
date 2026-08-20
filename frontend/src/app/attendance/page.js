@@ -6,12 +6,12 @@ import { getEvents, getEventAttendances, updateAttendance, getPlayers } from '@/
 import styles from './page.module.css';
 
 const STATUS_CONFIG = {
-  present: { label: '◯ 参加', color: 'var(--color-success)', bg: 'rgba(34,197,94,0.15)' },
-  absent: { label: '✕ 不参加', color: 'var(--color-danger)', bg: 'rgba(239,68,68,0.15)' },
-  pending: { label: '△ 未定', color: 'var(--color-warning)', bg: 'rgba(245,158,11,0.15)' },
+  present: { label: '参加', color: 'var(--color-success)', bg: 'rgba(34,197,94,0.15)' },
+  absent: { label: '不参加', color: 'var(--color-danger)', bg: 'rgba(239,68,68,0.15)' },
+  pending: { label: '未定', color: 'var(--color-warning)', bg: 'rgba(245,158,11,0.15)' },
 };
 
-const EVENT_ICONS = { match: '⚽', practice: '🏃', other: '📌' };
+const EVENT_LABELS = { match: 'Match', practice: 'Practice', other: 'Event' };
 
 export default function AttendancePage() {
   const [players, setPlayers] = useState([]);
@@ -89,9 +89,10 @@ export default function AttendancePage() {
   return (
     <div className={styles.page}>
       <div className={styles.pageHeader}>
-        <div className={styles.headerBg} />
-        <h1 className={styles.pageTitle}>ATTENDANCE</h1>
-        <p className={styles.pageSubtitle}>出欠登録</p>
+        <div className="container">
+          <p className={styles.pageSubtitle}>出欠登録</p>
+          <h1 className={styles.pageTitle}>Attendance</h1>
+        </div>
       </div>
 
       <div className="container">
@@ -133,7 +134,7 @@ export default function AttendancePage() {
                 >
                   <div className={styles.eventMain}>
                     <div className={styles.eventIcon}>
-                      {EVENT_ICONS[event.event_type] || '📌'}
+                      {EVENT_LABELS[event.event_type] || 'Event'}
                     </div>
                     <div className={styles.eventInfo}>
                       <div className={styles.eventDate}>
@@ -147,7 +148,7 @@ export default function AttendancePage() {
                       </div>
                       <h3 className={styles.eventTitle}>{event.title}</h3>
                       {event.location && (
-                        <span className={styles.eventLocation}>📍 {event.location}</span>
+                        <span className={styles.eventLocation}>{event.location}</span>
                       )}
                     </div>
                   </div>

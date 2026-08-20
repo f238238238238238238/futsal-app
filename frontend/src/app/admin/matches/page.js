@@ -206,7 +206,7 @@ export default function AdminMatchesPage() {
         <div style={{ display: 'flex', gap: '8px' }}>
           <button className={styles.addBtn} onClick={openCreate}>+ 新規登録</button>
           <Link href="/admin/video-analysis" className={styles.addBtn} style={{ background: '#7950f2', color: '#fff', textDecoration: 'none', border: '1px solid #6741d9' }}>
-            🎬 動画解析から作成
+            動画解析から作成
           </Link>
           <Link href="/admin/matches/live" className={styles.addBtn} style={{ background: 'var(--color-gold)', color: 'var(--color-black)', textDecoration: 'none' }}>
             + リアルタイム
@@ -243,7 +243,7 @@ export default function AdminMatchesPage() {
                     <td style={{ fontWeight: 700 }}>{m.our_score} - {m.opponent_score}</td>
                     <td className={styles.tableCell}>
                       <div className={styles.actionButtons}>
-                        <Link href={`/admin/matches/${m.match_id}/video-editor`} className={styles.editBtn} style={{ background: '#7950f2' }}>🎬 タイムライン</Link>
+                        <Link href={`/admin/matches/${m.match_id}/video-editor`} className={styles.editBtn} style={{ background: '#7950f2' }}>タイムライン</Link>
                         <button className={styles.editBtn} onClick={() => openEdit(m.match_id)}>編集</button>
                         <button className={styles.deleteBtn} onClick={() => handleDelete(m.match_id)}>削除</button>
                       </div>

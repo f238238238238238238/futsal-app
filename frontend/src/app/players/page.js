@@ -42,8 +42,14 @@ export default function PlayersPage() {
   }, [position]);
 
   return (
-    <div className={`container ${styles.page}`}>
-      <h1 className={styles.pageTitle}>Players</h1>
+    <div className={styles.page}>
+      <div className={styles.pageHeader}>
+        <div className="container">
+          <p className={styles.pageSubtitle}>Squad</p>
+          <h1 className={styles.pageTitle}>Players</h1>
+        </div>
+      </div>
+      <div className="container">
 
       <div className={styles.filters}>
         {POSITIONS.map(pos => (
@@ -91,6 +97,7 @@ export default function PlayersPage() {
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 }

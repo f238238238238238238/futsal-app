@@ -33,16 +33,14 @@ export default function LoginPage() {
       <div className={styles.loginContainer}>
         <div className={styles.loginCard}>
           <div className={styles.loginHeader}>
-            <span className={styles.loginIcon}>🔑</span>
-            <h1 className={styles.loginTitle}>LOGIN</h1>
+            <span className="stripeMarkLg" aria-hidden="true" />
+            <h1 className={styles.loginTitle}>Login</h1>
             <p className={styles.loginSubtitle}>ログイン</p>
           </div>
 
           <form onSubmit={handleSubmit} className={styles.form}>
             {error && (
-              <div className={styles.errorMsg}>
-                <span>⚠</span> {error}
-              </div>
+              <div className={styles.errorMsg}>{error}</div>
             )}
 
             <div className={styles.formGroup}>

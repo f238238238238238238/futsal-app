@@ -152,12 +152,12 @@ export default function PlayerDetailPage({ params }) {
     : player.salary;
 
   const infoItems = [
-    { icon: '🥅', label: 'ポジション', value: player.position || '-' },
-    { icon: '📏', label: '身長', value: player.height ? `${player.height}cm` : '-' },
-    { icon: '⚖️', label: '体重', value: player.weight ? `${player.weight}kg` : '-' },
-    { icon: '🎂', label: '年齢', value: ageDisplay },
-    { icon: '🦶', label: '利き足', value: player.dominant_foot || player.foot || '-' },
-    { icon: '💰', label: '年俸', value: formatSalary(latestSalary) },
+    { label: 'ポジション', value: player.position || '-' },
+    { label: '身長', value: player.height ? `${player.height}cm` : '-' },
+    { label: '体重', value: player.weight ? `${player.weight}kg` : '-' },
+    { label: '年齢', value: ageDisplay },
+    { label: '利き足', value: player.dominant_foot || player.foot || '-' },
+    { label: '年俸', value: formatSalary(latestSalary) },
   ];
 
   const selectedYearStat = player.yearlyStats?.find(s => s.year.toString() === selectedYear);
@@ -168,8 +168,8 @@ export default function PlayerDetailPage({ params }) {
     selectedYearStat?.calculated_offense ?? player.stat_offense ?? 40,
     selectedYearStat?.calculated_defense ?? player.stat_defense ?? 40,
     selectedYearStat?.calculated_technique ?? player.stat_technique ?? 40,
-    75, // Physical fixed
-    selectedYearStat?.calculated_speed ?? player.stat_speed ?? 75,
+    selectedYearStat?.calculated_stamina ?? player.stat_stamina ?? 40,
+    selectedYearStat?.calculated_speed ?? player.stat_speed ?? 50,
     selectedYearStat?.calculated_goalkeeping ?? 40,
   ];
 
@@ -217,7 +217,6 @@ export default function PlayerDetailPage({ params }) {
                 <div className={styles.infoGrid2Col}>
                   {infoItems.map((item, i) => (
                     <div key={i} className={styles.infoCard} style={{ animationDelay: `${i * 0.1}s` }}>
-                      <div className={styles.infoIcon}>{item.icon}</div>
                       <div className={styles.infoLabel}>{item.label}</div>
                       <div className={styles.infoValue}>{item.value}</div>
                     </div>
@@ -344,8 +343,8 @@ export default function PlayerDetailPage({ params }) {
                   <span>{currentStats[3]}</span> <span>フィジカル</span>
                 </div>
                 <div className={styles.attrSub}>
-                  <div><span>スタミナ</span> <span>{selectedYearStat?.sub_stats?.staminaWorkRate ?? '-'}</span></div>
-                  <div><span>フィジカル</span> <span>75</span></div>
+                  <div><span>出場時間</span> <span>{selectedYearStat?.sub_stats?.staminaWorkRate ?? '-'}</span></div>
+                  <div><span>プレー密度</span> <span>{selectedYearStat?.calculated_stamina ?? '-'}</span></div>
                 </div>
               </div>
 
@@ -354,8 +353,8 @@ export default function PlayerDetailPage({ params }) {
                   <span>{currentStats[4]}</span> <span>スピード</span>
                 </div>
                 <div className={styles.attrSub}>
-                  <div><span>加速度</span> <span>{selectedYearStat?.sub_stats?.acceleration ?? 75}</span></div>
-                  <div><span>スプリント力</span> <span>{selectedYearStat?.sub_stats?.sprintSpeed ?? 75}</span></div>
+                  <div><span>加速度</span> <span>{selectedYearStat?.sub_stats?.acceleration ?? '-'}</span></div>
+                  <div><span>スプリント力</span> <span>{selectedYearStat?.sub_stats?.sprintSpeed ?? '-'}</span></div>
                 </div>
 
                 <div className={styles.attrMain} style={{marginTop: '1rem'}}>

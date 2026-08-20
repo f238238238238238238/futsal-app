@@ -1,10 +1,54 @@
 import { Router } from 'express';
 import { getDb } from '../db/database.js';
 import { authenticate, requireAdmin } from '../middleware/auth.js';
+import { countPlayerEvents, computeMatchRating } from '../lib/playerRatings.js';
 
 const router = Router();
 
-function calculateMinutesPlayed(stats, events, matchLengthSeconds = 2400) {
+// イベントを時刻順に整列する。同一時刻は event_seq（なければ配列順）で順序を保証する
+export function sortEventsChronologically(events) {
+  return (events || [])
+    .map((ev, i) => ({ ev, i }))
+    .sort((a, b) =>
+      ((a.ev.minute || 0) - (b.ev.minute || 0)) ||
+      ((a.ev.event_seq ?? a.i) - (b.ev.event_seq ?? b.i))
+    )
+    .map(x => x.ev);
+}
+
+function parseLoc(v) {
+  if (v === undefined || v === null || v === '') return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+function buildEventInsert(matchId, events) {
+  const values = [];
+  const params = [];
+  events.forEach((ev, i) => {
+    const offset = i * 10;
+    const isDummy = typeof ev.user_id === 'string' && (ev.user_id.startsWith('dummy_') || ev.user_id === 'opponent');
+    let uid = isDummy ? null : ev.user_id;
+    if (uid === '') uid = null;
+    else if (uid != null) uid = parseInt(uid, 10);
+
+    const pos = isDummy ? ev.user_id : (ev.position || null);
+
+    let targetUid = null;
+    if (ev.target_user_id && ev.target_user_id !== 'opponent' && ev.target_user_id !== '') {
+      targetUid = parseInt(ev.target_user_id, 10);
+    }
+
+    values.push(`($${offset+1}, $${offset+2}, $${offset+3}, $${offset+4}, $${offset+5}, $${offset+6}, $${offset+7}, $${offset+8}, $${offset+9}, $${offset+10})`);
+    params.push(
+      matchId, ev.event_type, uid, ev.minute ?? null, pos, targetUid,
+      i, ev.period ?? null, parseLoc(ev.loc_x), parseLoc(ev.loc_y)
+    );
+  });
+  return { values, params };
+}
+
+export function calculateMinutesPlayed(stats, events, matchLengthSeconds = 2400) {
   const playingTimesSecs = {};
   stats.forEach(st => playingTimesSecs[st.user_id] = 0);
   
@@ -15,7 +59,13 @@ function calculateMinutesPlayed(stats, events, matchLengthSeconds = 2400) {
     }
   });
 
-  const sortedEvents = [...(events || [])].sort((a,b) => (a.minute || 0) - (b.minute || 0));
+  const sortedEvents = sortEventsChronologically(events);
+
+  // ピリオド（前後半）対応:
+  // period_end でコート上の全員の時間を確定し、次の period_start で再開する。
+  // 最初の period_start より前（ウォームアップ等）は出場時間に含めない。
+  let pausedPlayers = null;
+  let sawPeriodStart = false;
 
   sortedEvents.forEach(ev => {
     if (ev.event_type === 'sub_out') {
@@ -33,6 +83,22 @@ function calculateMinutesPlayed(stats, events, matchLengthSeconds = 2400) {
       if (ev.user_id) {
         enteredAt[ev.user_id] = ev.minute;
       }
+    } else if (ev.event_type === 'period_end') {
+      pausedPlayers = Object.keys(enteredAt);
+      pausedPlayers.forEach(uid => {
+        playingTimesSecs[uid] = (playingTimesSecs[uid] || 0) + (ev.minute - enteredAt[uid]);
+        delete enteredAt[uid];
+      });
+    } else if (ev.event_type === 'period_start') {
+      if (pausedPlayers) {
+        // ハーフタイム明け: コートにいたメンバーを再入場扱いにする
+        pausedPlayers.forEach(uid => { enteredAt[uid] = ev.minute; });
+        pausedPlayers = null;
+      } else if (!sawPeriodStart) {
+        // 試合開始: スタメンの入場時刻をキックオフに合わせる
+        Object.keys(enteredAt).forEach(uid => { enteredAt[uid] = ev.minute; });
+      }
+      sawPeriodStart = true;
     }
   });
 
@@ -105,12 +171,20 @@ router.get('/:id', async (req, res) => {
       LEFT JOIN users u ON me.user_id = u.user_id
       LEFT JOIN users tu ON me.target_user_id = tu.user_id
       WHERE me.match_id = $1
-      ORDER BY me.minute ASC
+      ORDER BY me.minute ASC, me.event_seq ASC NULLS LAST, me.event_id ASC
     `, [matchId]);
 
     res.json({
       ...match,
-      stats: statsResult.rows,
+      stats: statsResult.rows.map(s => {
+        const counts = countPlayerEvents(eventsResult.rows, s.user_id);
+        if (parseInt(s.assists, 10) > 0) counts.assists = parseInt(s.assists, 10);
+        if (parseInt(s.goals, 10) > 0) counts.goals = parseInt(s.goals, 10);
+        return {
+          ...s,
+          rating: computeMatchRating(counts, s.minutes_played),
+        };
+      }),
       events: eventsResult.rows
     });
   } catch (err) {
@@ -166,27 +240,9 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
     }
 
     if (events && Array.isArray(events) && events.length > 0) {
-      const values = [];
-      const params = [];
-      events.forEach((ev, i) => {
-        const offset = i * 6;
-        const isDummy = typeof ev.user_id === 'string' && (ev.user_id.startsWith('dummy_') || ev.user_id === 'opponent');
-        let uid = isDummy ? null : ev.user_id;
-        if (uid === '') uid = null;
-        else if (uid != null) uid = parseInt(uid, 10);
-        
-        const pos = isDummy ? ev.user_id : (ev.position || null);
-        
-        let targetUid = null;
-        if (ev.target_user_id && ev.target_user_id !== 'opponent' && ev.target_user_id !== '') {
-          targetUid = parseInt(ev.target_user_id, 10);
-        }
-
-        values.push(`($${offset+1}, $${offset+2}, $${offset+3}, $${offset+4}, $${offset+5}, $${offset+6})`);
-        params.push(matchId, ev.event_type, uid, ev.minute || null, pos, targetUid);
-      });
+      const { values, params } = buildEventInsert(matchId, events);
       await client.query(`
-        INSERT INTO match_events (match_id, event_type, user_id, minute, position, target_user_id)
+        INSERT INTO match_events (match_id, event_type, user_id, minute, position, target_user_id, event_seq, period, loc_x, loc_y)
         VALUES ${values.join(', ')}
       `, params);
     }
@@ -256,27 +312,9 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
     // Update events: delete old and insert new
     await client.query(`DELETE FROM match_events WHERE match_id = $1`, [matchId]);
     if (events && Array.isArray(events) && events.length > 0) {
-      const values = [];
-      const params = [];
-      events.forEach((ev, i) => {
-        const offset = i * 6;
-        const isDummy = typeof ev.user_id === 'string' && (ev.user_id.startsWith('dummy_') || ev.user_id === 'opponent');
-        let uid = isDummy ? null : ev.user_id;
-        if (uid === '') uid = null;
-        else if (uid != null) uid = parseInt(uid, 10);
-        
-        const pos = isDummy ? ev.user_id : (ev.position || null);
-        
-        let targetUid = null;
-        if (ev.target_user_id && ev.target_user_id !== 'opponent' && ev.target_user_id !== '') {
-          targetUid = parseInt(ev.target_user_id, 10);
-        }
-
-        values.push(`($${offset+1}, $${offset+2}, $${offset+3}, $${offset+4}, $${offset+5}, $${offset+6})`);
-        params.push(matchId, ev.event_type, uid, ev.minute || null, pos, targetUid);
-      });
+      const { values, params } = buildEventInsert(matchId, events);
       await client.query(`
-        INSERT INTO match_events (match_id, event_type, user_id, minute, position, target_user_id)
+        INSERT INTO match_events (match_id, event_type, user_id, minute, position, target_user_id, event_seq, period, loc_x, loc_y)
         VALUES ${values.join(', ')}
       `, params);
     }

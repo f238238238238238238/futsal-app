@@ -33,6 +33,10 @@ function useCountdown(targetDate) {
   return timeLeft;
 }
 
+function pad(n) {
+  return String(n).padStart(2, '0');
+}
+
 function getMatchResult(match) {
   const ourScore = match.ourScore ?? match.our_score ?? 0;
   const opponentScore = match.opponentScore ?? match.opponent_score ?? 0;
@@ -41,16 +45,19 @@ function getMatchResult(match) {
   return 'draw';
 }
 
+function matchId(match) {
+  return match.match_id || match.id;
+}
+
 export default function HomePage() {
   const [nextEvent, setNextEvent] = useState(null);
   const [matches, setMatches] = useState([]);
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [heroImages, setHeroImages] = useState([]);
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  const countdown = useCountdown(nextEvent?.date || nextEvent?.event_date);
+  const countdown = useCountdown(nextEvent?.date || nextEvent?.event_date || nextEvent?.date_time);
 
   useEffect(() => {
     async function fetchData() {
@@ -62,12 +69,11 @@ export default function HomePage() {
           getSettings(),
         ]);
 
-        // Settings (hero images)
         if (settingsData.status === 'fulfilled') {
           const s = settingsData.value?.settings || {};
           let images = [];
           if (s.hero_images) {
-            try { images = JSON.parse(s.hero_images); } catch(e) {}
+            try { images = JSON.parse(s.hero_images); } catch (e) { /* ignore */ }
           } else if (s.hero_image_base64) {
             images = [s.hero_image_base64];
           } else if (s.hero_image_url) {
@@ -76,29 +82,26 @@ export default function HomePage() {
           setHeroImages(images);
         }
 
-        // Next event
         if (eventsData.status === 'fulfilled') {
           const events = eventsData.value?.events || eventsData.value || [];
           const now = new Date();
           const upcoming = events
-            .filter(e => new Date(e.date || e.event_date) > now)
-            .sort((a, b) => new Date(a.date || a.event_date) - new Date(b.date || b.event_date));
+            .filter(e => new Date(e.date || e.event_date || e.date_time) > now)
+            .sort((a, b) =>
+              new Date(a.date || a.event_date || a.date_time) - new Date(b.date || b.event_date || b.date_time)
+            );
           if (upcoming.length > 0) setNextEvent(upcoming[0]);
         }
 
-        // Recent matches
         if (matchesData.status === 'fulfilled') {
           const allMatches = matchesData.value?.matches || matchesData.value || [];
           setMatches(allMatches.slice(0, 3));
         }
 
-        // News
         if (newsData.status === 'fulfilled') {
           const allNews = newsData.value?.news || newsData.value || [];
           setNews(allNews.slice(0, 3));
         }
-      } catch (err) {
-        setError(err.message);
       } finally {
         setLoading(false);
       }
@@ -110,164 +113,194 @@ export default function HomePage() {
     if (heroImages.length <= 1) return;
     const interval = setInterval(() => {
       setCurrentSlide(prev => (prev + 1) % heroImages.length);
-    }, 5000);
+    }, 6000);
     return () => clearInterval(interval);
   }, [heroImages]);
 
+  const featured = matches[0];
+  const restMatches = matches.slice(1);
+
   return (
     <>
-      {/* Hero Section */}
       <section className={styles.hero}>
         {heroImages.length > 0 ? (
           heroImages.map((img, i) => (
-            <div 
+            <div
               key={i}
-              className={styles.heroBackground} 
-              style={{ 
-                backgroundImage: `url(${img})`, 
-                backgroundSize: 'cover', 
-                backgroundPosition: 'center',
+              className={styles.heroBackground}
+              style={{
+                backgroundImage: `url(${img})`,
                 opacity: i === currentSlide ? 1 : 0,
-                transition: 'opacity 1s ease-in-out',
-                zIndex: i === currentSlide ? 1 : 0
-              }} 
+              }}
             />
           ))
         ) : (
           <div className={styles.heroBackground}>
-            <div className={styles.heroPattern} />
+            <div className={styles.heroStripes} />
           </div>
         )}
-        <div className={styles.heroGradient} style={{ zIndex: 2 }} />
-        
-        <div className={styles.heroContent} style={{ zIndex: 3 }}>
-          <h1 className={styles.heroTitle}>
-            <span className={styles.heroTitleAccent}>FUMINTUS</span>
-          </h1>
+        <div className={styles.heroGradient} />
+        <div className={styles.heroRail} aria-hidden="true" />
+
+        <div className={styles.heroContent}>
+          <p className={styles.heroKicker}>Official club</p>
+          <h1 className={styles.heroTitle}>FUMINTUS</h1>
           <p className={styles.heroSubtitle}>Victory is a state of mind.</p>
           <div className={styles.heroCta}>
-            <Link href="/matches" className="btn btnPrimary btnLarge">
-              試合結果を見る
-            </Link>
-            <Link href="/players" className="btn btnSecondary btnLarge">
-              選手一覧
-            </Link>
+            <Link href="/matches" className="btn btnPrimary">試合結果</Link>
+            <Link href="/players" className="btn btnSecondary">選手一覧</Link>
           </div>
-        </div>
-        <div className={styles.heroScrollIndicator}>
-          <span>Scroll</span>
-          <div className={styles.scrollLine} />
         </div>
       </section>
 
-      {/* Next Match Section */}
-      <section className={`${styles.section} ${styles.nextMatch}`}>
+      <section className={styles.fixture}>
         <div className="container">
-          <div className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>Next Match</h2>
-            <Link href="/attendance" className={styles.moreLink}>
-              出欠登録 →
-            </Link>
+          <div className={styles.fixtureHead}>
+            <div>
+              <p className={styles.sectionKicker}>Next fixture</p>
+              <h2 className={styles.fixtureTitle}>次の試合</h2>
+            </div>
+            <Link href="/attendance" className={styles.moreLink}>出欠を登録</Link>
           </div>
+
           {loading ? (
             <div className={styles.loading}><div className={styles.spinner} /></div>
           ) : nextEvent ? (
-            <div className={styles.nextMatchCard}>
-              <div className={styles.nextMatchLabel}>次の試合</div>
-              <div className={styles.nextMatchDate}>
-                {new Date(nextEvent.date || nextEvent.event_date).toLocaleDateString('ja-JP', {
-                  year: 'numeric', month: 'long', day: 'numeric', weekday: 'short'
+            <div className={styles.fixtureBoard}>
+              <div className={styles.fixtureMeta}>
+                {new Date(nextEvent.date || nextEvent.event_date || nextEvent.date_time).toLocaleDateString('ja-JP', {
+                  weekday: 'short', year: 'numeric', month: 'long', day: 'numeric',
                 })}
+                {nextEvent.location ? `  ·  ${nextEvent.location}` : ''}
               </div>
-              <div className={styles.nextMatchInfo}>
-                {nextEvent.title || nextEvent.name || '練習試合'}
-                {nextEvent.location && ` | ${nextEvent.location}`}
+              <div className={styles.fixtureTeams}>
+                <span className={styles.fixtureUs}>FUMINTUS</span>
+                <span className={styles.fixtureVs}>vs</span>
+                <span className={styles.fixtureThem}>
+                  {nextEvent.title || nextEvent.name || '対戦相手未定'}
+                </span>
               </div>
               <div className={styles.countdown}>
-                <div className={styles.countdownItem}>
-                  <span className={styles.countdownNumber}>{countdown.days}</span>
-                  <span className={styles.countdownUnit}>Days</span>
-                </div>
-                <div className={styles.countdownItem}>
-                  <span className={styles.countdownNumber}>{countdown.hours}</span>
-                  <span className={styles.countdownUnit}>Hours</span>
-                </div>
-                <div className={styles.countdownItem}>
-                  <span className={styles.countdownNumber}>{countdown.minutes}</span>
-                  <span className={styles.countdownUnit}>Min</span>
-                </div>
-                <div className={styles.countdownItem}>
-                  <span className={styles.countdownNumber}>{countdown.seconds}</span>
-                  <span className={styles.countdownUnit}>Sec</span>
-                </div>
+                {[
+                  [pad(countdown.days), 'Days'],
+                  [pad(countdown.hours), 'Hrs'],
+                  [pad(countdown.minutes), 'Min'],
+                  [pad(countdown.seconds), 'Sec'],
+                ].map(([num, unit]) => (
+                  <div key={unit} className={styles.countdownItem}>
+                    <span className={styles.countdownNumber}>{num}</span>
+                    <span className={styles.countdownUnit}>{unit}</span>
+                  </div>
+                ))}
               </div>
             </div>
           ) : (
-            <div className={styles.noMatch}>次回の試合は未定です</div>
+            <p className={styles.empty}>次戦はまだ組まれていません</p>
           )}
         </div>
       </section>
 
-      {/* Recent Results Section */}
       <section className={styles.section}>
         <div className="container">
           <div className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>Results</h2>
-            <Link href="/matches" className={styles.moreLink}>
-              もっと見る →
-            </Link>
+            <div>
+              <p className={styles.sectionKicker}>Latest</p>
+              <h2 className={styles.sectionTitle}>Results</h2>
+            </div>
+            <Link href="/matches" className={styles.moreLink}>すべての試合</Link>
           </div>
+
           {loading ? (
             <div className={styles.loading}><div className={styles.spinner} /></div>
-          ) : error ? (
-            <p className={styles.error}>データの取得に失敗しました</p>
           ) : matches.length === 0 ? (
-            <p className={styles.noMatch}>試合結果はまだありません</p>
+            <p className={styles.empty}>試合結果はまだありません</p>
           ) : (
-            <div className={styles.resultsGrid}>
-              {matches.map((match, i) => {
-                const result = getMatchResult(match);
-                const ourScore = match.ourScore ?? match.our_score ?? 0;
-                const opponentScore = match.opponentScore ?? match.opponent_score ?? 0;
-                return (
-                  <div key={match.id || i} className={styles.resultCard} style={{ animationDelay: `${i * 0.1}s` }}>
-                    <div className={styles.resultDate}>
-                      {new Date(match.date || match.match_date).toLocaleDateString('ja-JP')}
-                    </div>
-                    <div className={styles.resultTeams}>
-                      <span className={styles.resultTeamName}>FUMINTUS</span>
-                      <span className={`${styles.resultScore} ${styles[`result${result.charAt(0).toUpperCase() + result.slice(1)}`]}`}>
-                        {ourScore} - {opponentScore}
-                      </span>
-                      <span className={styles.resultTeamName}>{match.opponent || match.opponent_name || '対戦相手'}</span>
-                    </div>
-                    <div className={styles.resultCompetition}>{match.competition || match.tournament || ''}</div>
+            <div className={styles.results}>
+              {featured && (
+                <Link
+                  href={`/matches/${matchId(featured)}`}
+                  className={`${styles.featured} ${styles[getMatchResult(featured)]}`}
+                >
+                  <div className={styles.featuredMeta}>
+                    <span>
+                      {new Date(featured.date || featured.match_date).toLocaleDateString('ja-JP', {
+                        month: 'short', day: 'numeric',
+                      })}
+                    </span>
+                    <span>{featured.competition_name || featured.competition || featured.tournament || 'Friendly'}</span>
                   </div>
-                );
-              })}
+                  <div className={styles.featuredRow}>
+                    <span className={styles.featuredTeam}>FUMINTUS</span>
+                    <span className={styles.featuredScore}>
+                      {featured.ourScore ?? featured.our_score ?? 0}
+                    </span>
+                  </div>
+                  <div className={styles.featuredRow}>
+                    <span className={styles.featuredTeamMuted}>
+                      {featured.opponent || featured.opponent_name || '対戦相手'}
+                    </span>
+                    <span className={styles.featuredScoreMuted}>
+                      {featured.opponentScore ?? featured.opponent_score ?? 0}
+                    </span>
+                  </div>
+                </Link>
+              )}
+
+              <div className={styles.resultStack}>
+                {restMatches.map((match) => {
+                  const result = getMatchResult(match);
+                  return (
+                    <Link
+                      key={matchId(match)}
+                      href={`/matches/${matchId(match)}`}
+                      className={`${styles.resultRow} ${styles[result]}`}
+                    >
+                      <span className={styles.resultDate}>
+                        {new Date(match.date || match.match_date).toLocaleDateString('ja-JP', {
+                          month: 'numeric', day: 'numeric',
+                        })}
+                      </span>
+                      <span className={styles.resultUs}>FUMINTUS</span>
+                      <span className={styles.resultScoreline}>
+                        {match.ourScore ?? match.our_score ?? 0}
+                        <span>–</span>
+                        {match.opponentScore ?? match.opponent_score ?? 0}
+                      </span>
+                      <span className={styles.resultThem}>
+                        {match.opponent || match.opponent_name || '対戦相手'}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
       </section>
 
-      {/* News Section */}
-      <section className={styles.section}>
+      <section className={`${styles.section} ${styles.newsSection}`}>
         <div className="container">
           <div className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>News</h2>
-            <Link href="/news" className={styles.moreLink}>
-              もっと見る →
-            </Link>
+            <div>
+              <p className={styles.sectionKicker}>Club</p>
+              <h2 className={styles.sectionTitle}>News</h2>
+            </div>
+            <Link href="/news" className={styles.moreLink}>すべてのニュース</Link>
           </div>
+
           {loading ? (
             <div className={styles.loading}><div className={styles.spinner} /></div>
           ) : news.length === 0 ? (
-            <p className={styles.noMatch}>ニュースはまだありません</p>
+            <p className={styles.empty}>ニュースはまだありません。公開されるとここに並びます。</p>
           ) : (
-            <div className={styles.newsGrid}>
-              {news.map((item, i) => (
-                <Link key={item.id || i} href={`/news/${item.id}`} className={styles.newsCard} style={{ animationDelay: `${i * 0.1}s` }}>
-                  <span className={styles.newsCategory}>{item.category || 'お知らせ'}</span>
+            <div className={styles.newsList}>
+              {news.map((item) => (
+                <Link
+                  key={item.news_id || item.id}
+                  href={`/news/${item.news_id || item.id}`}
+                  className={styles.newsRow}
+                >
+                  <span className={styles.newsCat}>{item.category || 'お知らせ'}</span>
                   <h3 className={styles.newsTitle}>{item.title}</h3>
                   <span className={styles.newsDate}>
                     {new Date(item.createdAt || item.created_at || item.date).toLocaleDateString('ja-JP')}

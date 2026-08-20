@@ -1,57 +1,33 @@
 .page {
-  padding-top: var(--header-height);
+  padding-top: 0;
 }
 
 .pageHeader {
-  position: relative;
-  padding: var(--space-3xl) 0 var(--space-2xl);
-  text-align: center;
-  overflow: hidden;
-}
-
-.headerBg {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, var(--color-dark-800) 0%, var(--color-dark-900) 100%);
-}
-
-.headerBg::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 300px;
-  height: 300px;
-  background: radial-gradient(circle, var(--color-gold-glow), transparent 70%);
-  opacity: 0.25;
+  padding: calc(var(--header-height) + 40px) 0 36px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .pageTitle {
-  position: relative;
   font-family: var(--font-heading);
-  font-size: clamp(2.5rem, 6vw, 4rem);
-  font-weight: 900;
-  letter-spacing: 0.15em;
-  z-index: 1;
+  font-size: clamp(2.75rem, 8vw, 5.25rem);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 0.9;
 }
 
 .pageSubtitle {
-  position: relative;
   font-family: var(--font-heading);
-  font-size: 0.9rem;
-  color: var(--color-gold);
-  letter-spacing: 0.2em;
-  margin-top: var(--space-sm);
-  z-index: 1;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--color-ash);
+  margin-bottom: 8px;
 }
 
 .yearFilterWrapper {
-  position: relative;
-  margin-top: var(--space-xl);
-  z-index: 1;
-  display: flex;
-  justify-content: center;
+  margin-top: var(--space-lg);
 }
 
 .yearSelect {
@@ -92,17 +68,18 @@
 }
 
 .filterBtn {
-  padding: 8px 20px;
-  background: var(--color-dark-800);
-  border: 1px solid var(--color-dark-600);
-  border-radius: var(--radius-full);
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 0;
   color: var(--color-light-400);
   font-family: var(--font-heading);
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   white-space: nowrap;
   cursor: pointer;
-  transition: all var(--transition-base);
 }
 
 .filterBtn:hover {
@@ -130,36 +107,33 @@
   display: flex;
   align-items: center;
   gap: var(--space-lg);
-  padding: var(--space-lg);
-  background: var(--color-dark-800);
-  border: 1px solid var(--color-dark-600);
-  border-radius: var(--radius-lg);
+  padding: var(--space-lg) 0;
+  background: transparent;
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0;
   text-decoration: none;
   color: inherit;
-  animation: fadeInUp 0.5s ease forwards;
-  opacity: 0;
-  transition: all var(--transition-base);
 }
 
 .newsCard:hover {
-  transform: translateY(-2px);
-  border-color: var(--color-gold);
-  box-shadow: var(--shadow-gold);
+  color: inherit;
 }
 
 .newsImage {
-  width: 80px;
-  height: 80px;
-  border-radius: var(--radius-md);
-  background: var(--color-dark-700);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    #ffffff 0 6px,
+    #050505 6px 12px
+  );
   flex-shrink: 0;
 }
 
 .newsImagePlaceholder {
-  font-size: 2rem;
+  display: none;
 }
 
 .newsBody {
@@ -177,13 +151,13 @@
 .newsCategory {
   font-family: var(--font-heading);
   font-size: 0.65rem;
-  font-weight: 700;
+  font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  padding: 3px 8px;
-  background: rgba(197, 160, 89, 0.15);
+  letter-spacing: 0.12em;
+  padding: 0;
+  background: none;
   color: var(--color-gold);
-  border-radius: var(--radius-full);
+  border-radius: 0;
 }
 
 .newsDate {
@@ -194,9 +168,11 @@
 .newsTitle {
   font-family: var(--font-heading);
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--color-white);
   margin-bottom: 4px;
+  text-transform: none;
+  letter-spacing: 0.02em;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;

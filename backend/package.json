@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
-    "seed": "node src/db/seed.js"
+    "seed": "node src/db/seed.js",
+    "backup": "node src/db/backup.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.2",

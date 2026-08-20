@@ -4,29 +4,29 @@
 }
 
 .header {
-  background: var(--color-dark-800);
-  padding: var(--space-4xl) 0;
-  text-align: center;
-  border-bottom: 1px solid var(--color-dark-600);
+  padding: calc(var(--header-height) + 40px) 0 36px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   margin-bottom: var(--space-3xl);
+  background: transparent;
+  text-align: left;
 }
 
 .title {
   font-family: var(--font-heading);
-  font-size: clamp(2.5rem, 6vw, 4rem);
-  font-weight: 900;
-  color: var(--color-gold);
-  letter-spacing: 0.1em;
-  line-height: 1.1;
-  margin-bottom: var(--space-xs);
+  font-size: clamp(2.75rem, 8vw, 5.25rem);
+  font-weight: 600;
+  color: var(--color-white);
+  letter-spacing: 0.04em;
+  line-height: 0.9;
 }
 
 .subtitle {
   font-family: var(--font-heading);
-  font-size: clamp(0.875rem, 2vw, 1.25rem);
-  font-weight: 600;
-  color: var(--color-light-400);
-  letter-spacing: 0.2em;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--color-ash);
+  letter-spacing: 0.28em;
+  margin-bottom: 8px;
 }
 
 .container {

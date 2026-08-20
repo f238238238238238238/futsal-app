@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { getMatch, getImageUrl } from '@/lib/api';
+import YouTube from 'react-youtube';
 import styles from './page.module.css';
 
 const POSITIONS = {
@@ -38,6 +39,7 @@ export default function MatchDetailPage() {
   
   const [minute, setMinute] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const ytPlayerRef = useRef(null);
   const [playIndex, setPlayIndex] = useState(-1);
   
   const [ballState, setBallState] = useState({ top: '50%', left: '50%', opacity: 0 });
@@ -123,12 +125,12 @@ export default function MatchDetailPage() {
         } else if (ev.target_user_id === 'opponent' || (ev.target_user_id && ev.target_user_id.toString().startsWith('dummy_'))) {
           setTimeout(() => {
             setBallState({ top: '50%', left: '50%', opacity: 1 });
-            setEffect({ key: Date.now(), type: 'badge', top: '50%', left: '50%', emoji: '💥' });
+            setEffect({ key: Date.now(), type: 'badge', top: '50%', left: '50%', emoji: 'GOAL' });
           }, 300);
         }
         
         if(ev.event_type === 'assist') {
-          setEffect({ key: Date.now(), type: 'badge', top: pPos.top, left: pPos.left, emoji: '🅰️' });
+          setEffect({ key: Date.now(), type: 'badge', top: pPos.top, left: pPos.left, emoji: 'ASSIST' });
         }
         break;
       case 'steal':
@@ -136,20 +138,20 @@ export default function MatchDetailPage() {
       case 'pass_cut':
         setBallState({ top: pPos.top, left: pPos.left, opacity: 1 });
         if(ev.event_type === 'steal' || ev.event_type === 'catch' || ev.event_type === 'pass_cut') {
-          setEffect({ key: Date.now(), type: 'badge', top: pPos.top, left: pPos.left, emoji: ev.event_type === 'catch' ? '🧤' : '🛡️' });
+          setEffect({ key: Date.now(), type: 'badge', top: pPos.top, left: pPos.left, emoji: ev.event_type === 'catch' ? 'CATCH' : 'BLOCK' });
         }
         if(ev.event_type === 'assist') {
-          setEffect({ key: Date.now(), type: 'badge', top: pPos.top, left: pPos.left, emoji: '🅰️' });
+          setEffect({ key: Date.now(), type: 'badge', top: pPos.top, left: pPos.left, emoji: 'ASSIST' });
         }
         break;
       case 'lost_ball':
-        setEffect({ key: Date.now(), type: 'badge', top: pPos.top, left: pPos.left, emoji: '💥' });
+        setEffect({ key: Date.now(), type: 'badge', top: pPos.top, left: pPos.left, emoji: 'GOAL' });
         setBallState({ top: pPos.top, left: pPos.left, opacity: 0 });
         break;
       case 'block':
       case 'save':
       case 'defense':
-        setEffect({ key: Date.now(), type: 'badge', top: pPos.top, left: pPos.left, emoji: ev.event_type === 'save' ? '🧤' : '🛡️' });
+        setEffect({ key: Date.now(), type: 'badge', top: pPos.top, left: pPos.left, emoji: ev.event_type === 'save' ? 'SAVE' : 'DEFENSE' });
         setBallState({ top: `calc(${pPos.top} + 15%)`, left: `calc(${pPos.left} + 15%)`, opacity: 0 });
         break;
       case 'goal':
@@ -170,9 +172,9 @@ export default function MatchDetailPage() {
           setBallState({ top: '0%', left: '50%', opacity: 1 });
           setTimeout(() => {
             if (isHattrick) {
-              setEffect({ key: Date.now(), type: 'hattrick', top: '50%', left: '50%', emoji: 'HATTRICK!!! 🎩✨🔥' });
+              setEffect({ key: Date.now(), type: 'hattrick', top: '50%', left: '50%', emoji: 'HATTRICK!!!' });
             } else {
-              setEffect({ key: Date.now(), type: 'goal', top: '50%', left: '50%', emoji: 'GOAL!! 🎉' });
+              setEffect({ key: Date.now(), type: 'goal', top: '50%', left: '50%', emoji: 'GOAL!!' });
             }
             
             // 演出終了後(約1.5秒〜2秒後)にコート中央へボールをリセット
@@ -192,7 +194,7 @@ export default function MatchDetailPage() {
             if (ev.event_type === 'shot') {
               setEffect({ key: Date.now(), type: 'badge', top: '50%', left: '50%', emoji: '👟💥' });
             } else {
-              setEffect({ key: Date.now(), type: 'miss', top: '50%', left: '50%', emoji: 'NO GOAL 😱' });
+              setEffect({ key: Date.now(), type: 'miss', top: '50%', left: '50%', emoji: 'MISS' });
             }
           }, 400);
         }, 400);
@@ -529,6 +531,18 @@ export default function MatchDetailPage() {
     return (matchMatch && matchMatch[2].length === 11) ? matchMatch[2] : null;
   }
 
+  const seekMatchVideo = (seconds) => {
+    if (!ytPlayerRef.current) return;
+    const t = Math.max(0, Number(seconds) || 0);
+    ytPlayerRef.current.seekTo(t, true);
+    ytPlayerRef.current.playVideo();
+  };
+
+  const jumpToEvent = (ev) => {
+    handleSliderChange(ev.minute || 0);
+    seekMatchVideo(ev.minute || 0);
+  };
+
   const StatBar = ({ label, leftVal, rightVal, leftStr, rightStr }) => {
     const total = leftVal + rightVal;
     const leftRatio = total > 0 ? (leftVal / total) * 100 : 50;
@@ -562,56 +576,55 @@ export default function MatchDetailPage() {
       name = '相手選手';
     }
     switch (ev.event_type) {
-      case 'goal': 
-        if (ev.user_id === 'opponent') return `💢 失点 (相手ゴール)`;
-        return `⚽ ${name} が得点！`;
-      case 'opponent_goal': return `💢 失点 (相手ゴール)`;
-      case 'assist': return `🅰️ ${name} がアシスト！`;
-      case 'save': 
-        if (ev.user_id === 'opponent') return `🧤 相手GKがセーブ！`;
-        return `🧤 ${name} がセーブ(弾く)！`;
-      case 'catch': 
-        if (ev.user_id === 'opponent') return `🧤 相手GKがボールキャッチ！`;
-        return `🧤 ${name} がボールキャッチ！`;
-      case 'shot': return `👟 ${name} がシュート！(枠内)`;
-      case 'shot_off': 
-        if (ev.user_id === 'opponent') return `☄️ 相手チームのノーゴール`;
-        return `👟 ${name} がシュート！(ノーゴール)`;
-      case 'defense': return `🛡️ ${name} がディフェンス！`;
-      case 'steal': return `🛡️ ${name} がボール奪取！`;
-      case 'pass_cut': return `🛡️ ${name} がパスカット！`;
-      case 'block': return `🛡️ ${name} がブロック！`;
-      case 'opponent_block': return `🛡️ 相手がブロック！`;
-      case 'sub_in': return `🔼 ${name} がピッチに入りました`;
-      case 'sub_out': return `🔽 ${name} がベンチに下がりました`;
-      case 'substitution': return `🔄 ${ev.target_user_name || '選手'} に代わって ${name} がピッチに入りました`;
-      case 'position_change': return `🔄 ${name} が ${ev.position || '別ポジション'} に変更`;
+      case 'period_start': return ev.period === 2 ? '後半開始' : '前半開始';
+      case 'period_end': return ev.period === 2 ? '後半終了' : '前半終了';
+      case 'goal':
+        if (ev.user_id === 'opponent') return '失点（相手ゴール）';
+        return `${name} が得点`;
+      case 'opponent_goal': return '失点（相手ゴール）';
+      case 'assist': return `${name} がアシスト`;
+      case 'save':
+        if (ev.user_id === 'opponent') return '相手GKがセーブ';
+        return `${name} がセーブ`;
+      case 'catch':
+        if (ev.user_id === 'opponent') return '相手GKがキャッチ';
+        return `${name} がキャッチ`;
+      case 'shot': return `${name} がシュート（枠内）`;
+      case 'shot_off':
+        if (ev.user_id === 'opponent') return '相手チームのシュート枠外';
+        return `${name} がシュート（枠外）`;
+      case 'defense': return `${name} がディフェンス`;
+      case 'steal': return `${name} がボール奪取`;
+      case 'pass_cut': return `${name} がパスカット`;
+      case 'block': return `${name} がブロック`;
+      case 'opponent_block': return '相手がブロック';
+      case 'sub_in': return `${name} がピッチに入りました`;
+      case 'sub_out': return `${name} がベンチに下がりました`;
+      case 'substitution': return `${ev.target_user_name || '選手'} に代わって ${name} がピッチに入りました`;
+      case 'position_change': return `${name} が ${ev.position || '別ポジション'} に変更`;
       case 'kickoff':
-        if (ev.target_user_name) {
-          return `📣 ${name} から ${ev.target_user_name} へキックオフ！`;
+        if (ev.target_user_name) return `${name} から ${ev.target_user_name} へキックオフ`;
+        return `${name} がキックオフ`;
+      case 'pass':
+        if (ev.user_id === 'opponent') return '相手チームがパスを繋ぎました';
+        if (ev.target_user_name) return `${name} が ${ev.target_user_name} にパス`;
+        if (ev.target_user_id === 'opponent' || (ev.target_user_id && String(ev.target_user_id).startsWith('dummy_'))) {
+          return `${name} のパスが相手に渡りました`;
         }
-        return `📣 ${name} がキックオフ！`;
-      case 'pass': 
-        if (ev.user_id === 'opponent') return `🔁 相手チームがパスを繋ぎました`;
-        if (ev.target_user_name) {
-          return `🔁 ${name} が ${ev.target_user_name} にパスを繋ぎました`;
-        } else if (ev.target_user_id === 'opponent' || (ev.target_user_id && String(ev.target_user_id).startsWith('dummy_'))) {
-          return `💥 ${name} のパスが相手に渡りました`;
-        }
-        return `🔁 ${name} がパスを繋ぎました`;
-      case 'dribble': return `🏃‍♂️ ${name} がドリブルで仕掛けました！`;
-      case 'lost_ball': return `💥 ${name} がボールをロスト`;
-      case 'trap_miss': return `💥 ${name} がトラップミス！`;
-      case 'pass_miss': return `💥 ${name} がパスミス！`;
-      case 'opponent_pass': return `🔁 相手チームがパスを繋ぎました`;
-      case 'opponent_pass_fail': return `💥 相手チームがボールをロストしました`;
-      case 'concede': return `💢 ${name} が失点`;
-      case 'clear': return `🛡️ ${name} がクリア！`;
-      case 'recovery': return ev.team === 'opponent' ? `🔄 相手チームがこぼれ球を拾いました` : `🔄 ${name} がこぼれ球を拾いました`;
-      case 'opponent_shot_off': return `☄️ 相手チームがシュートミス(枠外)`;
-      case 'side_out': return ev.team === 'opponent' ? `🚩 相手のサイドアウト` : `🚩 ${name} のサイドアウト(キックイン)`;
-      case 'corner_kick': return ev.team === 'opponent' ? `🚩 相手のコーナーキック` : `🚩 ${name} のコーナーキック`;
-      case 'goal_kick': return ev.team === 'opponent' ? `🚩 相手のゴールキック` : `🚩 ${name} のゴールキック`;
+        return `${name} がパス`;
+      case 'dribble': return `${name} がドリブル`;
+      case 'lost_ball': return `${name} がボールをロスト`;
+      case 'trap_miss': return `${name} がトラップミス`;
+      case 'pass_miss': return `${name} がパスミス`;
+      case 'opponent_pass': return '相手チームがパスを繋ぎました';
+      case 'opponent_pass_fail': return '相手チームがボールをロストしました';
+      case 'concede': return `${name} が失点`;
+      case 'clear': return `${name} がクリア`;
+      case 'recovery': return ev.team === 'opponent' ? '相手チームがこぼれ球を拾いました' : `${name} がこぼれ球を拾いました`;
+      case 'opponent_shot_off': return '相手チームのシュート枠外';
+      case 'side_out': return ev.team === 'opponent' ? '相手のキックイン' : `${name} のキックイン`;
+      case 'corner_kick': return ev.team === 'opponent' ? '相手のコーナーキック' : `${name} のコーナーキック`;
+      case 'goal_kick': return ev.team === 'opponent' ? '相手のゴールキック' : `${name} のゴールキック`;
       default: return `${name} - ${ev.event_type}`;
     }
   };
@@ -637,20 +650,19 @@ export default function MatchDetailPage() {
   return (
     <div className={styles.page}>
       <div className={styles.pageHeader}>
-        <div className={styles.headerBg} />
-        <h1 className={styles.pageTitle}>MATCH DETAIL</h1>
-        <div style={{ color: 'var(--color-primary-400)', fontWeight: 600, marginBottom: '1rem', letterSpacing: '0.1em', position: 'relative', zIndex: 1 }}>{match.competition_name || '練習試合'}</div>
-        
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', position: 'relative', zIndex: 1, maxWidth: '600px', margin: '0 auto' }}>
-          <div style={{ flex: 1, textAlign: 'right', fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-light-100)' }}>FUMINTUS</div>
-          <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--color-primary-400)' }}>VS</div>
-          <div style={{ flex: 1, textAlign: 'left', fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-light-100)' }}>{match.opponent_name}</div>
-        </div>
-
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', position: 'relative', zIndex: 1, maxWidth: '600px', margin: '0.5rem auto 0' }}>
-          <div style={{ flex: 1, textAlign: 'right', fontSize: '2.5rem', fontWeight: 800, color: 'var(--color-light-100)' }}>{match.our_score}</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--color-dark-500)' }}>-</div>
-          <div style={{ flex: 1, textAlign: 'left', fontSize: '2.5rem', fontWeight: 800, color: 'var(--color-light-100)' }}>{match.opponent_score}</div>
+        <div className="container">
+          <p className={styles.pageSubtitle}>{match.competition_name || '練習試合'}</p>
+          <div className={styles.scoreboard}>
+            <div className={styles.scoreSide}>
+              <span className={styles.scoreTeam}>FUMINTUS</span>
+              <span className={styles.scoreNum}>{match.our_score}</span>
+            </div>
+            <span className={styles.scoreVs}>vs</span>
+            <div className={`${styles.scoreSide} ${styles.scoreSideAway}`}>
+              <span className={styles.scoreTeam}>{match.opponent_name}</span>
+              <span className={styles.scoreNum}>{match.opponent_score}</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -658,18 +670,19 @@ export default function MatchDetailPage() {
         <Link href="/matches" className={styles.backLink}>← 試合一覧に戻る</Link>
 
         {match.video_url && getYouTubeId(match.video_url) && (
-          <div style={{ marginBottom: '2rem', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 8px 30px rgba(0,0,0,0.3)', backgroundColor: '#000', paddingBottom: '56.25%', position: 'relative' }}>
-            <iframe 
-              src={`https://www.youtube.com/embed/${getYouTubeId(match.video_url)}`} 
-              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
+          <div className={styles.youtubeWrap}>
+            <div className={styles.youtubeInner}>
+              <YouTube
+                videoId={getYouTubeId(match.video_url)}
+                opts={{ width: '100%', height: '100%', playerVars: { autoplay: 0, rel: 0 } }}
+                onReady={(e) => { ytPlayerRef.current = e.target; }}
+              />
+            </div>
           </div>
         )}
 
         <div className={styles.sliderContainer}>
-          <div className={styles.sliderLabel}>⏱️ {Math.floor(minute / 60)}分{(minute % 60).toString().padStart(2, '0')}秒</div>
+          <div className={styles.sliderLabel}>{Math.floor(minute / 60)}分{Math.floor(minute % 60).toString().padStart(2, '0')}秒</div>
           <input 
             type="range" 
             min="0" 
@@ -680,7 +693,7 @@ export default function MatchDetailPage() {
           />
           <div className={styles.playbackControls}>
             <button className={styles.playBtn} onClick={togglePlay}>
-              {isPlaying ? '⏸ 停止' : '▶ ハイライト再生'}
+              {isPlaying ? '停止' : 'ハイライト再生'}
             </button>
           </div>
         </div>
@@ -867,18 +880,60 @@ export default function MatchDetailPage() {
           {/* 右側: イベントログ (実況) */}
           <div className={styles.rightColumn}>
             <div className={styles.sectionBox}>
-              <h2 className={styles.sectionTitle}>タイムライン ({Math.floor(minute / 60)}分{(minute % 60).toString().padStart(2, '0')}秒時点)</h2>
+              <h2 className={styles.sectionTitle}>タイムライン ({Math.floor(minute / 60)}分{Math.floor(minute % 60).toString().padStart(2, '0')}秒時点)</h2>
               <div className={styles.eventLogList} style={{ maxHeight: '300px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {pastEvents.length === 0 && <p style={{color: '#888'}}>まだイベントはありません</p>}
                 {pastEvents.map((ev, i) => (
-                  <div key={i} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', background: 'var(--color-dark-900)', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--color-dark-700)' }}>
-                    <span style={{ fontWeight: 700, color: 'var(--color-primary-400)', minWidth: '55px' }}>{Math.floor(ev.minute / 60)}'{String(ev.minute % 60).padStart(2, '0')}"</span>
+                  <div
+                    key={i}
+                    className={`${styles.timelineItem} ${match.video_url ? styles.timelineItemClickable : ''}`}
+                    onClick={() => jumpToEvent(ev)}
+                    title={match.video_url ? 'クリックでこの場面を再生' : undefined}
+                  >
+                    <span className={styles.timelineTime}>{Math.floor(ev.minute / 60)}'{String(Math.floor(ev.minute % 60)).padStart(2, '0')}"</span>
                     <span style={{ color: 'var(--color-light-100)', flex: 1, lineHeight: 1.4 }}>{getEventText(ev)}</span>
                   </div>
                 ))}
               </div>
             </div>
           </div>
+        </div>
+
+        <div className={styles.sectionBox} style={{ marginTop: '2rem' }}>
+          <h2 className={styles.sectionTitle}>シュートマップ</h2>
+          {match.events?.some(ev => ev.loc_x != null && ev.loc_y != null) ? (
+            <>
+              <svg viewBox="0 0 400 200" style={{ width: '100%', maxWidth: '640px', borderRadius: '8px', background: '#1a4d2e', display: 'block', marginTop: '1rem' }}>
+                <rect x="10" y="10" width="380" height="180" fill="none" stroke="#fff" strokeWidth="2" />
+                <line x1="200" y1="10" x2="200" y2="190" stroke="#fff" strokeWidth="1.5" />
+                <circle cx="200" cy="100" r="28" fill="none" stroke="#fff" />
+                <rect x="10" y="45" width="55" height="110" fill="none" stroke="#fff" />
+                <rect x="335" y="45" width="55" height="110" fill="none" stroke="#fff" />
+                <rect x="2" y="80" width="8" height="40" fill="#fff" />
+                <rect x="390" y="80" width="8" height="40" fill="#fff" />
+                {match.events.filter(ev => ev.loc_x != null && ev.loc_y != null).map((ev, i) => {
+                  const x = parseFloat(ev.loc_x);
+                  const y = parseFloat(ev.loc_y);
+                  if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+                  let fill = '#fff';
+                  if (ev.event_type === 'goal') fill = 'var(--color-gold, #C5A059)';
+                  else if (ev.event_type === 'shot_off') fill = '#888';
+                  else if (ev.event_type === 'opponent_goal' || ev.event_type === 'concede') fill = '#ff6b6b';
+                  else if (ev.event_type === 'save' || ev.event_type === 'catch' || ev.event_type === 'block') fill = '#74c0fc';
+                  return <circle key={i} cx={x * 400} cy={y * 200} r="6" fill={fill} stroke="#111" strokeWidth="1" />;
+                })}
+              </svg>
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '0.75rem', fontSize: '0.8rem', color: '#aaa', flexWrap: 'wrap' }}>
+                <span><span style={{ color: 'var(--color-gold)' }}>●</span> ゴール</span>
+                <span><span style={{ color: '#fff' }}>●</span> 枠内</span>
+                <span><span style={{ color: '#888' }}>●</span> 枠外</span>
+                <span><span style={{ color: '#74c0fc' }}>●</span> セーブ/ブロック</span>
+                <span><span style={{ color: '#ff6b6b' }}>●</span> 失点</span>
+              </div>
+            </>
+          ) : (
+            <p style={{ color: '#888', marginTop: '1rem' }}>この試合にはシュート位置の記録がありません</p>
+          )}
         </div>
 
         <div className={styles.sectionBox} style={{ marginTop: '2rem' }}>
@@ -902,7 +957,6 @@ export default function MatchDetailPage() {
               <tbody>
                 {match?.stats?.map(s => {
                   const pEvents = match.events ? match.events.filter(e => e.user_id === s.user_id || e.user_id === String(s.user_id)) : [];
-                  
                   const goals = s.goals > 0 ? s.goals : pEvents.filter(e => e.event_type === 'goal').length;
                   let autoAssists = 0;
                   if (match.events) {
@@ -913,9 +967,7 @@ export default function MatchDetailPage() {
                           if (['steal', 'opponent_pass', 'intercept', 'clear', 'opponent_block', 'lost_ball', 'pass_miss', 'trap_miss'].includes(prevEv.event_type)) break;
                           if (prevEv.team === 'opponent') break;
                           if ((prevEv.event_type === 'pass' || prevEv.event_type === 'kickoff') && (String(prevEv.target_user_id) === String(ev.user_id))) {
-                            if (String(prevEv.user_id) === String(s.user_id)) {
-                              autoAssists++;
-                            }
+                            if (String(prevEv.user_id) === String(s.user_id)) autoAssists++;
                             break;
                           }
                         }
@@ -923,17 +975,13 @@ export default function MatchDetailPage() {
                     });
                   }
                   const assists = s.assists > 0 ? s.assists : autoAssists;
-                  
                   const passes = pEvents.filter(e => e.event_type === 'pass').length;
                   const shots = pEvents.filter(e => e.event_type === 'shot' || e.event_type === 'shot_off' || e.event_type === 'goal').length;
                   const blocks = pEvents.filter(e => e.event_type === 'block').length;
                   const steals = pEvents.filter(e => e.event_type === 'steal' || e.event_type === 'pass_cut').length;
                   const saves = s.saves > 0 ? s.saves : pEvents.filter(e => e.event_type === 'save' || e.event_type === 'catch').length;
-                  
-                  const lostBalls = pEvents.filter(e => e.event_type === 'lost_ball').length;
-                  const shotsOff = pEvents.filter(e => e.event_type === 'shot_off').length;
                   const keepTime = teamStats.playerPossession ? (teamStats.playerPossession[s.user_id] || teamStats.playerPossession[String(s.user_id)] || 0) : 0;
-                  const rating = (6.0 + (goals * 1.0) + (assists * 0.5) + (passes * 0.1) + (shots * 0.1) + (blocks * 0.2) + (steals * 0.2) + (saves * 0.3) - (lostBalls * 0.2) - (shotsOff * 0.1)).toFixed(1);
+                  const rating = s.rating != null ? Number(s.rating).toFixed(1) : '6.0';
 
                   return (
                     <tr key={s.user_id} style={{ borderBottom: '1px solid #333' }}>

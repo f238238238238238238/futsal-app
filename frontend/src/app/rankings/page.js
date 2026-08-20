@@ -5,12 +5,12 @@ import { getGoalRanking, getAssistRanking, getAttendanceRanking, getStaminaRanki
 import styles from './page.module.css';
 
 const TABS = [
-  { key: 'goals', label: '得点王', icon: '⚽', unit: 'ゴール' },
-  { key: 'assists', label: 'アシスト王', icon: '🅰️', unit: 'アシスト' },
-  { key: 'defense', label: 'ディフェンス王', icon: '🛡️', unit: '回' },
-  { key: 'saves', label: 'セーブ王', icon: '🧤', unit: '回' },
-  { key: 'stamina', label: 'スタミナ王', icon: '💪', unit: 'km' },
-  { key: 'attendance', label: '出席王', icon: '📅', unit: '%' },
+  { key: 'goals', label: '得点王', unit: 'ゴール' },
+  { key: 'assists', label: 'アシスト王', unit: 'アシスト' },
+  { key: 'defense', label: 'ディフェンス王', unit: '回' },
+  { key: 'saves', label: 'セーブ王', unit: '回' },
+  { key: 'stamina', label: 'スタミナ王', unit: 'km' },
+  { key: 'attendance', label: '出席王', unit: '%' },
 ];
 
 const MEDAL_COLORS = ['#FFD700', '#C0C0C0', '#CD7F32'];
@@ -88,9 +88,9 @@ export default function RankingsPage() {
   return (
     <div className={styles.page}>
       <div className={styles.pageHeader}>
-        <div className={styles.headerBg} />
-        <h1 className={styles.pageTitle}>RANKINGS</h1>
-        <p className={styles.pageSubtitle}>チーム内ランキング</p>
+        <div className="container">
+          <p className={styles.pageSubtitle}>チーム内ランキング</p>
+          <h1 className={styles.pageTitle}>Rankings</h1>
         
         <div className={styles.yearFilterWrapper}>
           <select 
@@ -104,6 +104,7 @@ export default function RankingsPage() {
             ))}
           </select>
         </div>
+        </div>
       </div>
 
       <div className="container">
@@ -114,7 +115,6 @@ export default function RankingsPage() {
               className={`${styles.tab} ${activeTab === t.key ? styles.tabActive : ''}`}
               onClick={() => setActiveTab(t.key)}
             >
-              <span className={styles.tabIcon}>{t.icon}</span>
               <span className={styles.tabLabel}>{t.label}</span>
             </button>
           ))}
@@ -142,8 +142,8 @@ export default function RankingsPage() {
                   className={`${styles.podiumCard} ${styles[`podium${i + 1}`]}`}
                   style={{ animationDelay: `${i * 0.15}s` }}
                 >
-                  <div className={styles.podiumMedal} style={{ color: MEDAL_COLORS[item.displayRank - 1] || '#ccc' }}>
-                    {item.displayRank === 1 ? '👑' : item.displayRank === 2 ? '🥈' : item.displayRank === 3 ? '🥉' : ''}
+                  <div className={styles.podiumMedal}>
+                    {item.displayRank}
                   </div>
                   <div className={styles.podiumRank} style={{ color: MEDAL_COLORS[item.displayRank - 1] || '#ccc' }}>
                     {item.displayRank}

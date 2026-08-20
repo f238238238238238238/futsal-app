@@ -7,13 +7,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import styles from './Header.module.css';
 
 const NAV_LINKS = [
-  { href: '/', label: 'TOP' },
-  { href: '/players', label: 'PLAYERS' },
-  { href: '/matches', label: 'MATCHES' },
-  { href: '/rankings', label: 'RANKINGS' },
-  { href: '/fumindor', label: 'FUMINDOR' },
-  { href: '/news', label: 'NEWS' },
-  { href: '/attendance', label: 'ATTENDANCE' },
+  { href: '/', label: 'Home' },
+  { href: '/players', label: 'Players' },
+  { href: '/matches', label: 'Matches' },
+  { href: '/rankings', label: 'Rankings' },
+  { href: '/fumindor', label: 'Fumindor' },
+  { href: '/news', label: 'News' },
+  { href: '/attendance', label: 'Attendance' },
 ];
 
 export default function Header() {
@@ -23,7 +23,7 @@ export default function Header() {
   const { user, logout, isAdmin } = useAuth();
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 50);
+    const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -32,17 +32,16 @@ export default function Header() {
     setMenuOpen(false);
   }, [pathname]);
 
-  // Lock body scroll when menu is open
   useEffect(() => {
     document.body.style.overflow = menuOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [menuOpen]);
 
   return (
-    <header className={`${styles.header} ${scrolled ? styles.scrolled : ''}`}>
+    <header className={`${styles.header} ${scrolled || menuOpen ? styles.scrolled : ''}`}>
       <div className={styles.inner}>
         <Link href="/" className={styles.logo}>
-          <span className={styles.logoIcon}>⚽</span>
+          <span className="stripeMark" aria-hidden="true" />
           <span className={styles.logoText}>FUMINTUS</span>
         </Link>
 
@@ -64,7 +63,7 @@ export default function Header() {
                   href="/admin"
                   className={`${styles.navLink} ${styles.navLinkAdmin} ${pathname.startsWith('/admin') ? styles.navLinkActive : ''}`}
                 >
-                  ADMIN
+                  Admin
                 </Link>
               </li>
             )}
@@ -73,12 +72,14 @@ export default function Header() {
           <div className={styles.navActions}>
             {user ? (
               <div className={styles.userMenu}>
-                <Link href="/mypage" className={styles.userName}>👤 {user.name} (設定)</Link>
+                <Link href="/mypage" className={styles.userName}>{user.name}</Link>
                 <button onClick={logout} className={styles.logoutBtn}>
-                  LOGOUT
+                  Logout
                 </button>
               </div>
-            ) : null}
+            ) : (
+              <Link href="/login" className={styles.loginBtn}>Login</Link>
+            )}
           </div>
         </nav>
 

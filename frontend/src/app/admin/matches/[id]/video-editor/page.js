@@ -562,7 +562,7 @@ export default function VideoEditorPage() {
     <div className={styles.editorPage}>
       <header className={styles.editorHeader}>
         <Link href={`/matches/${id}`} className={styles.backBtn}>← MATCH DETAIL</Link>
-        <div className={styles.headerTitle}>🎬 動画解析エディタ（既存編集）</div>
+        <div className={styles.headerTitle}>動画解析エディタ（既存編集）</div>
         <button className={styles.globalSaveBtn} onClick={handleSaveClick}>上書き保存</button>
       </header>
 

@@ -1,82 +1,56 @@
 .page {
-  padding-top: var(--header-height);
+  padding-top: 0;
 }
 
 .pageHeader {
-  position: relative;
-  padding: var(--space-3xl) 0 var(--space-2xl);
-  text-align: center;
-  overflow: hidden;
-}
-
-.headerBg {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, var(--color-dark-800) 0%, var(--color-dark-900) 100%);
-  z-index: 0;
-}
-
-.headerBg::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 300px;
-  height: 300px;
-  background: radial-gradient(circle, var(--color-gold-glow), transparent 70%);
-  opacity: 0.3;
+  padding: calc(var(--header-height) + 40px) 0 36px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .pageTitle {
-  position: relative;
   font-family: var(--font-heading);
-  font-size: clamp(2.5rem, 6vw, 4rem);
-  font-weight: 900;
-  letter-spacing: 0.15em;
+  font-size: clamp(2.75rem, 8vw, 5.25rem);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 0.9;
   color: var(--color-white);
-  z-index: 1;
 }
 
 .pageSubtitle {
-  position: relative;
   font-family: var(--font-heading);
-  font-size: 0.9rem;
-  color: var(--color-gold);
-  letter-spacing: 0.2em;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.28em;
   text-transform: uppercase;
-  margin-top: var(--space-sm);
-  z-index: 1;
+  color: var(--color-ash);
+  margin-bottom: 8px;
 }
 
 .yearFilterWrapper {
-  position: relative;
-  margin-top: var(--space-xl);
-  z-index: 1;
-  display: flex;
-  justify-content: center;
+  margin-top: var(--space-lg);
 }
 
 .yearSelect {
-  background: var(--color-dark-800);
+  background: transparent;
   color: var(--color-white);
-  border: 1px solid var(--color-dark-600);
-  padding: 8px 32px 8px 16px;
-  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 8px 36px 8px 12px;
+  border-radius: 0;
   font-family: var(--font-heading);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
   appearance: none;
   cursor: pointer;
   background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23ffffff%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
   background-repeat: no-repeat;
   background-position: right 12px top 50%;
   background-size: 10px auto;
-  transition: border-color var(--transition-fast);
 }
 
 .yearSelect:hover,
 .yearSelect:focus {
-  border-color: var(--color-gold);
+  border-color: var(--color-white);
   outline: none;
 }
 
@@ -91,11 +65,9 @@
 
 .matchCard {
   background: var(--color-dark-800);
-  border: 1px solid var(--color-dark-600);
-  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0;
   overflow: hidden;
-  
-  opacity: 1;
   transition: border-color var(--transition-base);
 }
 
@@ -207,11 +179,11 @@
 .resultBadge {
   font-family: var(--font-heading);
   font-size: 0.65rem;
-  font-weight: 700;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   padding: 4px 10px;
-  border-radius: var(--radius-full);
+  border-radius: 0;
 }
 
 .badge_win {
@@ -276,12 +248,13 @@
   align-items: center;
   gap: var(--space-sm);
   padding: 8px 16px;
-  background: rgba(197, 160, 89, 0.1);
-  border: 1px solid rgba(197, 160, 89, 0.3);
-  border-radius: var(--radius-full);
+  background: transparent;
+  border: 1px solid var(--color-gold);
+  border-radius: 0;
   font-family: var(--font-heading);
-  font-weight: 700;
-  font-size: 0.9rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
   color: var(--color-gold);
 }
 

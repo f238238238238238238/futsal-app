@@ -1,13 +1,13 @@
-import { Montserrat, Inter } from "next/font/google";
+import { Oswald, Inter } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header/Header";
 import Footer from "@/components/Footer/Footer";
 import { AuthProvider } from "@/contexts/AuthContext";
 
-const montserrat = Montserrat({
-  variable: "--font-montserrat",
+const oswald = Oswald({
+  variable: "--font-oswald",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800", "900"],
+  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
@@ -19,10 +19,10 @@ const inter = Inter({
 });
 
 export const metadata = {
-  title: "FUTSALISTA | フットサルチーム公式サイト",
+  title: "FUMINTUS | Official Website",
   description:
-    "フットサルチームの成績データ、選手情報、試合結果、ランキング、最新ニュースをお届けする公式Webサイト",
-  keywords: "フットサル, futsal, チーム, 成績, ランキング",
+    "フットサルチーム FUMINTUS の公式サイト。試合結果、選手、ランキング、出欠、ニュース。",
+  keywords: "FUMINTUS, フットサル, futsal, チーム, 成績, ランキング",
 };
 
 export const viewport = {
@@ -36,7 +36,7 @@ export default function RootLayout({ children }) {
   return (
     <html
       lang="ja"
-      className={`${montserrat.variable} ${inter.variable}`}
+      className={`${oswald.variable} ${inter.variable}`}
     >
       <body>
         <AuthProvider>

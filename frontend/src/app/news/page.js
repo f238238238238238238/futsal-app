@@ -31,9 +31,9 @@ export default function NewsPage() {
   return (
     <div className={styles.page}>
       <div className={styles.pageHeader}>
-        <div className={styles.headerBg} />
-        <h1 className={styles.pageTitle}>NEWS</h1>
-        <p className={styles.pageSubtitle}>最新ニュース</p>
+        <div className="container">
+          <p className={styles.pageSubtitle}>最新ニュース</p>
+          <h1 className={styles.pageTitle}>News</h1>
         <div className={styles.yearFilterWrapper}>
           <select 
             value={selectedYear} 
@@ -45,6 +45,7 @@ export default function NewsPage() {
               <option key={y} value={y}>{y}年度</option>
             ))}
           </select>
+        </div>
         </div>
       </div>
 
@@ -75,7 +76,7 @@ export default function NewsPage() {
                 style={{ animationDelay: `${i * 0.08}s` }}
               >
                 <div className={styles.newsImage}>
-                  <span className={styles.newsImagePlaceholder}>📰</span>
+                  <span className={styles.newsImagePlaceholder} aria-hidden="true" />
                 </div>
                 <div className={styles.newsBody}>
                   <div className={styles.newsMeta}>

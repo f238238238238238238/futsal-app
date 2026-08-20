@@ -1,17 +1,7 @@
 .footer {
   background: var(--color-black);
-  border-top: 1px solid var(--color-dark-600);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
   margin-top: auto;
-}
-
-.goldLine {
-  height: 2px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    var(--color-gold),
-    transparent
-  );
 }
 
 .inner {
@@ -27,7 +17,6 @@
   margin-bottom: var(--space-2xl);
 }
 
-/* Brand */
 .brand {
   display: flex;
   flex-direction: column;
@@ -37,30 +26,25 @@
 .logo {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
-}
-
-.logoIcon {
-  font-size: 1.5rem;
+  gap: 10px;
 }
 
 .logoText {
   font-family: var(--font-heading);
-  font-size: 1.5rem;
-  font-weight: 900;
-  letter-spacing: 0.15em;
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
   color: var(--color-white);
 }
 
 .tagline {
-  font-family: var(--font-heading);
-  font-style: italic;
   font-size: 0.9rem;
-  color: var(--color-light-400);
-  letter-spacing: 0.05em;
+  color: var(--color-ash);
+  letter-spacing: 0.04em;
+  font-style: italic;
+  max-width: 28ch;
 }
 
-/* Links */
 .links {
   display: flex;
   flex-direction: column;
@@ -69,10 +53,10 @@
 
 .linksTitle {
   font-family: var(--font-heading);
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.15em;
-  color: var(--color-gold);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  color: var(--color-ash);
   text-transform: uppercase;
 }
 
@@ -80,34 +64,33 @@
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  gap: 10px;
 }
 
 .linksList a {
   font-family: var(--font-heading);
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 500;
-  letter-spacing: 0.1em;
-  color: var(--color-light-400);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-light-300);
   text-decoration: none;
-  transition: color var(--transition-fast);
 }
 
 .linksList a:hover {
   color: var(--color-white);
 }
 
-/* Bottom */
 .bottom {
   padding-top: var(--space-xl);
-  border-top: 1px solid var(--color-dark-700);
-  text-align: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .copyright {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: var(--color-dark-400);
-  letter-spacing: 0.05em;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 @media (max-width: 768px) {

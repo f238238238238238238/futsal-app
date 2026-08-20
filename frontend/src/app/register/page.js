@@ -34,16 +34,14 @@ export default function RegisterPage() {
       <div className={styles.loginContainer}>
         <div className={styles.loginCard}>
           <div className={styles.loginHeader}>
-            <span className={styles.loginIcon}>📝</span>
-            <h1 className={styles.loginTitle}>SIGN UP</h1>
+            <span className="stripeMarkLg" aria-hidden="true" />
+            <h1 className={styles.loginTitle}>Sign up</h1>
             <p className={styles.loginSubtitle}>選手アカウントを新規作成</p>
           </div>
 
           <form onSubmit={handleSubmit} className={styles.form}>
             {error && (
-              <div className={styles.errorMsg}>
-                <span>⚠</span> {error}
-              </div>
+              <div className={styles.errorMsg}>{error}</div>
             )}
 
             <div className={styles.formGroup}>

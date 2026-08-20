@@ -35,8 +35,10 @@ export default function FumindorPage() {
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <h1 className={styles.title}>FUMINDOR</h1>
-        <p className={styles.subtitle}>ANNUAL MVP AWARDS</p>
+        <div className="container">
+          <p className={styles.subtitle}>Annual MVP</p>
+          <h1 className={styles.title}>Fumindor</h1>
+        </div>
       </div>
 
       <div className={`container ${styles.container}`}>

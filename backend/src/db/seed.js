@@ -1,18 +1,34 @@
-import bcrypt from 'bcryptjs';
+﻿import bcrypt from 'bcryptjs';
 import { initializeDb, getDb, closeDb } from './database.js';
 
 async function seed() {
+  // 安全ガード: 全テーブルを削除して作り直す破壊的操作のため、明示的な確認を必須とする
+  if (!process.argv.includes('--force')) {
+    console.error('==================================================');
+    console.error('警告: このコマンドは接続先DBの全テーブルを削除して作り直します。');
+    console.error('既存のデータはすべて失われます。');
+    console.error('');
+    console.error('実行前に必ずバックアップを取得してください: npm run backup');
+    console.error('実行する場合: npm run seed -- --force');
+    console.error('==================================================');
+    process.exit(1);
+  }
+
   console.log('Initializing database connection...');
   initializeDb();
-  
-  // Wait a moment for connection pool to be ready (though usually not strictly required, good for safety)
+
+  // Wait a moment for connection pool to be ready
   await new Promise(r => setTimeout(r, 1000));
   const pool = getDb();
 
+  // 全処理を1トランザクションで実行する。
+  // 途中でエラーが起きた場合は全てロールバックされ、DBは実行前の状態のまま保たれる
+  // （「削除だけ成功して再作成に失敗」という部分適用を防ぐ）
+  const client = await pool.connect();
+  await client.query('BEGIN');
+
   console.log('Clearing existing data...');
-  // PostgreSQLでは CASCADE を使ってテーブルを削除またはTRUNCATEする方が早いですが、
-  // ここではテーブルごと削除して再作成する方針にします（schema.sqlの制約エラーを防ぐため）
-  await pool.query(`
+  await client.query(`
     DROP TABLE IF EXISTS match_events CASCADE;
     DROP TABLE IF EXISTS match_stats CASCADE;
     DROP TABLE IF EXISTS attendances CASCADE;
@@ -21,6 +37,7 @@ async function seed() {
     DROP TABLE IF EXISTS news CASCADE;
     DROP TABLE IF EXISTS fumindor CASCADE;
     DROP TABLE IF EXISTS site_settings CASCADE;
+    DROP TABLE IF EXISTS user_salaries CASCADE;
     DROP TABLE IF EXISTS users CASCADE;
   `);
 
@@ -32,7 +49,7 @@ async function seed() {
   const __dirname = path.dirname(__filename);
   const schemaPath = path.join(__dirname, 'schema.sql');
   const schema = fs.readFileSync(schemaPath, 'utf8');
-  await pool.query(schema);
+  await client.query(schema);
 
   console.log('Seeding users...');
   const adminHash = bcrypt.hashSync('admin123', 10);
@@ -48,7 +65,7 @@ async function seed() {
   `;
 
   // 管理者
-  await pool.query(insertUserQuery, [
+  await client.query(insertUserQuery, [
     '山田 太郎', 'admin@futsal.com', adminHash, 'admin', null, null,
     null, '1985-03-15', 175, 72, null,
     'チームを勝利へ導く', null, 'サッカー観戦', null, null,
@@ -160,7 +177,7 @@ async function seed() {
   ];
 
   for (const p of players) {
-    await pool.query(insertUserQuery, [
+    await client.query(insertUserQuery, [
       p.name, p.email, playerHash, 'player', p.jersey, p.position,
       p.foot, p.birth, p.height, p.weight, null,
       p.catchphrase, p.reason, p.hobby, p.goal, p.shoes,
@@ -192,7 +209,7 @@ async function seed() {
 
   const matchIds = [];
   for (const m of matchesData) {
-    const res = await pool.query(insertMatchQuery, [m.date, m.opponent, m.comp, m.our, m.opp, m.summary, m.mom]);
+    const res = await client.query(insertMatchQuery, [m.date, m.opponent, m.comp, m.our, m.opp, m.summary, m.mom]);
     matchIds.push(res.rows[0].match_id);
   }
 
@@ -212,7 +229,7 @@ async function seed() {
   ];
 
   for (const s of statsData) {
-    await pool.query(insertStatQuery, [matchIds[s.matchIdx], s.user, s.starter, s.goals, s.assists]);
+    await client.query(insertStatQuery, [matchIds[s.matchIdx], s.user, s.starter, s.goals, s.assists]);
   }
 
   console.log('Seeding events...');
@@ -229,7 +246,7 @@ async function seed() {
 
   const eventIds = [];
   for (const ev of scheduleEvents) {
-    const res = await pool.query(insertScheduleEvent, [ev.title, ev.type, ev.dateTime, ev.location, ev.description]);
+    const res = await client.query(insertScheduleEvent, [ev.title, ev.type, ev.dateTime, ev.location, ev.description]);
     eventIds.push(res.rows[0].event_id);
   }
 
@@ -238,9 +255,9 @@ async function seed() {
     INSERT INTO attendances (event_id, user_id, status, comment)
     VALUES ($1, $2, $3, $4)
   `;
-  await pool.query(insertAttendance, [eventIds[0], 2, 'present', '参加します！']);
-  await pool.query(insertAttendance, [eventIds[0], 3, 'present', null]);
-  await pool.query(insertAttendance, [eventIds[0], 5, 'absent', '仕事のため欠席']);
+  await client.query(insertAttendance, [eventIds[0], 2, 'present', '参加します！']);
+  await client.query(insertAttendance, [eventIds[0], 3, 'present', null]);
+  await client.query(insertAttendance, [eventIds[0], 5, 'absent', '仕事のため欠席']);
 
   console.log('Seeding news...');
   const insertNews = `
@@ -252,7 +269,7 @@ async function seed() {
     { title: '中村颯太選手が月間MVP受賞！', content: '開幕戦でのハットトリックを含む安定した得点力が評価されました。', category: '選手情報', image: null, date: '2026-05-01 11:00:00' },
   ];
   for (const n of newsData) {
-    await pool.query(insertNews, [n.title, n.content, n.category, n.image, n.date]);
+    await client.query(insertNews, [n.title, n.content, n.category, n.image, n.date]);
   }
 
   console.log('Seeding fumindor (annual MVP)...');
@@ -260,20 +277,23 @@ async function seed() {
     INSERT INTO fumindor (year, user_id, goals, assists, matches_played, description)
     VALUES ($1, $2, $3, $4, $5, $6)
   `;
-  await pool.query(insertFumindor, [2023, 9, 18, 12, 20, 'チーム創設初年度のMVPに。']);
-  await pool.query(insertFumindor, [2024, 7, 22, 8, 22, 'シーズン22ゴールはチーム記録。']);
-  await pool.query(insertFumindor, [2025, 11, 15, 5, 18, 'チーム初のカップ戦ベスト4進出に貢献。']);
+  await client.query(insertFumindor, [2023, 9, 18, 12, 20, 'チーム創設初年度のMVPに。']);
+  await client.query(insertFumindor, [2024, 7, 22, 8, 22, 'シーズン22ゴールはチーム記録。']);
+  await client.query(insertFumindor, [2025, 11, 15, 5, 18, 'チーム初のカップ戦ベスト4進出に貢献。']);
 
   console.log('Seeding site settings...');
   const insertSetting = 'INSERT INTO site_settings (key, value) VALUES ($1, $2)';
-  await pool.query(insertSetting, ['hero_image_url', '']);
-  await pool.query(insertSetting, ['team_name', 'FUMINTUS']);
+  await client.query(insertSetting, ['hero_image_url', '']);
+  await client.query(insertSetting, ['team_name', 'FUMINTUS']);
 
+  await client.query('COMMIT');
+  client.release();
   console.log('Seed data inserted successfully!');
   await closeDb();
 }
 
 seed().catch(err => {
-  console.error('Seed failed:', err);
+  // トランザクション未COMMITのままプロセスが終了するため、変更は自動でロールバックされる
+  console.error('Seed failed (all changes rolled back):', err);
   process.exit(1);
 });

@@ -56,7 +56,7 @@ export default function SensorTest() {
       addLog('🟢 センサーに接続しました！');
     } catch (error) {
       console.error(error);
-      addLog('❌ エラー: ' + error.message);
+      addLog('エラー: ' + error.message);
     }
   };
 
@@ -95,7 +95,7 @@ export default function SensorTest() {
       addLog(`⚙️ 設定変更: ${configStr}`);
       alert("設定をマイコンに送信しました！");
     } catch(err) {
-      addLog(`❌ 設定送信エラー: ${err.message}`);
+      addLog(`設定送信エラー: ${err.message}`);
     }
   };
 

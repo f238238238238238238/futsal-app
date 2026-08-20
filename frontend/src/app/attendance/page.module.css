@@ -1,49 +1,29 @@
 .page {
-  padding-top: var(--header-height);
+  padding-top: 0;
 }
 
 .pageHeader {
-  position: relative;
-  padding: var(--space-3xl) 0 var(--space-2xl);
-  text-align: center;
-  overflow: hidden;
-}
-
-.headerBg {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, var(--color-dark-800) 0%, var(--color-dark-900) 100%);
-}
-
-.headerBg::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 300px;
-  height: 300px;
-  background: radial-gradient(circle, var(--color-gold-glow), transparent 70%);
-  opacity: 0.25;
+  padding: calc(var(--header-height) + 40px) 0 36px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .pageTitle {
-  position: relative;
   font-family: var(--font-heading);
-  font-size: clamp(2.5rem, 6vw, 4rem);
-  font-weight: 900;
-  letter-spacing: 0.15em;
-  z-index: 1;
+  font-size: clamp(2.75rem, 8vw, 5.25rem);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 0.9;
 }
 
 .pageSubtitle {
-  position: relative;
   font-family: var(--font-heading);
-  font-size: 0.9rem;
-  color: var(--color-gold);
-  letter-spacing: 0.2em;
-  margin-top: var(--space-sm);
-  z-index: 1;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--color-ash);
+  margin-bottom: 8px;
 }
 
 /* Auth required */
@@ -123,14 +103,18 @@
 }
 
 .eventIcon {
-  font-size: 1.5rem;
-  width: 44px;
-  height: 44px;
+  font-family: var(--font-heading);
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  min-width: 72px;
+  height: auto;
   display: flex;
   align-items: center;
-  justify-content: center;
-  background: var(--color-dark-700);
-  border-radius: var(--radius-md);
+  color: var(--color-gold);
+  background: none;
+  border-radius: 0;
   flex-shrink: 0;
 }
 

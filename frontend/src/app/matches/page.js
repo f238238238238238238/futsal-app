@@ -53,20 +53,21 @@ export default function MatchesPage() {
     return (
       <div className={styles.page}>
         <div className={styles.pageHeader}>
-          <div className={styles.headerBg} />
-          <h1 className={styles.pageTitle}>MATCHES</h1>
-          <p className={styles.pageSubtitle}>試合結果</p>
-          <div className={styles.yearFilterWrapper}>
-            <select 
-              value={selectedYear} 
-              onChange={(e) => setSelectedYear(e.target.value)}
-              className={styles.yearSelect}
-            >
-              <option value="all">すべての期間</option>
-              {YEARS.filter(y => y !== 'all').map(y => (
-                <option key={y} value={y}>{y}年度</option>
-              ))}
-            </select>
+          <div className="container">
+            <p className={styles.pageSubtitle}>試合結果</p>
+            <h1 className={styles.pageTitle}>Matches</h1>
+            <div className={styles.yearFilterWrapper}>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+                className={styles.yearSelect}
+              >
+                <option value="all">すべての期間</option>
+                {YEARS.filter(y => y !== 'all').map(y => (
+                  <option key={y} value={y}>{y}年度</option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
         <div className="container">
@@ -79,20 +80,21 @@ export default function MatchesPage() {
   return (
     <div className={styles.page}>
       <div className={styles.pageHeader}>
-        <div className={styles.headerBg} />
-        <h1 className={styles.pageTitle}>MATCHES</h1>
-        <p className={styles.pageSubtitle}>試合結果</p>
-        <div className={styles.yearFilterWrapper}>
-          <select 
-            value={selectedYear} 
-            onChange={(e) => setSelectedYear(e.target.value)}
-            className={styles.yearSelect}
-          >
-            <option value="all">すべての期間</option>
-            {YEARS.filter(y => y !== 'all').map(y => (
-              <option key={y} value={y}>{y}年度</option>
-            ))}
-          </select>
+        <div className="container">
+          <p className={styles.pageSubtitle}>試合結果</p>
+          <h1 className={styles.pageTitle}>Matches</h1>
+          <div className={styles.yearFilterWrapper}>
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              className={styles.yearSelect}
+            >
+              <option value="all">すべての期間</option>
+              {YEARS.filter(y => y !== 'all').map(y => (
+                <option key={y} value={y}>{y}年度</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
       <div className="container">
@@ -154,7 +156,7 @@ export default function MatchesPage() {
                           {detail.mom_name && (
                             <div className={styles.detailSection}>
                               <h4 className={styles.detailLabel}>MOM (Man of the Match)</h4>
-                              <div className={styles.momBadge}>⭐ {detail.mom_name}</div>
+                              <div className={styles.momBadge}>MOM {detail.mom_name}</div>
                             </div>
                           )}
 
@@ -170,8 +172,8 @@ export default function MatchesPage() {
                                         {s.is_starter ? 'ST' : 'SUB'}
                                       </span>
                                       <span className={styles.memberName}>{s.name || s.user_name}</span>
-                                      {s.goals > 0 && <span className={styles.memberStat}>⚽{s.goals}</span>}
-                                      {s.assists > 0 && <span className={styles.memberStat}>🅰️{s.assists}</span>}
+                                      {s.goals > 0 && <span className={styles.memberStat}>G {s.goals}</span>}
+                                      {s.assists > 0 && <span className={styles.memberStat}>A {s.assists}</span>}
                                     </div>
                                   ))}
                               </div>

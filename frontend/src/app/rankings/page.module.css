@@ -1,57 +1,33 @@
 .page {
-  padding-top: var(--header-height);
+  padding-top: 0;
 }
 
 .pageHeader {
-  position: relative;
-  padding: var(--space-3xl) 0 var(--space-2xl);
-  text-align: center;
-  overflow: hidden;
-}
-
-.headerBg {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, var(--color-dark-800) 0%, var(--color-dark-900) 100%);
-}
-
-.headerBg::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 400px;
-  height: 400px;
-  background: radial-gradient(circle, var(--color-gold-glow), transparent 70%);
-  opacity: 0.25;
+  padding: calc(var(--header-height) + 40px) 0 36px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .pageTitle {
-  position: relative;
   font-family: var(--font-heading);
-  font-size: clamp(2.5rem, 6vw, 4rem);
-  font-weight: 900;
-  letter-spacing: 0.15em;
-  z-index: 1;
+  font-size: clamp(2.75rem, 8vw, 5.25rem);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 0.9;
 }
 
 .pageSubtitle {
-  position: relative;
   font-family: var(--font-heading);
-  font-size: 0.9rem;
-  color: var(--color-gold);
-  letter-spacing: 0.2em;
-  margin-top: var(--space-sm);
-  z-index: 1;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--color-ash);
+  margin-bottom: 8px;
 }
 
 .yearFilterWrapper {
-  position: relative;
-  margin-top: var(--space-xl);
-  z-index: 1;
-  display: flex;
-  justify-content: center;
+  margin-top: var(--space-lg);
 }
 
 .yearSelect {
@@ -95,17 +71,18 @@
   display: flex;
   align-items: center;
   gap: var(--space-sm);
-  padding: 12px 24px;
-  background: var(--color-dark-800);
-  border: 1px solid var(--color-dark-600);
-  border-radius: var(--radius-full);
+  padding: 10px 18px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 0;
   color: var(--color-light-400);
   font-family: var(--font-heading);
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   white-space: nowrap;
   cursor: pointer;
-  transition: all var(--transition-base);
 }
 
 .tab:hover {
